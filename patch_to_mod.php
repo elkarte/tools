@@ -567,4 +567,3 @@ function template_create_script ()
 		<span class="lowerframe"><span></span></span>
 	</div>';
 }
-?>

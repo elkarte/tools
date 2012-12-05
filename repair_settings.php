@@ -1,14 +1,16 @@
 <?php
 
 /**
+ * @name      Dialogo Forum
+ * @copyright Dialogo Forum contributors
+ *
+ * This software is a derived product, based on:
+ *
  * Simple Machines Forum (SMF)
+ * copyright:	2011 Simple Machines (http://www.simplemachines.org)
+ * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @package SMF
- * @author Simple Machines
- * @copyright 2011 Simple Machines
- * @license http://www.simplemachines.org/about/smf/license.php BSD
- *
- * @version 2.0
+ * @version 1.0
  */
 
 // We need the Settings.php info for database stuff.
@@ -18,6 +20,7 @@ if (file_exists(dirname(__FILE__) . '/Settings.php'))
 // Initialize everything and load the language files.
 initialize_inputs();
 
+$txt['dialogo_repair_settings'] = 'Dialogo Settings Repair Tool';
 $txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
 $txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
 $txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
@@ -97,7 +100,9 @@ if (isset($_POST['submit']))
 if (isset($_POST['remove_hooks']))
 	remove_hooks();
 
-// try to find the smflogo: could be a .gif or a .png
+// try to find the logo: could be a .gif or a .png
+$smflogo = "Themes/default/images/logo_sm.png";
+if (!file_exists(dirname(__FILE__) . "/" . $smflogo))
 $smflogo = "Themes/default/images/smflogo.png";
 if (!file_exists(dirname(__FILE__) . "/" . $smflogo))
 $smflogo = "Themes/default/images/smflogo.gif";
@@ -209,7 +214,7 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.simplemachines.org/" target="_blank"><img src="' . $smflogo . '" style="width: 250px; float: right;" alt="Simple Machines" border="0" /></a>
+			<a href="http://www.spudsdesign.org/dialogo" target="_blank"><img src="' . $smflogo . '" style="width: 250px; float: right;" alt="Dialogo" border="0" /></a>
 			<div>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</div>
 		</div>
 		<div id="content">';

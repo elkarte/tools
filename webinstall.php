@@ -1,14 +1,16 @@
 <?php
 
 /**
+ * @name      Dialogo Forum
+ * @copyright Dialogo Forum contributors
+ *
+ * This software is a derived product, based on:
+ *
  * Simple Machines Forum (SMF)
+ * copyright:	2011 Simple Machines (http://www.simplemachines.org)
+ * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @package SMF
- * @author Simple Machines
- * @copyright 2011 Simple Machines
- * @license http://www.simplemachines.org/about/smf/license.php BSD
- *
- * @version 2.0
+ * @version 1.0 Alpha
  */
 
 // !!! On upgrade, warn about installed.list!
@@ -37,7 +39,7 @@ function template_webinstall_above()
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<meta name="robots" content="noindex" />
-		<title>', $txt['smf_installer'], '</title>
+		<title>', $txt['installer'], '</title>
 		<style type="text/css">
 			body
 			{
@@ -155,7 +157,7 @@ function template_webinstall_above()
 	</head>
 	<body>
 		<div id="header">
-			<div title="Akihabara">', $txt['smf_installer'], '</div>
+			<div title="Akihabara">', $txt['installer'], '</div>
 		</div>
 		<div id="content">';
 }
@@ -289,20 +291,6 @@ function doStep0()
 		return false;
 	}
 
-	// Make sure this stuff is set, if not go to the default values.
-	if (!isset($_SESSION['webinstall_state']['is_logged_in']))
-	{
-		$_SESSION['webinstall_state']['is_logged_in'] = false;
-		$_SESSION['webinstall_state']['is_charter'] = false;
-		$_SESSION['webinstall_state']['is_beta_tester'] = false;
-		$_SESSION['webinstall_state']['is_team'] = false;
-
-		$_SESSION['webinstall_state']['access'] = array(0);
-
-		$_SESSION['webinstall_state']['can_svn'] = false;
-		$_SESSION['webinstall_state']['user_data'] = '';
-	}
-
 	$install_info = fetch_install_info();
 
 	if ($install_info === false)
@@ -344,15 +332,6 @@ function doStep0()
 							<tr>
 								<td width="26%" valign="top" class="textbox" style="padding-bottom: 1ex; white-space: normal;"><label>', $txt['member_login'], ':</label></td>
 								<td valign="top">';
-
-	if (empty($_SESSION['webinstall_state']['is_logged_in']))
-		echo '
-									<span style="white-space: nowrap;"><label for="member_username">', $txt['member_username'], ':</label> <input type="text" size="20" name="member_username" id="member_username" value="', isset($_POST['member_username']) ? $_POST['member_username'] : '', '" style="margin-right: 3ex;" onchange="if (this.value != \'\' && this.form.member_password.value != \'\') this.form.verify.click();" /></span>
-									<span style="white-space: nowrap;"><label for="member_password">', $txt['member_password'], ':</label> <input type="password" size="20" name="member_password" id="member_password" value="" style="margin-right: 3ex;" onchange="if (this.value != \'\' && this.form.member_password.value != \'\') this.form.verify.click();" /></span> <input type="submit" name="verify" value="', $txt['member_verify'], '" />
-									<div style="font-size: smaller; margin-bottom: 2ex;">', $txt['member_login_info'], '</div>';
-	else
-		echo '
-									', $txt['member_verify_done'], ' (<a href="', $_SERVER['PHP_SELF'], '?step=1&amp;logout=1">', $txt['member_verify_logout'], '</a>)';
 
 	echo '
 								</td>
@@ -425,7 +404,7 @@ function doStep0()
 											<input type="checkbox" name="languages[]" id="language-', $file, '" value="', $file, '" />
 											<strong>
 												', $data['name'], '
-												<span class="supported-ver">(SMF ', implode(', SMF ', $data['versions']), ')</span>
+												<span class="supported-ver">(Dialogo ', implode(', Dialogo ', $data['versions']), ')</span>
 											</strong>
 										</label>';
 	}
@@ -456,61 +435,9 @@ function doStep1()
 {
 	global $txt, $ftp;
 
-	// Remember if they agreed (even if they are only verifying.)
+	// Remember if they agreed
 	if (isset($_POST['agree']))
 		$_SESSION['webinstall_state']['agree'] = true;
-
-	if (!empty($_POST['verify']) || (!empty($_POST['member_username']) && !empty($_POST['member_password'])))
-	{
-		$pass_data = 'web_user=' . base64_encode($_POST['member_username']) . '&check&web_pass=' . sha1(sha1(strtolower($_POST['member_username']) . $_POST['member_password']) . 'w$--IN5~2a');
-
-		$data = (int) fetch_web_data('http://download.simplemachines.org/index.php', $pass_data . '&verify=1');
-
-		$_SESSION['webinstall_state']['is_logged_in'] = !empty($data);
-		$_SESSION['webinstall_state']['is_charter'] = $data === 2;
-		$_SESSION['webinstall_state']['is_beta_tester'] = $data === 3;
-		$_SESSION['webinstall_state']['is_team'] = $data === 4;
-
-		if ($_SESSION['webinstall_state']['is_team'])
-			$_SESSION['webinstall_state']['access'] = array(0,1,2);
-		elseif ($_SESSION['webinstall_state']['is_charter'] || $_SESSION['webinstall_state']['is_beta_tester'])
-			$_SESSION['webinstall_state']['access'] = array(0,2);
-		else
-			$_SESSION['webinstall_state']['access'] = array(0);
-
-		$_SESSION['webinstall_state']['can_svn'] = $_SESSION['webinstall_state']['is_team'] || $_SESSION['webinstall_state']['is_beta_tester'];
-
-		$_SESSION['webinstall_state']['user_data'] = $_SESSION['webinstall_state']['is_logged_in'] ? '?' . $pass_data : '';
-
-		$_SESSION['webinstall_state']['member_info'] = $_SESSION['webinstall_state']['can_svn'] ? array($_POST['member_username'], $_POST['member_password']) : array();
-
-		if (empty($data))
-		{
-			echo '
-						<br />
-						<div class="error_message" style="margin: 0 1ex 2ex 1ex;">
-							<div style="float: left; width: 2ex; font-size: 2em; color: red;">X</div>
-							', $txt['error_not_member'], '
-						</div>';
-
-		}
-
-		return doStep0();
-	}
-	elseif (isset($_GET['logout']))
-	{
-		$_SESSION['webinstall_state']['is_logged_in'] = false;
-		$_SESSION['webinstall_state']['is_charter'] = false;
-		$_SESSION['webinstall_state']['is_beta_tester'] = false;
-		$_SESSION['webinstall_state']['is_team'] = false;
-
-		$_SESSION['webinstall_state']['access'] = array(0);
-
-		$_SESSION['webinstall_state']['can_svn'] = false;
-		$_SESSION['webinstall_state']['user_data'] = '';
-
-		return doStep0();
-	}
 
 	// Perhaps they don't want to use a chmod of 777.
 	if (isset($_REQUEST['chmod']) && is_numeric($_REQUEST['chmod']))
@@ -558,18 +485,18 @@ function doStep1()
 		if (!empty($_SESSION['webinstall_state']['can_svn']) && !empty($_POST['use_svn']))
 		{
 			// SVN files only have the branch numbers on them and not the actual version.
-			preg_match('~(smf_[\d]-[\d])(.*)~', $_POST['filename'], $match);
+			preg_match('~(dialogo_[\d]-[\d])(.*)~', $_POST['filename'], $match);
 			$_POST['filename_unmodified'] = $_POST['filename'];
 			$_POST['filename'] = $match[1] . '-dev' . strftime('%Y%m%d') . '_';
 
-			$_POST['mirror'] = 'https://devel.simplemachines.org/mkbuild/release/';
+			$_POST['mirror'] = 'https://github.com/spuds/Dialogo/downloads';
 		}
 
 		$files_to_download[] = $_POST['mirror'] . $_POST['filename'] . $type . $ext;
 
 		if (isset($_POST['languages']))
 		{
-			$version_selected = str_replace('SMF ', '', $_SESSION['webinstall_state']['install_info']['install'][isset($_POST['filename_unmodified']) ? $_POST['filename_unmodified'] : $_POST['filename']]);
+			$version_selected = str_replace('Dialogo ', '', $_SESSION['webinstall_state']['install_info']['install'][isset($_POST['filename_unmodified']) ? $_POST['filename_unmodified'] : $_POST['filename']]);
 			foreach ($_POST['languages'] as $lang)
 				if (isset($_SESSION['webinstall_state']['install_info']['languages'][$lang]) && in_array($version_selected, $_SESSION['webinstall_state']['install_info']['languages'][$lang]['versions']))
 					$files_to_download[] = $_POST['mirror'] . $_POST['filename'] . $lang . $ext;
@@ -673,11 +600,11 @@ function doStep2()
 		{
 			foreach ($_SESSION['webinstall_state']['files_to_download'] as $i => $file)
 			{
-				$ftp->create_file('smf_install' . $i . '.tmp');
-				$ftp->chmod('smf_install' . $i . '.tmp', $chmod);
+				$ftp->create_file('dialogo_install' . $i . '.tmp');
+				$ftp->chmod('dialogo_install' . $i . '.tmp', $chmod);
 			}
 
-			if (!file_exists(dirname(__FILE__) . '/smf_install0.tmp'))
+			if (!file_exists(dirname(__FILE__) . '/dialogo_install0.tmp'))
 				$ftp->error = true;
 		}
 
@@ -729,7 +656,7 @@ function doStep2()
 			return false;
 		}
 
-		file_put_contents(dirname(__FILE__) . '/smf_install' . $i . '.tmp', $data);
+		file_put_contents(dirname(__FILE__) . '/dialogo_install' . $i . '.tmp', $data);
 
 		if ($i < ($_SESSION['webinstall_state']['files_to_download_total'] - 1))
 		{
@@ -772,15 +699,6 @@ function doStep2()
 			return true;
 		}
 	}
-
-	$_SESSION['webinstall_state']['is_logged_in'] = false;
-	$_SESSION['webinstall_state']['is_charter'] = false;
-	$_SESSION['webinstall_state']['is_beta_tester'] = false;
-	$_SESSION['webinstall_state']['is_team'] = false;
-	$_SESSION['webinstall_state']['access'] = array(0);
-	$_SESSION['webinstall_state']['can_svn'] = false;
-	$_SESSION['webinstall_state']['user_data'] = '';
-	$_SESSION['webinstall_state']['member_info'] = array();
 
 	echo '
 				<div class="panel">
@@ -826,7 +744,7 @@ function doStep3()
 		if ($i < $_GET['substep'])
 			continue;
 
-		$fp = fopen(dirname(__FILE__) . '/smf_install' . $i . '.tmp', 'rb');
+		$fp = fopen(dirname(__FILE__) . '/dialogo_install' . $i . '.tmp', 'rb');
 		$data = '';
 		while (!feof($fp))
 			$data .= fread($fp, 4096);
@@ -839,14 +757,14 @@ function doStep3()
 
 			extract_tar($data, dirname(__FILE__), $ftp);
 
-			$ftp->unlink('smf_install' . $i . '.tmp');
+			$ftp->unlink('dialogo_install' . $i . '.tmp');
 			$ftp->close();
 		}
 		else
 		{
 			extract_tar($data, dirname(__FILE__), null);
 
-			unlink('smf_install' . $i . '.tmp');
+			unlink('dialogo_install' . $i . '.tmp');
 		}
 
 		if ($i < ($_SESSION['webinstall_state']['files_to_download_total'] - 1))
@@ -931,8 +849,8 @@ function run_chmod_test(&$ftp, &$chmod)
 	);
 
 	// At this point, we have valid FTP information.  Time to do a chmod test.
-	$ftp_test_file = 'smf_install_chmod_test.php';
-	$local_test_file = dirname(__FILE__) . '/smf_install_chmod_test.php';
+	$ftp_test_file = 'dialogo_install_chmod_test.php';
+	$local_test_file = dirname(__FILE__) . '/dialogo_install_chmod_test.php';
 	$ftp->create_file($ftp_test_file);
 
 	$chmod = false;
@@ -1041,7 +959,7 @@ function fetch_web_data($url, $post_data = '', $keep_alive = false, $redirection
 			fwrite($fp, 'POST ' . $match[6] . ' HTTP/1.0' . "\r\n");
 
 		fwrite($fp, 'Host: ' . $origin . "\r\n");
-		fwrite($fp, 'User-Agent: PHP/SMF' . "\r\n");
+		fwrite($fp, 'User-Agent: PHP/Dialogo' . "\r\n");
 
 		if (!empty($_SESSION['webinstall_state']['can_svn']) && strpos($match[6], '-dev') !== false && !empty($_SESSION['webinstall_state']['member_info']))
 		{
@@ -1283,7 +1201,7 @@ function extract_tar($data, $destination, $ftp)
 
 function fetch_install_info()
 {
-	$install_info = fetch_web_data('http://www.simplemachines.org/smf/mirrors.xml');
+	$install_info = fetch_web_data('https://github.com/norv/tools-dialogo/blob/master/site/mirrors.xml');
 
 	if ($install_info === false)
 		return false;
@@ -1307,7 +1225,7 @@ function fetch_install_info()
 		if (in_array($match[1], $_SESSION['webinstall_state']['access']))
 		{
 			$info['install'][$match[3]] = $match[2];
-			$vers[] = str_replace('SMF ', '', $match[2]);
+			$vers[] = str_replace('dialogo ', '', $match[2]);
 		}
 
 	// Get language packages.
@@ -1432,11 +1350,11 @@ function load_language_data()
 {
 	global $txt;
 
-	$txt['smf_installer'] = 'SMF Installer';
+	$txt['installer'] = 'Dialogo Installer';
 	$txt['error_message_click'] = 'Click here';
 	$txt['error_message_try_again'] = 'to try this step again.';
 	$txt['error_message_bad_try_again'] = 'to try installing anyway, but note that this is <em>strongly</em> discouraged.';
-	$txt['error_php_too_low'] = 'Warning!  You do not appear to have a version of PHP installed on your webserver that meets SMF\'s <strong>minimum installations requirements</strong>.<br />If you are not the host, you will need to ask your host to upgrade, or use a different host - otherwise, please upgrade PHP to a recent version.<br /><br />If you know for a fact that your PHP version is high enough you may continue, although this is strongly discouraged.';
+	$txt['error_php_too_low'] = 'Warning!  You do not appear to have a version of PHP installed on your webserver that meets Dialogo\'s <strong>minimum installations requirements</strong>.<br />If you are not the host, you will need to ask your host to upgrade, or use a different host - otherwise, please upgrade PHP to a recent version.<br /><br />If you know for a fact that your PHP version is high enough you may continue, although this is strongly discouraged.';
 	$txt['error_session_save_path'] = 'Please inform your host that the <strong>session.save_path specified in php.ini</strong> is not valid!  It needs to be changed to a directory that <strong>exists</strong>, and is <strong>writable</strong> by the user PHP is running under.<br />';
 	$txt['error_mysql_missing'] = 'The installer was unable to detect MySQL support in PHP.  Please ask your host to ensure that PHP was compiled with MySQL, or that the proper extension is being loaded.';
 	$txt['error_not_right_path'] = 'Sorry, the FTP path you entered wasn\'t the same place as this installer was uploaded to.';
@@ -1445,7 +1363,7 @@ function load_language_data()
 	$txt['error_horrible_chmod'] = 'The installer couldn\'t find any way to write files to your server.  Please contact your server administrator or check your settings.';
 	$txt['ftp_please_note'] = 'Before you proceed, please note that <strong>the contents of the directory this file is in may be overwritten</strong>.  This installer will check to make sure that the path you specify points to where this file is, but please be careful not to overwrite anything important!';
 	$txt['ftp_login'] = 'Your FTP connection information';
-	$txt['ftp_login_info'] = 'This web installer needs your FTP information in order to automate the installation for you.  Please note that none of this information is saved in your installation, it is just used to setup SMF.';
+	$txt['ftp_login_info'] = 'This web installer needs your FTP information in order to automate the installation for you.  Please note that none of this information is saved in your installation, it is just used to setup Dialogo.';
 	$txt['ftp_server'] = 'Server';
 	$txt['ftp_server_info'] = 'The address (often localhost) and port for your FTP server.';
 	$txt['ftp_port'] = 'Port';
@@ -1456,7 +1374,7 @@ function load_language_data()
 	$txt['ftp_path'] = 'Install Path';
 	$txt['ftp_path_info'] = 'This is the <em>relative</em> path you use in your FTP client <a href="' . $_SERVER['PHP_SELF'] . '?ftphelp" onclick="window.open(this.href, \'\', \'width=450,height=250\');return false;" target="_blank">(more help)</a>.';
 	$txt['ftp_path_found_info'] = 'The path in the box above was automatically detected.';
-	$txt['ftp_path_help'] = 'Your FTP path is the path you see when you log in to your FTP client.  It commonly starts with &quot;<tt>www</tt>&quot;, &quot;<tt>public_html</tt>&quot;, or &quot;<tt>httpdocs</tt>&quot; - but it should include the directory SMF is in too, such as &quot;/public_html/forum&quot;.  It is different from your URL and full path.<br /><br />Files in this path may be overwritten, so make sure it\'s correct.';
+	$txt['ftp_path_help'] = 'Your FTP path is the path you see when you log in to your FTP client.  It commonly starts with &quot;<tt>www</tt>&quot;, &quot;<tt>public_html</tt>&quot;, or &quot;<tt>httpdocs</tt>&quot; - but it should include the directory Dialogo is in too, such as &quot;/public_html/forum&quot;.  It is different from your URL and full path.<br /><br />Files in this path may be overwritten, so make sure it\'s correct.';
 	$txt['ftp_path_help_close'] = 'Close';
 	$txt['ftp_connect'] = 'Connect';
 	$txt['download_successful'] = 'Download successful';
@@ -1467,28 +1385,20 @@ function load_language_data()
 
 	$txt['package_info'] = 'Package information';
 	$txt['package_info_info'] = 'Here you can optionally select your package, languages, and other options.  If you log into your Simple Machines Community Forum account you will be able to install all packages available to you.';
-	$txt['member_login'] = 'Simple Machines Community Forum member login';
-	$txt['member_login_info'] = '<noscript>Please enable JavaScript.</noscript> (leave blank if you don\'t have a membership.)';
-	$txt['member_username'] = 'Username';
-	$txt['member_password'] = 'Password';
-	$txt['member_verify'] = 'Verify';
-	$txt['member_verify_done'] = 'Account verified.';
-	$txt['member_verify_logout'] = 'logout';
-	$txt['error_not_member'] = 'The username and password you provided were rejected.<br />Either you are not a member of Simple Machines Community Forum, your password is wrong, or you need to wait to try to login again.';
 	$txt['package_info_version'] = 'Version to install';
 	$txt['package_info_mirror'] = 'Mirror';
 	$txt['package_info_languages'] = 'Additional languages';
 	$txt['package_info_ready'] = 'Continue';
 
-	$txt['read_the_license'] = 'Before you download and install SMF, please <a href="http://www.simplemachines.org/about/license.php" target="_blank">read the license</a>.  It contains important agreements in it.';
+	$txt['read_the_license'] = 'Before you download and install Dialogo, please <a href="http://www.simplemachines.org/about/license.php" target="_blank">read the license</a>.  It contains important agreements in it.';
 	$txt['read_the_license_done'] = 'I have read the license and agree to be bound by it.';
-	$txt['error_read_the_license'] = 'Sorry, but unless you read and agree to the license, you cannot download and install SMF.';
+	$txt['error_read_the_license'] = 'Sorry, but unless you read and agree to the license, you cannot download and install Dialogo.';
 
 	$txt['upgrade_process'] = 'Performing an upgrade';
-	$txt['upgrade_process_info'] = 'The installer found an installation of SMF in this directory.  The package you select below will be upgraded over your current version if you continue.  If you want to install fresh, please empty this directory first.';
+	$txt['upgrade_process_info'] = 'The installer found an installation of Dialogo in this directory.  The package you select below will be upgraded over your current version if you continue.  If you want to install fresh, please empty this directory first.';
 
 	$txt['yes'] = 'Yes';
-	$txt['download_svn'] = 'Download the SVN version (latest \'nightly\')';
+	$txt['download_svn'] = 'Download the development version (latest \'nightly\')';
 
 	$txt['source_theme_location_problem'] = 'It appears that your source file or theme file directory is not in the default location.  After the package file is downloaded and uncompressed you will need to manually move the files to the correct location.';
 
@@ -1501,7 +1411,7 @@ function load_language_data()
 	$txt['extraction_progress'] = 'Extraction Progress';
 	$txt['download_progress'] = 'Download Progress';
 
-	$txt['cant_fetch_install_info'] = 'We are sorry but the installer was unable to download the installation package details from the Simple Machines website.  You may download the packages manually by using the <a href="http://download.simplemachines.org/">SMF Download</a> page.';
+	$txt['cant_fetch_install_info'] = 'We are sorry but the installer was unable to download the installation package details from the Simple Machines website.  You may download the packages manually by using the <a href="https://github.com/spuds/Dialogo/downloads/">Download</a> page.';
 
 	$txt['chmod_desc'] = 'Some hosts require that PHP scripts not have a file permission of 777.  If you are on one of these hosts, or if you recieve an error code of 500 after the packages are downloaded and extracted, please change the file permission in the below field.  A common alternate value is 755.';
 	$txt['chmod_header'] = 'File Permission';

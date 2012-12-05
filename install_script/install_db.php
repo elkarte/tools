@@ -243,4 +243,3 @@ function template_install_script ()
 		<span class="lowerframe"><span></span></span>
 	</div>';
 }
-?>

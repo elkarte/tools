@@ -1,14 +1,16 @@
 <?php
 
 /**
+ * @name      Dialogo Forum
+ * @copyright Dialogo Forum contributors
+ *
+ * This software is a derived product, based on:
+ *
  * Simple Machines Forum (SMF)
+ * copyright:	2011 Simple Machines (http://www.simplemachines.org)
+ * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @package SMF
- * @author Simple Machines
- * @copyright 2011 Simple Machines
- * @license http://www.simplemachines.org/about/smf/license.php BSD
- *
- * @version 2.0
+ * @version 1.0 Alpha
  */
 
 // If SSI.php is in the same place as this file, and SMF isn't defined, this is being run standalone.
