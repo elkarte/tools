@@ -56,7 +56,7 @@ function load_txt_strings()
 	$txt['db_table_info'] = 'Detailed Table Information';
 
 
-	// SMF Specific Info
+	// Dialogo Specific Info
 	$txt['site_relevant'] = 'Relevant Forum Settings';
 	$txt['sef_urls'] = 'SEF URLs';
 	$txt['time_load'] = 'Display Load Times';
@@ -283,36 +283,6 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 			.dynamic-tab-pane-control .tab-pane{
 				position:relative;
 			}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			.dynamic-tab-pane-control .tab-page{
 				border:1px solid #919b9c;
 				background:#f6f6f6;
@@ -325,12 +295,6 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 				width:97%;
 				float:left;
 			}
-
-
-
-
-
-
 			/* This is for phpinfo */
 			table.adminlist
 			{
@@ -342,68 +306,55 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 				width:100%;
 				border-collapse:collapse;
 			}
-
 			table.adminlist th
 			{
 				margin:0;
 				padding:6px 4px 2px 4px;
 				height:25px;
-
 				background-repeat:repeat;
 				font-size:11px;
 				color:#fff;
 			}
-
 			table.adminlist th.title
 			{
 				text-align:left;
 			}
-
 			table.adminlist th a
 			{
 				color:#f90;
 			}
-
 			table.adminlist tr.row0
 			{
 				background-color:#F5F5F5;
 			}
-
 			table.adminlist tr.row1
 			{
 				background-color:#FFF;
 			}
-
 			table.adminlist td
 			{
 				border-bottom:1px solid #e5e5e5;
 				padding:4px;
 			}
-
 			table.adminlist tr.row0:hover
 			{
 				background-color:#f1f1f1;
 			}
-
 			table.adminlist tr.row1:hover
 			{
 				background-color:#f1f1f1;
 			}
-
 			table.adminlist td.options
 			{
 				background-color:#fff;
 				font-size:8px;
 			}
-
 		</style>
 		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
 			var sections = new Array();
 			var titles = new Array();
 			function addSection(name, title)
 			{
-
-
 				var drop = document.getElementById("menuDropdown");
 				var option = document.createElement("option");
 				sections.push(name);
@@ -412,12 +363,8 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 				option.value = titles.length-1;
 				drop.options.add(option);
 			}
-
 			function swapSection(id)
 			{
-
-
-
 				for (var i = 0; i < sections.length; i++)
 				{
 					if (i == id)
@@ -425,26 +372,18 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 					else
 						document.getElementById(sections[i]).style.display = "none";
 				}
-
 			}
 			var onload_events = new Array();
 			function addLoadEvent(func)
 			{
-
-
-
 				// Get the old event if there is one.
 				var oldOnload = window.onload;
-
 				// Was the old event really an event?
 				if (typeof(oldOnload) != \'function\')
 				{
 					// Since we don\'t have anything at this point just add it stright in.
 					window.onload = func;
 				}
-
-
-
 				// So it is a function but is it our special function?
 				else if(onload_events.length == 0)
 				{
@@ -475,7 +414,6 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 		</div>
 		<div id="content">';
 
-
 	if (allowedTo('admin_forum'))
 		echo '
 		<div class="windowbg" style="margin: 1ex; padding: 1ex 2ex; border: 1px dashed green; color: green;">
@@ -484,21 +422,16 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 			<i id="yourVersion" style="white-space: nowrap;">', $smfinfo_version, '</i><br />
 			', $txt['support_versions_current'], ':
 			<i id="smfInfoVersion" style="white-space: nowrap;">??</i><br />
-
 		<script language="JavaScript" type="text/javascript" src="http://www.simplemachines.org/smf/current-smfinfo.js"></script>
 		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
 			function smfInfoCurrentVersion()
 			{
 				var smfVer, yourVer;
-
 				if (typeof(window.smfInfoVersion) != "string")
 					return;
-
 				smfVer = document.getElementById("smfInfoVersion");
 				yourVer = document.getElementById("yourVersion");
-
 				setInnerHTML(smfVer, window.smfInfoVersion);
-
 				var currentVersion = getInnerHTML(yourVer);
 				if (currentVersion != window.smfInfoVersion)
 					setInnerHTML(yourVer, "<span style=\"color: red;\">" + currentVersion + "</span>");
@@ -506,7 +439,6 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 			var oldonload;
 			if (typeof(window.onload) != "undefined")
 				oldonload = window.onload;
-
 			window.onload = function ()
 			{
 				smfInfoCurrentVersion();';
@@ -526,7 +458,6 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 					window.attachEvent("onload", smf_codeFix);';
 
 	echo '
-
 				if (oldonload)
 					oldonload();
 			}
@@ -572,10 +503,6 @@ function show_system_info()
 	get_database_version();
 
 	echo '
-
-
-
-
 			<div class="tab-page" id="main"><h2 class="tab">', $txt['maininfo'], '</h2>
 				<script type="text/javascript">addSection("main", "', $txt['maininfo'], '" );</script>
 				<table border="0" width="100%" cellpadding="2" cellspacing="2">
@@ -1328,7 +1255,7 @@ function show_footer()
 				return false;
 			}
 
-			function smfDetermineVersions()
+			function siteDetermineVersions()
 			{
 				var highYour = {"Sources": "??", "Default" : "??", "Languages": "??", "Templates": "??"};
 				var highCurrent = {"Sources": "??", "Default" : "??", "Languages": "??", "Templates": "??"};
@@ -1340,7 +1267,6 @@ function show_footer()
 				document.getElementById("Default").style.display = "none";
 				if (document.getElementById("Templates"))
 					document.getElementById("Templates").style.display = "none";
-
 
 				if (typeof(window.smfVersions) == "undefined")
 					window.smfVersions = {};
@@ -1379,7 +1305,6 @@ function show_footer()
 					setInnerHTML(document.getElementById("current" + filename), smfVersions[filename]);
 					setInnerHTML(document.getElementById("your" + filename), yourVersion);
 				}
-
 
 				if (typeof(window.smfLanguageVersions) == "undefined")
 					window.smfLanguageVersions = {};
@@ -1454,7 +1379,7 @@ function show_footer()
 		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
 
 			addLoadEvent(function() {
-				smfDetermineVersions();
+				siteDetermineVersions();
 				smfHideDbColumns();
 
 			});
@@ -1473,12 +1398,6 @@ function initialize()
 	// Set this to true so we get the correct forum value
 	$ssi_gzip = true;
 
-
-
-
-
-
-
 	$forum_version = get_file_versions(true);
 
 	$smfInfo = !empty($modSettings['smfInfo']) ? $modSettings['smfInfo'] : '';
@@ -1488,9 +1407,6 @@ function initialize()
 
 	// If the user isn't an admin or they don't have a password in the URL, or its incorrect, kick 'em out
 	if (!allowedTo('admin_forum') && (!isset($_POST['pass']) || strcmp($_POST['pass'], $smfInfo) != 0))
-
-
-
 		show_password_form();
 
 	// Either their an admin or have the right password
@@ -1517,23 +1433,12 @@ function get_database_version()
 
 	if (empty($db_type) || (!empty($db_type) && $db_type == 'mysql'))
 	{
-
-
-
 		$temp_prefix = (strpos($db_prefix, $db_name) === false ? '`' . $db_name . '`.' : '') . $db_prefix;
-
-
-
-
-
-
 
 		// Get the collation of the 'body' field of the messages table
 		$query = ' SHOW FULL COLUMNS FROM ' . $temp_prefix . 'messages WHERE Field = \'body\'';
 		$request = mysql_query($query);
 		$row = @mysql_fetch_assoc($request);
-
-
 		if (!empty($row))
 			$collation = $row['Collation'];
 	}
@@ -2616,18 +2521,18 @@ function get_error_log()
 
 function convert_memory($number, $bytes=true)
 {
-  $bitsOrBytes = ($bytes) ? 'B' : 'b';
+	$bitsOrBytes = ($bytes) ? 'B' : 'b';
 
-  $thousandArray = array();
-  $thousandArray[0] = '';
-  $thousandArray[1] = 'K';
-  $thousandArray[2] = 'M';
-  $thousandArray[3] = 'G';
-  $thousandArray[4] = 'T';
-  $thousandArray[5] = 'P';
+	$thousandArray = array();
+	$thousandArray[0] = '';
+	$thousandArray[1] = 'K';
+	$thousandArray[2] = 'M';
+	$thousandArray[3] = 'G';
+	$thousandArray[4] = 'T';
+	$thousandArray[5] = 'P';
 
-  for ($i = 0; $number > 1024 && $i < count($thousandArray); $i++)
-    $number /= 1024;
+	for ($i = 0; $number > 1024 && $i < count($thousandArray); $i++)
+		$number /= 1024;
 
-  return number_format($number,2) . ' ' . $thousandArray[$i] . $bitsOrBytes;
+	return number_format($number,2) . ' ' . $thousandArray[$i] . $bitsOrBytes;
 }
