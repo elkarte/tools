@@ -14,12 +14,12 @@
  */
 
 // If SSI.php is in the same place as this file, and SMF isn't defined, this is being run standalone.
-if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('SMF'))
+if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('SMF') && !defined('DIALOGO'))
 	require_once(dirname(__FILE__) . '/SSI.php');
 
-// Hmm... no SSI.php and no SMF?
-elseif(!defined('SMF'))
-	die('<b>Error:</b> Cannot start - please verify you put this in the same place as SMF\'s SSI.php.');
+// Hmm... no SSI.php and no Dialogo?
+elseif(!defined('SMF') && !defined('DIALOGO'))
+	die('<b>Error:</b> Cannot start - please verify you put this in the same place as Dialogo\'s SSI.php.');
 
 $smfinfo_version = '1.0';
 
@@ -30,7 +30,7 @@ function load_txt_strings()
 	global $txt, $boardurl;
 
 	// Tabs
-	$txt['title'] = 'SMF Info Support Tool';
+	$txt['title'] = 'Dialogo Info Support Tool';
 	$txt['maininfo'] = 'System Info';
 	$txt['phpinfo'] = 'PHP Info';
 	$txt['detailedinfo'] = 'Detailed File Check';
@@ -46,7 +46,7 @@ function load_txt_strings()
 
 	// Main info
 	$txt['smfinfo_pass'] = 'Below is the password to access this file.  Please share it wisely as this page contains a lot of information about your forum and host.<br /><br />Password: %s <a href="' . $boardurl . '/smfinfo.php?regenerate">(Regenerate)</a><br /><br /><a href="' . $boardurl . '/smfinfo.php?delete">Delete File</a> (This attempts to remove this file from your server)';
-	$txt['smf_version'] = 'SMF Version';
+	$txt['smf_version'] = 'SMF/Dialogo Version';
 	$txt['php_version'] = 'PHP Version';
 	$txt['database_version'] = 'Database Version';
 	$txt['webserver_version'] = 'Web Server';
@@ -57,7 +57,7 @@ function load_txt_strings()
 
 
 	// SMF Specific Info
-	$txt['smf_relevant'] = 'Relevant SMF Settings';
+	$txt['site_relevant'] = 'Relevant Forum Settings';
 	$txt['sef_urls'] = 'SEF URLs';
 	$txt['time_load'] = 'Display Load Times';
 	$txt['hostname_lookup'] = 'Disable Hostname Lookups';
@@ -160,25 +160,25 @@ load_txt_strings();
 // Makes for easy adding of extra info, or deleting
 $context['smfinfo'] = array (
 	'db_last_error' => !empty($db_last_error) ? date(DATE_RFC822, $db_last_error) : $txt['none'],
-	'auto_fix_db' => get_smf_setting('autoFixDatabase', 'on'),
-	'db_persist' => get_smf_setting('db_persist', 'off'),
-	'db_debug' => get_smf_setting('db_show_debug', 'off'),
-	'enable_error' => get_smf_setting('enableErrorLogging', 'on'),
-	'database_sessions' => get_smf_setting('databaseSession_enable'),
-	'database_loose' => get_smf_setting('databaseSession_loose'),
+	'auto_fix_db' => get_forum_setting('autoFixDatabase', 'on'),
+	'db_persist' => get_forum_setting('db_persist', 'off'),
+	'db_debug' => get_forum_setting('db_show_debug', 'off'),
+	'enable_error' => get_forum_setting('enableErrorLogging', 'on'),
+	'database_sessions' => get_forum_setting('databaseSession_enable'),
+	'database_loose' => get_forum_setting('databaseSession_loose'),
 	'session_timeout' => !empty($modSettings['databaseSession_lifetime']) ? $modSettings['databaseSession_lifetime'] . ' ' . $txt['seconds'] : '<i>' . $txt['empty'] . '</i>&nbsp;<strong>(' . $txt['recommended'] . ': >300)</strong>',
-	'maintenance_mode' => get_smf_setting('maintenance'),
-	'time_load' => get_smf_setting('timeLoadPageEnable'),
-	'hostname_lookup' => get_smf_setting('disableHostnameLookup'),
+	'maintenance_mode' => get_forum_setting('maintenance'),
+	'time_load' => get_forum_setting('timeLoadPageEnable'),
+	'hostname_lookup' => get_forum_setting('disableHostnameLookup'),
 	'cache' => (!empty($modSettings['cache_enable']) ? $txt['cache_level'] . ' ' . $modSettings['cache_enable'] : $txt['off']) . ($modSettings['cache_enable'] != '1' ? '&nbsp;<strong>(' . $txt['recommended'] . ': ' . $txt['cache_level'] . ' 1)</strong>' : ''),
 	'memcached_settings' => isset($modSettings['cache_memcached']) && trim($modSettings['cache_memcached']) != '' ? trim($modSettings['cache_memcached']) : '<i>' . $txt['empty'] . '</i>',
 	'cookie_name' => !empty($cookiename) ? $cookiename : '<i>' . $txt['empty'] . '</i>&nbsp;<strong>(' . $txt['recommended'] . ': SMFCookie' . rand(100,999) . ')</strong>',
-	'local_cookies' => get_smf_setting('localCookies', 'off'),
-	'global_cookies' => get_smf_setting('globalCookies'),
-	'log_pruning' => get_smf_setting('pruningOptions', 'on'),
-	'sef_urls' => get_smf_setting('queryless_urls'),
-	'compressed_output' => get_smf_setting('enableCompressedOutput'),
-	'previousCharacterSet' => get_smf_setting('previousCharacterSet'),
+	'local_cookies' => get_forum_setting('localCookies', 'off'),
+	'global_cookies' => get_forum_setting('globalCookies'),
+	'log_pruning' => get_forum_setting('pruningOptions', 'on'),
+	'sef_urls' => get_forum_setting('queryless_urls'),
+	'compressed_output' => get_forum_setting('enableCompressedOutput'),
+	'previousCharacterSet' => get_forum_setting('previousCharacterSet'),
 );
 
 $context['phpinfo'] = array (
@@ -592,7 +592,7 @@ function show_system_info()
 						<td>', $context['character_set'], '</td>
 					</tr>
 					<tr>
-						<td valign="top"><strong>', $txt['smf_relevant'], '</strong></td>
+						<td valign="top"><strong>', $txt['site_relevant'], '</strong></td>
 						<td>
 							<table width="100%" cellpadding="2" cellspacing="2">';
 
@@ -1739,7 +1739,7 @@ function get_php_setting($val, $rec = '')
 	return $r;
 }
 
-function get_smf_setting($val, $rec = '')
+function get_forum_setting($val, $rec = '')
 {
 	global $txt;
 	global $modSettings, $settings;
