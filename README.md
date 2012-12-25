@@ -1,7 +1,7 @@
-Dialogo scripts
+Elkarte scripts
 =====
 
-This repository contains a few useful scripts for Dialogo, such as install/upgrade or repair scripts, database cleaning up, etc.
+This repository contains a few useful scripts for Elkarte, such as install/upgrade or repair scripts, database cleaning up, etc.
 All scripts in this repository are under BSD 3-clause license, unless specified otherwise.
 
 The scripts are developed or maintained by [emanuele45](https://github.com/emanuele45).
