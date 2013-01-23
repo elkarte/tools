@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @name      Dialogo Forum
- * @copyright Dialogo Forum contributors
+ * @name      Elkarte Forum
+ * @copyright Elkarte Forum contributors
  *
  * This software is a derived product, based on:
  *
@@ -20,7 +20,7 @@ if (file_exists(dirname(__FILE__) . '/Settings.php'))
 // Initialize everything and load the language files.
 initialize_inputs();
 
-$txt['dialogo_repair_settings'] = 'Dialogo Settings Repair Tool';
+$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
 $txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
 $txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
 $txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
@@ -214,7 +214,7 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.spudsdesign.org/dialogo" target="_blank"><img src="' . $smflogo . '" style="width: 250px; float: right;" alt="Dialogo" border="0" /></a>
+			<a href="http://www.elkarte.net" target="_blank"><img src="' . $smflogo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
 			<div>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</div>
 		</div>
 		<div id="content">';
