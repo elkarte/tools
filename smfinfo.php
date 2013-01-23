@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @name      Dialogo Forum
- * @copyright Dialogo Forum contributors
+ * @name      Elkarte Forum
+ * @copyright Elkarte Forum contributors
  *
  * This software is a derived product, based on:
  *
@@ -14,12 +14,12 @@
  */
 
 // If SSI.php is in the same place as this file, and SMF isn't defined, this is being run standalone.
-if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('SMF') && !defined('DIALOGO'))
+if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('SMF') && !defined('ELKARTE'))
 	require_once(dirname(__FILE__) . '/SSI.php');
 
-// Hmm... no SSI.php and no Dialogo?
-elseif(!defined('SMF') && !defined('DIALOGO'))
-	die('<b>Error:</b> Cannot start - please verify you put this in the same place as Dialogo\'s SSI.php.');
+// Hmm... no SSI.php and no Elkarte?
+elseif(!defined('SMF') && !defined('ELKARTE'))
+	die('<b>Error:</b> Cannot start - please verify you put this in the same place as Elkarte\'s SSI.php.');
 
 $smfinfo_version = '1.0';
 
@@ -30,7 +30,7 @@ function load_txt_strings()
 	global $txt, $boardurl;
 
 	// Tabs
-	$txt['title'] = 'Dialogo Info Support Tool';
+	$txt['title'] = 'Elkarte Info Support Tool';
 	$txt['maininfo'] = 'System Info';
 	$txt['phpinfo'] = 'PHP Info';
 	$txt['detailedinfo'] = 'Detailed File Check';
@@ -46,7 +46,7 @@ function load_txt_strings()
 
 	// Main info
 	$txt['smfinfo_pass'] = 'Below is the password to access this file.  Please share it wisely as this page contains a lot of information about your forum and host.<br /><br />Password: %s <a href="' . $boardurl . '/smfinfo.php?regenerate">(Regenerate)</a><br /><br /><a href="' . $boardurl . '/smfinfo.php?delete">Delete File</a> (This attempts to remove this file from your server)';
-	$txt['smf_version'] = 'SMF/Dialogo Version';
+	$txt['smf_version'] = 'SMF/Elkarte Version';
 	$txt['php_version'] = 'PHP Version';
 	$txt['database_version'] = 'Database Version';
 	$txt['webserver_version'] = 'Web Server';
@@ -56,7 +56,7 @@ function load_txt_strings()
 	$txt['db_table_info'] = 'Detailed Table Information';
 
 
-	// Dialogo Specific Info
+	// Elkarte Specific Info
 	$txt['site_relevant'] = 'Relevant Forum Settings';
 	$txt['sef_urls'] = 'SEF URLs';
 	$txt['time_load'] = 'Display Load Times';
