@@ -20,80 +20,7 @@ if (file_exists(dirname(__FILE__) . '/Settings.php'))
 // Initialize everything and load the language files.
 initialize_inputs();
 
-$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
-$txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
-$txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
-$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
-$txt['default_value'] = 'Recommended value';
-$txt['other_possible_value'] = 'Other possible value';
-$txt['no_default_value'] = 'No recommended value';
-$txt['save_settings'] = 'Save Settings';
-$txt['remove_hooks'] = 'Remove all hooks';
-$txt['restore_all_settings'] = 'Restore all settings';
-$txt['not_writable'] = 'Settings.php cannot be written to by your webserver.  Please modify the permissions on this file to allow write access.';
-$txt['recommend_blank'] = '<em>(blank)</em>';
-$txt['database_settings_hidden'] = 'Some settings are not being shown because the database connection information is incorrect.';
-
-$txt['critical_settings'] = 'Critical Settings';
-$txt['critical_settings_info'] = 'These are the settings most likely to be screwing up your board, but try the things below (especially the path and URL ones) if these don\'t help.  You can click on the recommended value to use it.';
-$txt['maintenance'] = 'Maintenance Mode';
-$txt['maintenance0'] = 'Off (recommended)';
-$txt['maintenance1'] = 'Enabled';
-$txt['maintenance2'] = 'Unusable <em>(not recommended!)</em>';
-$txt['language'] = 'Language File';
-$txt['cookiename'] = 'Cookie Name';
-$txt['queryless_urls'] = 'Queryless URLs';
-$txt['queryless_urls0'] = 'Off (recommended)';
-$txt['queryless_urls1'] = 'On';
-$txt['enableCompressedOutput'] = 'Output Compression';
-$txt['enableCompressedOutput0'] = 'Off (recommended if you have problems)';
-$txt['enableCompressedOutput1'] = 'On (saves a lot of bandwidth)';
-$txt['databaseSession_enable'] = 'Database driven sessions';
-$txt['databaseSession_enable0'] = 'Off (not recommended)';
-$txt['databaseSession_enable1'] = 'On (recommended)';
-$txt['theme_default'] = 'Set SMF Default theme as overall forum default<br />for all users';
-$txt['theme_default0'] = 'No (keep the current users\' theme settings)';
-$txt['theme_default1'] = 'Yes (recommended if you have problems)';
-
-$txt['database_settings'] = 'Database Info';
-$txt['database_settings_info'] = 'This is the server, username, password, and database for your server.';
-$txt['db_server'] = 'Server';
-$txt['db_name'] = 'Database name';
-$txt['db_user'] = 'Username';
-$txt['db_passwd'] = 'Password';
-$txt['ssi_db_user'] = 'SSI Username';
-$txt['ssi_db_passwd'] = 'SSI Password';
-$txt['ssi_db_user_desc'] = '(Optional)';
-$txt['ssi_db_passwd_desc'] = '(Optional)';
-$txt['db_prefix'] = 'Table prefix';
-$txt['db_persist'] = 'Connection type';
-$txt['db_persist0'] = 'Standard (recommended)';
-$txt['db_persist1'] = 'Persistent (might cause problems)';
-$txt['db_mysql'] = 'MySQL';
-$txt['db_postgresql'] = 'PostgreSQL';
-$txt['db_sqlite'] = 'SQLite';
-
-$txt['path_url_settings'] = 'Paths &amp; URLs';
-$txt['path_url_settings_info'] = 'These are the paths and URLs to your SMF installation, and can cause big problems when they are wrong.  Sorry, there are a lot of them.';
-$txt['boardurl'] = 'Forum URL';
-$txt['boarddir'] = 'Forum Directory';
-$txt['sourcedir'] = 'Sources Directory';
-$txt['cachedir'] = 'Cache Directory';
-$txt['attachmentUploadDir'] = 'Attachment Directory';
-$txt['avatar_url'] = 'Avatar URL';
-$txt['avatar_directory'] = 'Avatar Directory';
-$txt['smileys_url'] = 'Smileys URL';
-$txt['smileys_dir'] = 'Smileys Directory';
-$txt['theme_url'] = 'Default Theme URL';
-$txt['images_url'] = 'Default Theme Images URL';
-$txt['theme_dir'] = 'Default Theme Directory';
-
-$txt['theme_path_url_settings'] = 'Paths &amp; URLs For Themes';
-$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your SMF themes.';
-
-// Fix Database title to use $db_type if available
-if (!empty($db_type) && isset($txt['db_' . $db_type]))
-	$txt['database_settings'] = $txt['db_' . $db_type] . ' ' . $txt['database_settings'];
+load_language_data();
 
 if (isset($_POST['submit']))
 	set_settings();
@@ -101,130 +28,19 @@ if (isset($_POST['remove_hooks']))
 	remove_hooks();
 
 // try to find the logo: could be a .gif or a .png
-$smflogo = "Themes/default/images/logo_sm.png";
-if (!file_exists(dirname(__FILE__) . "/" . $smflogo))
-$smflogo = "Themes/default/images/smflogo.png";
-if (!file_exists(dirname(__FILE__) . "/" . $smflogo))
-$smflogo = "Themes/default/images/smflogo.gif";
+$logo = "themes/default/images/logo.png";
+if (!file_exists(dirname(__FILE__) . "/" . $logo))
+$logo = "Themes/default/images/logo_sm.png";
+if (!file_exists(dirname(__FILE__) . "/" . $logo))
+$logo = "Themes/default/images/smflogo.png";
+if (!file_exists(dirname(__FILE__) . "/" . $logo))
+$logo = "Themes/default/images/smflogo.gif";
 
-// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
-echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-	<head>
-		<meta name="robots" content="noindex" />
-		<title>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</title>
-		<script type="text/javascript" src="Themes/default/scripts/script.js"></script>
-		<style type="text/css">
-			body
-			{
-				background-color: #e5e5e8;
-				margin: 0px;
-				padding: 0px;
-			}
-			body, td
-			{
-				color: #000000;
-				font-size: small;
-				font-family: verdana, sans-serif;
-			}
-			div#header
-			{
-				background-image: url(Themes/default/images/catbg.jpg);
-				background-repeat: repeat-x;
-				background-color: #88a6c0;
-				padding: 22px 4% 12px 4%;
-				color: white;
-				font-family: Georgia, serif;
-				font-size: xx-large;
-				border-bottom: 1px solid black;
-				height: 40px;
-			}
-			div#content
-			{
-				padding: 20px 30px;
-			}
-			div.error_message
-			{
-				border: 2px dashed red;
-				background-color: #e1e1e1;
-				margin: 1ex 4ex;
-				padding: 1.5ex;
-			}
-			div.panel
-			{
-				border: 1px solid gray;
-				background-color: #f6f6f6;
-				margin: 1ex 0;
-				padding: 1.2ex;
-			}
-			div.panel h2
-			{
-				margin: 0;
-				margin-bottom: 0.5ex;
-				padding-bottom: 3px;
-				border-bottom: 1px dashed black;
-				font-size: 14pt;
-				font-weight: normal;
-			}
-			div.panel h3
-			{
-				margin: 0;
-				margin-bottom: 2ex;
-				font-size: 10pt;
-				font-weight: normal;
-			}
-			form
-			{
-				margin: 0;
-			}
-			td.textbox
-			{
-				padding-top: 2px;
-				font-weight: bold;
-				white-space: nowrap;
-				padding-', empty($txt['lang_rtl']) ? 'right' : 'left', ': 2ex;
-			}
-			.smalltext
-			{
-				font-size: 0.8em;
-				font-weight: normal;
-			}
-			.centertext
-			{
-				margin: 0 auto;
-				text-align: center;
-			}
-			.righttext
-			{
-				margin-left: auto;
-				margin-right: 0;
-				text-align: right;
-			}
-			.lefttext
-			{
-				margin-left: 0;
-				margin-right: auto;
-				text-align: left;
-			}
-			.changed td
-			{
-				color: red;
-			}
-		</style>
-	</head>
-	<body>
-		<div id="header">
-			<a href="http://www.elkarte.net" target="_blank"><img src="' . $smflogo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
-			<div>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</div>
-		</div>
-		<div id="content">';
+template_initialize();
 
 show_settings();
 
-echo '
-		</div>
-	</body>
-</html>';
+template_show_footer();
 
 function initialize_inputs()
 {
@@ -259,41 +75,36 @@ function initialize_inputs()
 
 	// This is really quite simple; if ?delete is on the URL, delete the installer...
 	if (isset($_GET['delete']))
-	{
-		@unlink(__FILE__);
-
-		// Now just redirect to a blank.gif...
-		header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/Themes/default/images/blank.gif');
-		exit;
-	}
+		action_deleteScript();
 
 	$db_connection = false;
 	if (isset($sourcedir))
 	{
-		define('SMF', 1);
+		define('ELKARTE', 1);
 
 		if (empty($smcFunc))
 			$smcFunc = array();
 
 		// Default the database type to MySQL.
-		if (empty($db_type) || !file_exists($sourcedir . '/Subs-Db-' . $db_type . '.php'))
+		if (empty($db_type) || !file_exists($sourcedir . '/database/Db-' . $db_type . '.subs.php'))
 			$db_type = 'mysql';
 
 		require_once($sourcedir . '/Load.php');
-		require_once($sourcedir . '/Subs-Auth.php');
+		require_once($librarydir . '/Auth.subs.php');
 
 		// compat mode. Active!
 		$context['is_legacy'] = true;
 		if (!file_exists($sourcedir . '/Subs-Db-' . $db_type . '.php') && $db_type == 'mysql')
 		{
+			// This is probably SMF 1.1
 			$db_connection = smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
 		}
 		else
 		{
 			// Far as I know, this is 2.0.
 			$context['is_legacy'] = false;
-			require_once($sourcedir . '/Subs-Db-' . $db_type . '.php');
-			require_once($sourcedir . '/DbExtra-' . $db_type . '.php');
+			require_once($librarydir . '/Subs-Db-' . $db_type . '.php');
+			require_once($librarydir . '/DbExtra-' . $db_type . '.php');
 			$db_connection = smf_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
 			db_extra_init();
 		}
@@ -377,7 +188,7 @@ function show_settings()
 		'critical_settings' => array(
 			'maintenance' => array('flat', 'int', 2),
 			'language' => array('flat', 'string', 'english'),
-			'cookiename' => array('flat', 'string', 'SMFCookie' . (!empty($db_name) ? abs(crc32($db_name . preg_replace('~[^A-Za-z0-9_$]~', '', $db_prefix)) % 1000) : '20')),
+			'cookiename' => array('flat', 'string', 'ELKCookie' . (!empty($db_name) ? abs(crc32($db_name . preg_replace('~[^A-Za-z0-9_$]~', '', $db_prefix)) % 1000) : '20')),
 			'queryless_urls' => array('db', 'int', 1),
 			'enableCompressedOutput' => array('db', 'int', 1),
 			'databaseSession_enable' => array('db', 'int', 1),
@@ -398,6 +209,8 @@ function show_settings()
 			'boarddir' => array('flat', 'string'),
 			'sourcedir' => array('flat', 'string'),
 			'cachedir' => array('flat', 'string'),
+			'librarydir' => array('flat', 'string'),
+			'controllerdir' => array('flat', 'string'),
 			'attachmentUploadDir' => array('db', 'array_string'),
 			'avatar_url' => array('db', 'string'),
 			'avatar_directory' => array('db', 'string'),
@@ -450,11 +263,11 @@ function show_settings()
 		$known_settings['path_url_settings']['smileys_dir'][2] = realpath(dirname(__FILE__) . '/Smileys');
 	}
 
-/*	if (file_exists(dirname(__FILE__) . '/Themes/default'))
+/*	if (file_exists(dirname(__FILE__) . '/themes/default'))
 	{
-		$known_settings['path_url_settings']['theme_url'][2] = $url . '/Themes/default';
-		$known_settings['path_url_settings']['images_url'][2] = $url . '/Themes/default/images';
-		$known_settings['path_url_settings']['theme_dir'][2] = realpath(dirname(__FILE__) . '/Themes/default');
+		$known_settings['path_url_settings']['theme_url'][2] = $url . '/themes/default';
+		$known_settings['path_url_settings']['images_url'][2] = $url . '/themes/default/images';
+		$known_settings['path_url_settings']['theme_dir'][2] = realpath(dirname(__FILE__) . '/themes/default');
 	}
 */
 
@@ -463,16 +276,16 @@ function show_settings()
 		// Create the values for the themes.
 		foreach ($theme_settings as $id => $theme)
 		{
-			$this_theme = ($pos = strpos($theme['theme_url'], '/Themes/')) !== false ? substr($theme['theme_url'], $pos+8) : '';
+			$this_theme = ($pos = strpos($theme['theme_url'], '/themes/')) !== false ? substr($theme['theme_url'], $pos+8) : '';
 			if (!empty($this_theme))
-				$exist = file_exists(dirname(__FILE__) . '/Themes/' . $this_theme);
+				$exist = file_exists(dirname(__FILE__) . '/themes/' . $this_theme);
 			else
 				$exist = false;
 
 			$known_settings['theme_path_url_settings'] += array(
-				'theme_'. $id.'_theme_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/Themes/' . $this_theme : null),
-				'theme_'. $id.'_images_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/Themes/' . $this_theme . '/images' : null),
-				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/Themes/' . $this_theme) : null),
+				'theme_'. $id.'_theme_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : null),
+				'theme_'. $id.'_images_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
+				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : null),
 			);
 			$settings += array(
 				'theme_' . $id . '_theme_url' => $theme['theme_url'],
@@ -697,7 +510,7 @@ function guess_attachments_directories($id, $array_setting)
 	{
 		$availableDirs = array();
 		while (false !== ($file = readdir($basedir)))
-			if ($file != '.' && $file != '..' && is_dir($file) && $file != 'Sources'  && $file != 'Packages' && $file != 'Themes' && $file != 'cache' && $file != 'avatars' && $file != 'Smileys')
+			if ($file != '.' && $file != '..' && is_dir($file) && $file != 'sources'  && $file != 'packages' && $file != 'themes' && $file != 'cache' && $file != 'avatars' && $file != 'smileys')
 				$availableDirs[] = $file;
 	}
 
@@ -897,7 +710,16 @@ function remove_hooks()
 	cache_put_data('modsettings', null, 0);
 }
 
-// Compat mode!
+/**
+ * Compat mode.
+ *
+ * @param string $db_server
+ * @param string $db_name
+ * @param string $db_user
+ * @param string $db_passwd
+ * @param string $db_prefix
+ * @param array $db_options
+ */
 function smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_options = array())
 {
 	global $mysql_set_mod, $sourcedir, $db_connection, $db_prefix, $smcFunc;
@@ -919,7 +741,7 @@ function smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_pre
 				require_once($sourcedir . '/Errors.php');
 				display_db_error();
 			}
-			exit('Sorry, SMF was unable to connect to database.');
+			exit('Sorry, ElkArte was unable to connect to database.');
 		}
 	}
 
@@ -931,7 +753,7 @@ function smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_pre
 			require_once($sourcedir . '/Errors.php');
 			display_db_error();
 		}
-		exit('Sorry, SMF was unable to connect to database.');
+		exit('Sorry, ElkArte was unable to connect to database.');
 	}
 	else
 		$db_prefix = is_numeric(substr($db_prefix, 0, 1)) ? $db_name . '.' . $db_prefix : '`' . $db_name . '`.' . $db_prefix;
@@ -1023,7 +845,7 @@ function smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_pre
 			break;
 
 			case 'identifier':
-				// Backticks inside identifiers are supported as of MySQL 4.1. We don't need them for SMF.
+				// Backticks inside identifiers are supported as of MySQL 4.1. We don't need them for ElkArte.
 				return '`' . strtr($replacement, array('`' => '', '.' => '')) . '`';
 			break;
 
@@ -1171,4 +993,220 @@ function smc_compat_initiate($db_server, $db_name, $db_user, $db_passwd, $db_pre
 	$smcFunc['db_list_tables'] = 'smf_db_list_tables';
 
 	return $db_connection;
+}
+
+function action_deleteScript()
+{
+	@unlink(__FILE__);
+
+	// Now just redirect to a blank.gif...
+	header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/themes/default/images/blank.gif');
+	exit;
+}
+
+function load_language_data()
+{
+	global $txt, $db_type;
+
+	$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
+	$txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
+	$txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
+	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
+	$txt['default_value'] = 'Recommended value';
+	$txt['other_possible_value'] = 'Other possible value';
+	$txt['no_default_value'] = 'No recommended value';
+	$txt['save_settings'] = 'Save Settings';
+	$txt['remove_hooks'] = 'Remove all hooks';
+	$txt['restore_all_settings'] = 'Restore all settings';
+	$txt['not_writable'] = 'Settings.php cannot be written to by your webserver.  Please modify the permissions on this file to allow write access.';
+	$txt['recommend_blank'] = '<em>(blank)</em>';
+	$txt['database_settings_hidden'] = 'Some settings are not being shown because the database connection information is incorrect.';
+
+	$txt['critical_settings'] = 'Critical Settings';
+	$txt['critical_settings_info'] = 'These are the settings most likely to be screwing up your board, but try the things below (especially the path and URL ones) if these don\'t help.  You can click on the recommended value to use it.';
+	$txt['maintenance'] = 'Maintenance Mode';
+	$txt['maintenance0'] = 'Off (recommended)';
+	$txt['maintenance1'] = 'Enabled';
+	$txt['maintenance2'] = 'Unusable <em>(not recommended!)</em>';
+	$txt['language'] = 'Language File';
+	$txt['cookiename'] = 'Cookie Name';
+	$txt['queryless_urls'] = 'Queryless URLs';
+	$txt['queryless_urls0'] = 'Off (recommended)';
+	$txt['queryless_urls1'] = 'On';
+	$txt['enableCompressedOutput'] = 'Output Compression';
+	$txt['enableCompressedOutput0'] = 'Off (recommended if you have problems)';
+	$txt['enableCompressedOutput1'] = 'On (saves a lot of bandwidth)';
+	$txt['databaseSession_enable'] = 'Database driven sessions';
+	$txt['databaseSession_enable0'] = 'Off (not recommended)';
+	$txt['databaseSession_enable1'] = 'On (recommended)';
+	$txt['theme_default'] = 'Set ElkArte Default theme as overall forum default<br />for all users';
+	$txt['theme_default0'] = 'No (keep the current users\' theme settings)';
+	$txt['theme_default1'] = 'Yes (recommended if you have problems)';
+
+	$txt['database_settings'] = 'Database Info';
+	$txt['database_settings_info'] = 'This is the server, username, password, and database for your server.';
+	$txt['db_server'] = 'Server';
+	$txt['db_name'] = 'Database name';
+	$txt['db_user'] = 'Username';
+	$txt['db_passwd'] = 'Password';
+	$txt['ssi_db_user'] = 'SSI Username';
+	$txt['ssi_db_passwd'] = 'SSI Password';
+	$txt['ssi_db_user_desc'] = '(Optional)';
+	$txt['ssi_db_passwd_desc'] = '(Optional)';
+	$txt['db_prefix'] = 'Table prefix';
+	$txt['db_persist'] = 'Connection type';
+	$txt['db_persist0'] = 'Standard (recommended)';
+	$txt['db_persist1'] = 'Persistent (might cause problems)';
+	$txt['db_mysql'] = 'MySQL';
+	$txt['db_postgresql'] = 'PostgreSQL';
+	$txt['db_sqlite'] = 'SQLite';
+
+	$txt['path_url_settings'] = 'Paths &amp; URLs';
+	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation, and can cause big problems when they are wrong.  Sorry, there are a lot of them.';
+	$txt['boardurl'] = 'Forum URL';
+	$txt['boarddir'] = 'Forum Directory';
+	$txt['sourcedir'] = 'Sources Directory';
+	$txt['cachedir'] = 'Cache Directory';
+	$txt['attachmentUploadDir'] = 'Attachment Directory';
+	$txt['avatar_url'] = 'Avatar URL';
+	$txt['avatar_directory'] = 'Avatar Directory';
+	$txt['smileys_url'] = 'Smileys URL';
+	$txt['smileys_dir'] = 'Smileys Directory';
+	$txt['theme_url'] = 'Default Theme URL';
+	$txt['images_url'] = 'Default Theme Images URL';
+	$txt['theme_dir'] = 'Default Theme Directory';
+
+	$txt['theme_path_url_settings'] = 'Paths &amp; URLs For Themes';
+	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.';
+}
+
+function template_initialize()
+{
+	global $context, $txt;
+
+	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
+	echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta name="robots" content="noindex" />
+		<title>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</title>
+		<script type="text/javascript" src="themes/default/scripts/script.js"></script>
+		<style type="text/css">
+			body
+			{
+				background-color: #e5e5e8;
+				margin: 0px;
+				padding: 0px;
+			}
+			body, td
+			{
+				color: #000000;
+				font-size: small;
+				font-family: verdana, sans-serif;
+			}
+			div#header
+			{
+				background-image: url(themes/default/images/catbg.jpg);
+				background-repeat: repeat-x;
+				background-color: #88a6c0;
+				padding: 22px 4% 12px 4%;
+				color: white;
+				font-family: Georgia, serif;
+				font-size: xx-large;
+				border-bottom: 1px solid black;
+				height: 40px;
+			}
+			div#content
+			{
+				padding: 20px 30px;
+			}
+			div.error_message
+			{
+				border: 2px dashed red;
+				background-color: #e1e1e1;
+				margin: 1ex 4ex;
+				padding: 1.5ex;
+			}
+			div.panel
+			{
+				border: 1px solid gray;
+				background-color: #f6f6f6;
+				margin: 1ex 0;
+				padding: 1.2ex;
+			}
+			div.panel h2
+			{
+				margin: 0;
+				margin-bottom: 0.5ex;
+				padding-bottom: 3px;
+				border-bottom: 1px dashed black;
+				font-size: 14pt;
+				font-weight: normal;
+			}
+			div.panel h3
+			{
+				margin: 0;
+				margin-bottom: 2ex;
+				font-size: 10pt;
+				font-weight: normal;
+			}
+			form
+			{
+				margin: 0;
+			}
+			td.textbox
+			{
+				padding-top: 2px;
+				font-weight: bold;
+				white-space: nowrap;
+				padding-', empty($txt['lang_rtl']) ? 'right' : 'left', ': 2ex;
+			}
+			.smalltext
+			{
+				font-size: 0.8em;
+				font-weight: normal;
+			}
+			.centertext
+			{
+				margin: 0 auto;
+				text-align: center;
+			}
+			.righttext
+			{
+				margin-left: auto;
+				margin-right: 0;
+				text-align: right;
+			}
+			.lefttext
+			{
+				margin-left: 0;
+				margin-right: auto;
+				text-align: left;
+			}
+			.changed td
+			{
+				color: red;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="header">
+			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
+			<div>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</div>
+		</div>
+		<div id="content">';
+
+	// Fix Database title to use $db_type if available
+	if (!empty($db_type) && isset($txt['db_' . $db_type]))
+		$txt['database_settings'] = $txt['db_' . $db_type] . ' ' . $txt['database_settings'];
+
+}
+
+function template_show_footer()
+{
+	echo '
+		</div>
+	</body>
+</html>';
+
 }
