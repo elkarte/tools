@@ -69,12 +69,12 @@ function initialize_inputs()
 		action_deleteScript();
 
 	$db_connection = false;
-	if (isset($sourcedir))
+	if (empty($smcFunc))
+			$smcFunc = array();
+
+	if (isset($sourcedir) && file_exists($sourcedir))
 	{
 		define('ELKARTE', 1);
-
-		if (empty($smcFunc))
-			$smcFunc = array();
 
 		// Default the database type to MySQL.
 		if (empty($db_type) || !file_exists($sourcedir . '/database/Db-' . $db_type . '.subs.php'))
@@ -123,8 +123,12 @@ function show_settings()
 					$settings[$match[1]] = dirname(__FILE__);
 				elseif ($match[3] == 'dirname(__FILE__) . \'/Sources\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/Sources';
+				elseif ($match[3] == 'dirname(__FILE__) . \'/sources\'')
+					$settings[$match[1]] = dirname(__FILE__) . '/sources';
 				elseif ($match[3] == '$boarddir . \'/Sources\'')
 					$settings[$match[1]] = $settings['boarddir'] . '/Sources';
+				elseif ($match[3] == '$boarddir . \'/sources\'')
+					$settings[$match[1]] = $settings['boarddir'] . '/sources';
 				elseif ($match[3] == 'dirname(__FILE__) . \'/cache\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/cache';
 				else
@@ -217,11 +221,17 @@ function show_settings()
 	$known_settings['path_url_settings']['boardurl'][2] = $url;
 	$known_settings['path_url_settings']['boarddir'][2] = dirname(__FILE__);
 
-	if (file_exists(dirname(__FILE__) . '/Sources'))
-		$known_settings['path_url_settings']['sourcedir'][2] = realpath(dirname(__FILE__) . '/Sources');
+	if (file_exists(dirname(__FILE__) . '/sources'))
+		$known_settings['path_url_settings']['sourcedir'][2] = realpath(dirname(__FILE__) . '/sources');
 
 	if (file_exists(dirname(__FILE__) . '/cache'))
 		$known_settings['path_url_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
+
+	if (file_exists(dirname(__FILE__) . '/sources/subs'))
+		$known_settings['path_url_settings']['librarydir'][2] = realpath(dirname(__FILE__) . '/sources/subs');
+
+	if (file_exists(dirname(__FILE__) . '/sources/controllers'))
+		$known_settings['path_url_settings']['controllerdir'][2] = realpath(dirname(__FILE__) . '/sources/controllers');
 
 	if (file_exists(dirname(__FILE__) . '/avatars'))
 	{
@@ -229,10 +239,10 @@ function show_settings()
 		$known_settings['path_url_settings']['avatar_directory'][2] = realpath(dirname(__FILE__) . '/avatars');
 	}
 
-	if (file_exists(dirname(__FILE__) . '/Smileys'))
+	if (file_exists(dirname(__FILE__) . '/smileys'))
 	{
-		$known_settings['path_url_settings']['smileys_url'][2] = $url . '/Smileys';
-		$known_settings['path_url_settings']['smileys_dir'][2] = realpath(dirname(__FILE__) . '/Smileys');
+		$known_settings['path_url_settings']['smileys_url'][2] = $url . '/smileys';
+		$known_settings['path_url_settings']['smileys_dir'][2] = realpath(dirname(__FILE__) . '/smileys');
 	}
 
 /*	if (file_exists(dirname(__FILE__) . '/themes/default'))
@@ -254,10 +264,13 @@ function show_settings()
 			else
 				$exist = false;
 
+			$old_theme = ($pos = strpos($theme['theme_url'], '/Themes/')) !== false ? substr($theme['theme_url'], $pos+8) : '';
+			$new_theme_exists = file_exists(dirname(__FILE__) . '/themes/' . $this_theme);
+
 			$known_settings['theme_path_url_settings'] += array(
-				'theme_'. $id.'_theme_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : null),
-				'theme_'. $id.'_images_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
-				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : null),
+				'theme_'. $id.'_theme_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme : null),
+				'theme_'. $id.'_images_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
+				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : $new_theme_exists && !empty($old_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : null),
 			);
 			$settings += array(
 				'theme_' . $id . '_theme_url' => $theme['theme_url'],
@@ -749,11 +762,13 @@ function load_language_data()
 	$txt['db_sqlite'] = 'SQLite';
 
 	$txt['path_url_settings'] = 'Paths &amp; URLs';
-	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation, and can cause big problems when they are wrong.  Sorry, there are a lot of them.';
+	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation. Correct them if they are wrong, otherwise you can experience serious issues.';
 	$txt['boardurl'] = 'Forum URL';
 	$txt['boarddir'] = 'Forum Directory';
 	$txt['sourcedir'] = 'Sources Directory';
 	$txt['cachedir'] = 'Cache Directory';
+	$txt['librarydir'] = 'Library Directory';
+	$txt['controllerdir'] = 'Controller Directory';
 	$txt['attachmentUploadDir'] = 'Attachment Directory';
 	$txt['avatar_url'] = 'Avatar URL';
 	$txt['avatar_directory'] = 'Avatar Directory';
