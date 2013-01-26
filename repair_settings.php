@@ -27,15 +27,6 @@ if (isset($_POST['submit']))
 if (isset($_POST['remove_hooks']))
 	remove_hooks();
 
-// try to find the logo: could be a .gif or a .png
-$logo = "themes/default/images/logo.png";
-if (!file_exists(dirname(__FILE__) . "/" . $logo))
-$logo = "Themes/default/images/logo_sm.png";
-if (!file_exists(dirname(__FILE__) . "/" . $logo))
-$logo = "Themes/default/images/smflogo.png";
-if (!file_exists(dirname(__FILE__) . "/" . $logo))
-$logo = "Themes/default/images/smflogo.gif";
-
 template_initialize();
 
 show_settings();
@@ -90,7 +81,7 @@ function initialize_inputs()
 			$db_type = 'mysql';
 
 		require_once($sourcedir . '/Load.php');
-		require_once($librarydir . '/Auth.subs.php');
+		// require_once($librarydir . '/Auth.subs.php');
 
 		$context['is_legacy'] = false;
 		require_once($sourcedir . '/database/Db-' . $db_type . '.subs.php');
@@ -100,6 +91,11 @@ function initialize_inputs()
 	}
 }
 
+/**
+ * Display the current settings.
+ *
+ * This function reads Settings.php, and if it can connect, the database settings.
+ */
 function show_settings()
 {
 	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix, $context;
@@ -209,22 +205,9 @@ function show_settings()
 		'theme_path_url_settings' => array(),
 	);
 
-	// 1.x didn't have ssi_x, nor cachedir
-	if ($context['is_legacy'])
-	{
-// 		if (empty($known_settings['database_settings']['ssi_db_user']))
-			unset($known_settings['database_settings']['ssi_db_user']);
-// 		if (empty($known_settings['database_settings']['ssi_db_passwd']))
-			unset($known_settings['database_settings']['ssi_db_passwd']);
-// 		if (empty($known_settings['path_url_settings']['cachedir']))
-			unset($known_settings['path_url_settings']['cachedir']);
-	}
-	else
-	{
-		// !!! Multiple Attachment Dirs not supported as yet, so hide this field
-// 		if (empty($known_settings['path_url_settings']['attachmentUploadDir']))
-// 			unset($known_settings['path_url_settings']['attachmentUploadDir']);
-	}
+	// !!! Multiple Attachment Dirs not supported as yet, so hide this field
+	// if (empty($known_settings['path_url_settings']['attachmentUploadDir']))
+	// unset($known_settings['path_url_settings']['attachmentUploadDir']);
 
 	// Let's assume we don't want to change the current theme
 	$settings['theme_default'] = 0;
@@ -787,6 +770,15 @@ function load_language_data()
 function template_initialize()
 {
 	global $context, $txt;
+
+	// try to find the logo: could be a .gif or a .png
+	$logo = "themes/default/images/logo.png";
+	if (!file_exists(dirname(__FILE__) . "/" . $logo))
+		$logo = "Themes/default/images/logo_sm.png";
+	if (!file_exists(dirname(__FILE__) . "/" . $logo))
+		$logo = "Themes/default/images/smflogo.png";
+	if (!file_exists(dirname(__FILE__) . "/" . $logo))
+		$logo = "Themes/default/images/smflogo.gif";
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
 	echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
