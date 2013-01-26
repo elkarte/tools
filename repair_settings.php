@@ -548,7 +548,7 @@ function set_settings()
 			UPDATE {db_prefix}members
 			SET {raw:theme_column} = 0',
 			array(
-				'theme_column' => $context['is_legacy'] ? 'ID_THEME' : 'id_theme',
+				'theme_column' => 'id_theme',
 			)
 		);
 	}
