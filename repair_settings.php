@@ -23,9 +23,11 @@ initialize_inputs();
 load_language_data();
 
 if (isset($_POST['submit']))
-	set_settings();
+	action_set_settings();
 if (isset($_POST['remove_hooks']))
-	remove_hooks();
+	action_remove_hooks();
+if (isset($_GET['delete']))
+	action_deleteScript();
 
 template_initialize();
 
@@ -63,10 +65,6 @@ function initialize_inputs()
 		else
 			$_POST[$k] = addcslashes($v, '\'');
 	}
-
-	// This is really quite simple; if ?delete is on the URL, delete the installer...
-	if (isset($_GET['delete']))
-		action_deleteScript();
 
 	$db_connection = false;
 	if (empty($smcFunc))
@@ -530,7 +528,7 @@ function guess_attachments_directories($id, $array_setting)
 	}
 }
 
-function set_settings()
+function action_set_settings()
 {
 	global $smcFunc, $context;
 
@@ -679,7 +677,7 @@ function set_settings()
 		);
 }
 
-function remove_hooks()
+function action_remove_hooks()
 {
 	global $smcFunc;
 
