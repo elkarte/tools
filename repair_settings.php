@@ -31,7 +31,7 @@ if (isset($_GET['delete']))
 
 template_initialize();
 
-show_settings();
+action_show_settings();
 
 template_show_footer();
 
@@ -93,7 +93,7 @@ function initialize_inputs()
  *
  * This function reads Settings.php, and if it can connect, the database settings.
  */
-function show_settings()
+function action_show_settings()
 {
 	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix, $context;
 
