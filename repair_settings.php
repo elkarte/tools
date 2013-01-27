@@ -687,8 +687,6 @@ function load_language_data()
 	global $txt, $db_type;
 
 	$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
-	$txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
-	$txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
 	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
 	$txt['default_value'] = 'Recommended value';
 	$txt['other_possible_value'] = 'Other possible value';
@@ -778,7 +776,7 @@ function template_initialize()
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<meta name="robots" content="noindex" />
-		<title>', $txt['smf_repair_settings'], '</title>
+		<title>', $txt['elkarte_repair_settings'], '</title>
 		<script type="text/javascript" src="themes/default/scripts/script.js"></script>
 		<style type="text/css">
 			body
@@ -881,7 +879,7 @@ function template_initialize()
 	<body>
 		<div id="header">
 			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
-			<div>', $txt['smf_repair_settings'], '</div>
+			<div>', $txt['elkarte_repair_settings'], '</div>
 		</div>
 		<div id="content">';
 
