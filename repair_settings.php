@@ -23,13 +23,15 @@ initialize_inputs();
 load_language_data();
 
 if (isset($_POST['submit']))
-	set_settings();
+	action_set_settings();
 if (isset($_POST['remove_hooks']))
-	remove_hooks();
+	action_remove_hooks();
+if (isset($_GET['delete']))
+	action_deleteScript();
 
 template_initialize();
 
-show_settings();
+action_show_settings();
 
 template_show_footer();
 
@@ -64,10 +66,6 @@ function initialize_inputs()
 			$_POST[$k] = addcslashes($v, '\'');
 	}
 
-	// This is really quite simple; if ?delete is on the URL, delete the installer...
-	if (isset($_GET['delete']))
-		action_deleteScript();
-
 	$db_connection = false;
 	if (empty($smcFunc))
 			$smcFunc = array();
@@ -83,7 +81,6 @@ function initialize_inputs()
 		require_once($sourcedir . '/Load.php');
 		// require_once($librarydir . '/Auth.subs.php');
 
-		$context['is_legacy'] = false;
 		require_once($sourcedir . '/database/Db-' . $db_type . '.subs.php');
 		require_once($sourcedir . '/database/DbExtra-' . $db_type . '.php');
 		$db_connection = smf_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
@@ -96,7 +93,7 @@ function initialize_inputs()
  *
  * This function reads Settings.php, and if it can connect, the database settings.
  */
-function show_settings()
+function action_show_settings()
 {
 	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix, $context;
 
@@ -455,7 +452,7 @@ function show_settings()
 	else
 		echo '
 				[<a href="javascript:restoreAll();">', $txt['restore_all_settings'], '</a>]
-				<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />', $context['is_legacy'] ? '' : '
+				<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />
 				<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />';
 
 	echo '
@@ -474,12 +471,9 @@ function guess_attachments_directories($id, $array_setting)
 		$usedDirs = array();
 		$request = $smcFunc['db_query'](true, '
 			SELECT {raw:select_tables}, file_hash
-			FROM {db_prefix}attachments
-			{raw:smf1_limit}',
+			FROM {db_prefix}attachments',
 			array(
-				'select_tables' => $context['is_legacy'] ? ($id . ' as id_folder, ID_ATTACH as id_attach') : 'DISTINCT(id_folder), id_attach',
-			// If it's SMF 1.x then check only the last attachment loaded
-				'smf1_limit' => $context['is_legacy'] ? ' ORDER BY ID_ATTACH DESC LIMIT 1' : '',
+				'select_tables' => 'DISTINCT(id_folder), id_attach',
 			)
 		);
 
@@ -500,7 +494,7 @@ function guess_attachments_directories($id, $array_setting)
 	}
 
 	// 1st guess: let's see if we can find a file...if there is at least one.
-	if (isset($usedDirs[$id]) || ($context['is_legacy'] && isset($usedDirs[$id])))
+	if (isset($usedDirs[$id]))
 		foreach ($availableDirs as $aDir)
 			if (file_exists(dirname(__FILE__) . '/' . $aDir . '/' . $usedDirs[$id]['id_attach'] . '_' . $usedDirs[$id]['file_hash']))
 				return array(dirname(__FILE__) . '/' . $aDir);
@@ -530,7 +524,7 @@ function guess_attachments_directories($id, $array_setting)
 	}
 }
 
-function set_settings()
+function action_set_settings()
 {
 	global $smcFunc, $context;
 
@@ -607,25 +601,13 @@ function set_settings()
 		$setString[] = array($var, stripslashes($val));
 
 	// Attachments dirs
-	if ($context['is_legacy'])
-	{
-		foreach ($setString as $key => $value)
-			if (strpos($value[0], 'attachmentUploadDir') == 0 && strpos($value[0], 'attachmentUploadDir') !== false)
-			{
-				$attach_dirs[0] = $value[1];
-				unset($setString[$key]);
-			}
-	}
-	else
-	{
-		$attach_count = 1;
-		foreach ($setString as $key => $value)
-			if (strpos($value[0], 'attachmentUploadDir') == 0 && strpos($value[0], 'attachmentUploadDir') !== false)
-			{
-				$attach_dirs[$attach_count++] = $value[1];
-				unset($setString[$key]);
-			}
-	}
+	$attach_count = 1;
+	foreach ($setString as $key => $value)
+		if (strpos($value[0], 'attachmentUploadDir') == 0 && strpos($value[0], 'attachmentUploadDir') !== false)
+		{
+			$attach_dirs[$attach_count++] = $value[1];
+			unset($setString[$key]);
+		}
 
 	// Only one dir...or maybe nothing at all
 	if (count($attach_dirs) > 1)
@@ -636,14 +618,10 @@ function set_settings()
 // 			if (is_dir($attach_dir) && is_writable($attach_dir))
 // 				$setString[] = array('currentAttachmentUploadDir', $id + 1);
 	}
-	elseif (!$context['is_legacy'] && isset($attach_dirs[1]))
+	elseif (isset($attach_dirs[1]))
 	{
 		$setString[] = array('attachmentUploadDir', $attach_dirs[1]);
 		$setString[] = array('currentAttachmentUploadDir', 0);
-	}
-	elseif ($context['is_legacy'] && isset($attach_dirs[0]))
-	{
-		$setString[] = array('attachmentUploadDir', $attach_dirs[0]);
 	}
 	else
 	{
@@ -679,7 +657,7 @@ function set_settings()
 		);
 }
 
-function remove_hooks()
+function action_remove_hooks()
 {
 	global $smcFunc;
 
@@ -709,8 +687,6 @@ function load_language_data()
 	global $txt, $db_type;
 
 	$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
-	$txt['smf_repair_settings'] = 'SMF 2.0 Settings Repair Tool';
-	$txt['smf11_repair_settings'] = 'SMF 1.x Settings Repair Tool';
 	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
 	$txt['default_value'] = 'Recommended value';
 	$txt['other_possible_value'] = 'Other possible value';
@@ -800,7 +776,7 @@ function template_initialize()
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<meta name="robots" content="noindex" />
-		<title>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</title>
+		<title>', $txt['elkarte_repair_settings'], '</title>
 		<script type="text/javascript" src="themes/default/scripts/script.js"></script>
 		<style type="text/css">
 			body
@@ -903,7 +879,7 @@ function template_initialize()
 	<body>
 		<div id="header">
 			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
-			<div>', $context['is_legacy'] ? $txt['smf11_repair_settings'] : $txt['smf_repair_settings'], '</div>
+			<div>', $txt['elkarte_repair_settings'], '</div>
 		</div>
 		<div id="content">';
 
