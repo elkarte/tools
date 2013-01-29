@@ -265,8 +265,8 @@ function action_show_settings()
 			$new_theme_exists = file_exists(dirname(__FILE__) . '/themes/' . $this_theme);
 
 			$known_settings['theme_path_url_settings'] += array(
-				'theme_'. $id.'_theme_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme : null),
-				'theme_'. $id.'_images_url'=>array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
+				'theme_'. $id.'_theme_url' => array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme : null),
+				'theme_'. $id.'_images_url' => array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
 				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : $new_theme_exists && !empty($old_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : null),
 			);
 			$settings += array(
@@ -526,7 +526,7 @@ function guess_attachments_directories($id, $array_setting)
 
 function action_set_settings()
 {
-	global $smcFunc, $context;
+	global $smcFunc, $context, $db_connection;
 
 	$db_updates = isset($_POST['dbsettings']) ? $_POST['dbsettings'] : array();
 	$theme_updates = isset($_POST['themesettings']) ? $_POST['themesettings'] : array();
@@ -629,7 +629,7 @@ function action_set_settings()
 		$setString[] = array('currentAttachmentUploadDir', 0);
 	}
 
-	if (!empty($setString))
+	if ($db_connection && !empty($setString))
 		$smcFunc['db_insert']('replace',
 			'{db_prefix}settings',
 			array('variable' => 'string', 'value' => 'string-65534'),
@@ -648,7 +648,7 @@ function action_set_settings()
 		$setString[] = array($match[1], 0, $match[2], stripslashes($val));
 	}
 
-	if (!empty($setString))
+	if ($db_connection && !empty($setString))
 		$smcFunc['db_insert']('replace',
 			'{db_prefix}themes',
 			array('id_theme' => 'int', 'id_member' => 'int', 'variable' => 'string', 'value' => 'string-65534'),
@@ -659,15 +659,16 @@ function action_set_settings()
 
 function action_remove_hooks()
 {
-	global $smcFunc;
+	global $smcFunc, $db_connection;
 
-	$smcFunc['db_query']('', '
-		DELETE FROM {db_prefix}settings
-		WHERE variable LIKE {string:variable}',
-		array(
-			'variable' => 'integrate_%'
-		)
-	);
+	if ($db_connection)
+		$smcFunc['db_query']('', '
+			DELETE FROM {db_prefix}settings
+			WHERE variable LIKE {string:variable}',
+			array(
+				'variable' => 'integrate_%'
+			)
+		);
 
 	// Now fixing the cache...
 	cache_put_data('modsettings', null, 0);
