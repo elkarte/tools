@@ -767,9 +767,9 @@ function template_initialize()
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
 		$logo = "Themes/default/images/logo_sm.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.png";
+		$logo = "Themes/default/images/elklogo.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.gif";
+		$logo = "Themes/default/images/elklogo.gif";
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
 	echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
