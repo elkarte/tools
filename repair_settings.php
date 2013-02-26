@@ -763,7 +763,7 @@ function template_initialize()
 	global $context, $txt;
 
 	// try to find the logo: could be a .gif or a .png
-	$logo = "themes/default/images/logo.png";
+	$logo = "themes/default/images/logo_elk.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
 		$logo = "Themes/default/images/logo_sm.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
