@@ -46,15 +46,15 @@ class Populate
 	{
 		global $smcFunc;
 
-		$this->counters['categories']['max'] = 10;
+		$this->counters['categories']['max'] = 6;
 		$this->counters['categories']['current'] = 0;
-		$this->counters['boards']['max'] = 100;
+		$this->counters['boards']['max'] = 25;
 		$this->counters['boards']['current'] = 0;
-		$this->counters['members']['max'] = 270000;
+		$this->counters['members']['max'] = 2000;
 		$this->counters['members']['current'] = 0;
-		$this->counters['topics']['max'] = 370000;
+		$this->counters['topics']['max'] = 2500;
 		$this->counters['topics']['current'] = 0;
-		$this->counters['messages']['max'] = 3000000;
+		$this->counters['messages']['max'] = 10000;
 		$this->counters['messages']['current'] = 0;
 		$this->timeStart = microtime(TRUE);
 
@@ -85,10 +85,9 @@ class Populate
 		$this->complete($end);
 	}
 
-	private function makeCategories ()
+	private function makeCategories()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Categories.php');
+		require_once(SUBSDIR . '/Categories.subs.php');
 
 		while ($this->counters['categories']['current'] < $this->counters['categories']['max'] && $this->blockSize--)
 		{
@@ -103,10 +102,9 @@ class Populate
 		$this->pause();
 	}
 
-	private function makeBoards ()
+	private function makeBoards()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Boards.php');
+		require_once(SUBSDIR . '/Boards.subs.php');
 
 		while ($this->counters['boards']['current'] < $this->counters['boards']['max'] && $this->blockSize--)
 		{
@@ -130,10 +128,9 @@ class Populate
 		$this->pause();
 	}
 
-	private function makeMembers ()
+	private function makeMembers()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Members.php');
+		require_once(SUBSDIR . '/Members.subs.php');
 
 		while ($this->counters['members']['current'] < $this->counters['members']['max'] && $this->blockSize--)
 		{
@@ -151,10 +148,9 @@ class Populate
 		$this->pause();
 	}
 
-	private function makeMessages ()
+	private function makeMessages()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Post.php');
+		require_once(SUBSDIR . '/Post.subs.php');
 
 		while ($this->counters['messages']['current'] < $this->counters['messages']['max'] && $this->blockSize--)
 		{
@@ -183,7 +179,7 @@ class Populate
 		$this->pause();
 	}
 
-	private function pause ($end = false)
+	private function pause($end = false)
 	{
 		if (!$end)
 		{
@@ -210,9 +206,9 @@ class Populate
 			<b>Completed</b>';
 	}
 
-	private function fixupTopicsBoards ()
+	private function fixupTopicsBoards()
 	{
-		global $smcFunc, $sourcedir;
+		global $smcFunc;
 
 		$smcFunc['db_query']('', '
 			UPDATE {db_prefix}messages as mes, {db_prefix}topics as top
@@ -222,7 +218,7 @@ class Populate
 		);
 	}
 
-	private function complete ($end)
+	private function complete($end)
 	{
 		if ($end)
 		{
@@ -262,7 +258,7 @@ class LoremIpsumGenerator {
 
 	private $words, $wordsPerParagraph, $wordsPerSentence;
 
-	function __construct ($wordsPer = 100)
+	function __construct($wordsPer = 100)
 	{
 		$this->wordsPerParagraph = $wordsPer;
 		$this->wordsPerSentence = 24.460;
@@ -447,7 +443,7 @@ class LoremIpsumGenerator {
 		'cras' );
 	}
 
-	function getContent ($count, $format = 'html', $loremipsum = true)
+	function getContent($count, $format = 'html', $loremipsum = true)
 	{
 		$format = strtolower($format);
 
@@ -465,7 +461,7 @@ class LoremIpsumGenerator {
 		}
 	}
 
-	private function getWords (&$arr, $count, $loremipsum)
+	private function getWords(&$arr, $count, $loremipsum)
 	{
 		$i = 0;
 		if ($loremipsum)
@@ -488,7 +484,7 @@ class LoremIpsumGenerator {
 		}
 	}
 
-	private function getPlain ($count, $loremipsum, $returnStr = true)
+	private function getPlain($count, $loremipsum, $returnStr = true)
 	{
 		$words = array();
 		$this->getWords($words, $count, $loremipsum);
@@ -528,7 +524,7 @@ class LoremIpsumGenerator {
 			return $sentences;
 	}
 
-	private function getText ($count, $loremipsum)
+	private function getText($count, $loremipsum)
 	{
 		$sentences = $this->getPlain($count, $loremipsum, false);
 		$paragraphs = $this->getParagraphArr($sentences);
@@ -543,7 +539,7 @@ class LoremIpsumGenerator {
 		return implode("\n\n\t", $paragraphStr);
 	}
 
-	private function getParagraphArr ($sentences)
+	private function getParagraphArr($sentences)
 	{
 		$wordsPer = $this->wordsPerParagraph;
 		$sentenceAvg = $this->wordsPerSentence;
@@ -572,7 +568,7 @@ class LoremIpsumGenerator {
 		return $paragraphs;
 	}
 
-	private function getHTML ($count, $loremipsum)
+	private function getHTML($count, $loremipsum)
 	{
 		$sentences = $this->getPlain($count, $loremipsum, false);
 		$paragraphs = $this->getParagraphArr($sentences);
@@ -588,7 +584,7 @@ class LoremIpsumGenerator {
 		return implode("\n", $paragraphStr);
 	}
 
-	private function paragraphToString ($paragraph, $htmlCleanCode = false)
+	private function paragraphToString($paragraph, $htmlCleanCode = false)
 	{
 		$paragraphStr = '';
 		foreach ($paragraph as $sentence)
@@ -606,7 +602,7 @@ class LoremIpsumGenerator {
 	* Inserts commas and periods in the given
 	* word array.
 	*/
-	private function punctuate (& $sentence)
+	private function punctuate(& $sentence)
 	{
 		$count = count($sentence);
 		$sentence[$count - 1] = $sentence[$count - 1] . '.';
@@ -632,7 +628,7 @@ class LoremIpsumGenerator {
 	* sentence of the given length. Average and
 	* standard deviation are determined superficially
 	*/
-	private function numberOfCommas ($len)
+	private function numberOfCommas($len)
 	{
 		$avg = (float) log($len, 6);
 		$stdDev = (float) $avg / 6.000;
@@ -649,7 +645,7 @@ class LoremIpsumGenerator {
 	*	Average: 24.46
 	*	Standard Deviation: 5.08
 	*/
-	private function gaussianSentence ()
+	private function gaussianSentence()
 	{
 		$avg = (float) 24.460;
 		$stdDev = (float) 5.080;
@@ -663,7 +659,7 @@ class LoremIpsumGenerator {
 	* Source:
 	* 	http://us.php.net/manual/en/function.rand.php#53784
 	*/
-	private function gauss ()
+	private function gauss()
 	{   // N(0,1)
 		// returns random number with normal distribution:
 		//   mean=0
@@ -681,14 +677,13 @@ class LoremIpsumGenerator {
 		return $u;
 	}
 
-	private function gauss_ms ($m=0.0,$s=1.0)
+	private function gauss_ms($m=0.0,$s=1.0)
 	{
 		return $this->gauss()*$s+$m;
 	}
 
-	private function random_0_1 ()
+	private function random_0_1()
 	{
 		return (float)rand()/(float)getrandmax();
 	}
-
 }
