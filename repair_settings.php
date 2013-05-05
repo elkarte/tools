@@ -466,7 +466,7 @@ function guess_attachments_directories($id, $array_setting)
 	global $smcFunc, $context;
 	static $usedDirs;
 
-	if (empty($userdDirs))
+	if (empty($usedDirs))
 	{
 		$usedDirs = array();
 		$request = $smcFunc['db_query'](true, '
