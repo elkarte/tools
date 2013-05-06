@@ -37,7 +37,7 @@ template_show_footer();
 
 function initialize_inputs()
 {
-	global $smcFunc, $db_connection, $sourcedir, $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $context;
+	global $smcFunc, $db_connection, $sourcedir, $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type;
 
 	// Turn off magic quotes runtime and enable error reporting.
 	@set_magic_quotes_runtime(0);
@@ -61,9 +61,9 @@ function initialize_inputs()
 	{
 		if (is_array($v))
 			foreach ($v as $k2 => $v2)
-				$_POST[$k][$k2] = addcslashes($v2, '\'');
+				$_POST[$k][$k2] = addcslashes($v2, '\\\'');
 		else
-			$_POST[$k] = addcslashes($v, '\'');
+			$_POST[$k] = addcslashes($v, '\\\'');
 	}
 
 	$db_connection = false;
@@ -95,7 +95,7 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix, $context;
+	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix;
 
 	// Check to make sure Settings.php exists!
 	if (file_exists(dirname(__FILE__) . '/Settings.php'))
@@ -195,8 +195,7 @@ function action_show_settings()
 			'boarddir' => array('flat', 'string'),
 			'sourcedir' => array('flat', 'string'),
 			'cachedir' => array('flat', 'string'),
-			'librarydir' => array('flat', 'string'),
-			'controllerdir' => array('flat', 'string'),
+			'extdir' => array('flat', 'string'),
 			'attachmentUploadDir' => array('db', 'array_string'),
 			'avatar_url' => array('db', 'string'),
 			'avatar_directory' => array('db', 'string'),
@@ -224,11 +223,8 @@ function action_show_settings()
 	if (file_exists(dirname(__FILE__) . '/cache'))
 		$known_settings['path_url_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
 
-	if (file_exists(dirname(__FILE__) . '/sources/subs'))
-		$known_settings['path_url_settings']['librarydir'][2] = realpath(dirname(__FILE__) . '/sources/subs');
-
-	if (file_exists(dirname(__FILE__) . '/sources/controllers'))
-		$known_settings['path_url_settings']['controllerdir'][2] = realpath(dirname(__FILE__) . '/sources/controllers');
+	if (file_exists(dirname(__FILE__) . '/sources/ext'))
+		$known_settings['path_url_settings']['extdir'][2] = realpath(dirname(__FILE__) . '/sources/ext');
 
 	if (file_exists(dirname(__FILE__) . '/avatars'))
 	{
@@ -463,10 +459,10 @@ function action_show_settings()
 
 function guess_attachments_directories($id, $array_setting)
 {
-	global $smcFunc, $context;
+	global $smcFunc;
 	static $usedDirs;
 
-	if (empty($userdDirs))
+	if (empty($usedDirs))
 	{
 		$usedDirs = array();
 		$request = $smcFunc['db_query'](true, '
@@ -526,7 +522,7 @@ function guess_attachments_directories($id, $array_setting)
 
 function action_set_settings()
 {
-	global $smcFunc, $context, $db_connection;
+	global $smcFunc, $db_connection;
 
 	$db_updates = isset($_POST['dbsettings']) ? $_POST['dbsettings'] : array();
 	$theme_updates = isset($_POST['themesettings']) ? $_POST['themesettings'] : array();
@@ -685,9 +681,9 @@ function action_deleteScript()
 
 function load_language_data()
 {
-	global $txt, $db_type;
+	global $txt;
 
-	$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
+	$txt['elkarte_repair_settings'] = 'ElkArte Settings Repair Tool';
 	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
 	$txt['default_value'] = 'Recommended value';
 	$txt['other_possible_value'] = 'Other possible value';
@@ -744,8 +740,8 @@ function load_language_data()
 	$txt['boarddir'] = 'Forum Directory';
 	$txt['sourcedir'] = 'Sources Directory';
 	$txt['cachedir'] = 'Cache Directory';
-	$txt['librarydir'] = 'Library Directory';
-	$txt['controllerdir'] = 'Controller Directory';
+	$txt['extdir'] = 'External libraries Directory';
+	$txt['languagedir'] = 'Languages Directory';
 	$txt['attachmentUploadDir'] = 'Attachment Directory';
 	$txt['avatar_url'] = 'Avatar URL';
 	$txt['avatar_directory'] = 'Avatar Directory';
@@ -761,16 +757,12 @@ function load_language_data()
 
 function template_initialize()
 {
-	global $context, $txt;
+	global $txt, $db_type;
 
 	// try to find the logo: could be a .gif or a .png
-	$logo = "themes/default/images/logo.png";
+	$logo = "themes/default/images/logo_elk.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/logo_sm.png";
-	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.png";
-	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.gif";
+		$logo = "Themes/default/images/logo.png";
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
 	echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -782,30 +774,27 @@ function template_initialize()
 		<style type="text/css">
 			body
 			{
-				background-color: #e5e5e8;
 				margin: 0px;
 				padding: 0px;
 			}
 			body, td
 			{
-				color: #000000;
-				font-size: small;
-				font-family: verdana, sans-serif;
+				font: 90.33%/150% "Segoe UI","Helvetica Neue","Liberation Sans","Nimbus Sans L",Arial,sans-serif;	
+				color: #333;
 			}
 			div#header
 			{
-				background-image: url(themes/default/images/catbg.jpg);
-				background-repeat: repeat-x;
+				color: #fff;
+				text-shadow: 0 0 8px #333;
 				background-color: #88a6c0;
-				padding: 22px 4% 12px 4%;
-				color: white;
-				font-family: Georgia, serif;
+				padding: 22px 20px 12px 20px;
 				font-size: xx-large;
-				border-bottom: 1px solid black;
+				border-bottom: 1px solid #222;
 				height: 40px;
 			}
 			div#content
 			{
+				border-top: 1px solid white;
 				padding: 20px 30px;
 			}
 			div.error_message
@@ -817,8 +806,9 @@ function template_initialize()
 			}
 			div.panel
 			{
-				border: 1px solid gray;
-				background-color: #f6f6f6;
+				border: 1px solid #ccc;
+				border-radius: 5px;
+				background-color: #eee;
 				margin: 1ex 0;
 				padding: 1.2ex;
 			}
@@ -827,9 +817,10 @@ function template_initialize()
 				margin: 0;
 				margin-bottom: 0.5ex;
 				padding-bottom: 3px;
-				border-bottom: 1px dashed black;
+				border-bottom: 1px dashed #aaa;
 				font-size: 14pt;
-				font-weight: normal;
+				font-weight: bold;
+				color: #555;
 			}
 			div.panel h3
 			{
@@ -845,7 +836,6 @@ function template_initialize()
 			td.textbox
 			{
 				padding-top: 2px;
-				font-weight: bold;
 				white-space: nowrap;
 				padding-', empty($txt['lang_rtl']) ? 'right' : 'left', ': 2ex;
 			}
@@ -879,7 +869,7 @@ function template_initialize()
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
+			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 120px; float: right;" alt="Elkarte" border="0" /></a>
 			<div>', $txt['elkarte_repair_settings'], '</div>
 		</div>
 		<div id="content">';
