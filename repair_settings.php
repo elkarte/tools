@@ -37,7 +37,7 @@ template_show_footer();
 
 function initialize_inputs()
 {
-	global $smcFunc, $db_connection, $sourcedir, $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $context;
+	global $smcFunc, $db_connection, $sourcedir, $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type;
 
 	// Turn off magic quotes runtime and enable error reporting.
 	@set_magic_quotes_runtime(0);
@@ -95,7 +95,7 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix, $context;
+	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix;
 
 	// Check to make sure Settings.php exists!
 	if (file_exists(dirname(__FILE__) . '/Settings.php'))
@@ -459,7 +459,7 @@ function action_show_settings()
 
 function guess_attachments_directories($id, $array_setting)
 {
-	global $smcFunc, $context;
+	global $smcFunc;
 	static $usedDirs;
 
 	if (empty($usedDirs))
@@ -522,7 +522,7 @@ function guess_attachments_directories($id, $array_setting)
 
 function action_set_settings()
 {
-	global $smcFunc, $context, $db_connection;
+	global $smcFunc, $db_connection;
 
 	$db_updates = isset($_POST['dbsettings']) ? $_POST['dbsettings'] : array();
 	$theme_updates = isset($_POST['themesettings']) ? $_POST['themesettings'] : array();
@@ -681,9 +681,9 @@ function action_deleteScript()
 
 function load_language_data()
 {
-	global $txt, $db_type;
+	global $txt;
 
-	$txt['elkarte_repair_settings'] = 'Elkarte Settings Repair Tool';
+	$txt['elkarte_repair_settings'] = 'ElkArte Settings Repair Tool';
 	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
 	$txt['default_value'] = 'Recommended value';
 	$txt['other_possible_value'] = 'Other possible value';
@@ -757,7 +757,7 @@ function load_language_data()
 
 function template_initialize()
 {
-	global $context, $txt;
+	global $txt, $db_type;
 
 	// try to find the logo: could be a .gif or a .png
 	$logo = "themes/default/images/logo_elk.png";
