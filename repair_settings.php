@@ -61,9 +61,9 @@ function initialize_inputs()
 	{
 		if (is_array($v))
 			foreach ($v as $k2 => $v2)
-				$_POST[$k][$k2] = addcslashes($v2, '\'');
+				$_POST[$k][$k2] = addcslashes($v2, '\\\'');
 		else
-			$_POST[$k] = addcslashes($v, '\'');
+			$_POST[$k] = addcslashes($v, '\\\'');
 	}
 
 	$db_connection = false;
