@@ -774,30 +774,27 @@ function template_initialize()
 		<style type="text/css">
 			body
 			{
-				background-color: #e5e5e8;
 				margin: 0px;
 				padding: 0px;
 			}
 			body, td
 			{
-				color: #000000;
-				font-size: small;
-				font-family: verdana, sans-serif;
+				font: 90.33%/150% "Segoe UI","Helvetica Neue","Liberation Sans","Nimbus Sans L",Arial,sans-serif;	
+				color: #333;
 			}
 			div#header
 			{
-				background-image: url(themes/default/images/catbg.jpg);
-				background-repeat: repeat-x;
+				color: #fff;
+				text-shadow: 0 0 8px #333;
 				background-color: #88a6c0;
-				padding: 22px 4% 12px 4%;
-				color: white;
-				font-family: Georgia, serif;
+				padding: 22px 20px 12px 20px;
 				font-size: xx-large;
-				border-bottom: 1px solid black;
+				border-bottom: 1px solid #222;
 				height: 40px;
 			}
 			div#content
 			{
+				border-top: 1px solid white;
 				padding: 20px 30px;
 			}
 			div.error_message
@@ -809,8 +806,9 @@ function template_initialize()
 			}
 			div.panel
 			{
-				border: 1px solid gray;
-				background-color: #f6f6f6;
+				border: 1px solid #ccc;
+				border-radius: 5px;
+				background-color: #eee;
 				margin: 1ex 0;
 				padding: 1.2ex;
 			}
@@ -819,9 +817,10 @@ function template_initialize()
 				margin: 0;
 				margin-bottom: 0.5ex;
 				padding-bottom: 3px;
-				border-bottom: 1px dashed black;
+				border-bottom: 1px dashed #aaa;
 				font-size: 14pt;
-				font-weight: normal;
+				font-weight: bold;
+				color: #555;
 			}
 			div.panel h3
 			{
@@ -837,7 +836,6 @@ function template_initialize()
 			td.textbox
 			{
 				padding-top: 2px;
-				font-weight: bold;
 				white-space: nowrap;
 				padding-', empty($txt['lang_rtl']) ? 'right' : 'left', ': 2ex;
 			}
@@ -871,7 +869,7 @@ function template_initialize()
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 250px; float: right;" alt="Elkarte" border="0" /></a>
+			<a href="http://www.elkarte.net" target="_blank"><img src="' . $logo . '" style="width: 120px; float: right;" alt="Elkarte" border="0" /></a>
 			<div>', $txt['elkarte_repair_settings'], '</div>
 		</div>
 		<div id="content">';
