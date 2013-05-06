@@ -195,8 +195,7 @@ function action_show_settings()
 			'boarddir' => array('flat', 'string'),
 			'sourcedir' => array('flat', 'string'),
 			'cachedir' => array('flat', 'string'),
-			'librarydir' => array('flat', 'string'),
-			'controllerdir' => array('flat', 'string'),
+			'extdir' => array('flat', 'string'),
 			'attachmentUploadDir' => array('db', 'array_string'),
 			'avatar_url' => array('db', 'string'),
 			'avatar_directory' => array('db', 'string'),
@@ -224,11 +223,8 @@ function action_show_settings()
 	if (file_exists(dirname(__FILE__) . '/cache'))
 		$known_settings['path_url_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
 
-	if (file_exists(dirname(__FILE__) . '/sources/subs'))
-		$known_settings['path_url_settings']['librarydir'][2] = realpath(dirname(__FILE__) . '/sources/subs');
-
-	if (file_exists(dirname(__FILE__) . '/sources/controllers'))
-		$known_settings['path_url_settings']['controllerdir'][2] = realpath(dirname(__FILE__) . '/sources/controllers');
+	if (file_exists(dirname(__FILE__) . '/sources/ext'))
+		$known_settings['path_url_settings']['extdir'][2] = realpath(dirname(__FILE__) . '/sources/ext');
 
 	if (file_exists(dirname(__FILE__) . '/avatars'))
 	{
@@ -744,8 +740,8 @@ function load_language_data()
 	$txt['boarddir'] = 'Forum Directory';
 	$txt['sourcedir'] = 'Sources Directory';
 	$txt['cachedir'] = 'Cache Directory';
-	$txt['librarydir'] = 'Library Directory';
-	$txt['controllerdir'] = 'Controller Directory';
+	$txt['extdir'] = 'External libraries Directory';
+	$txt['languagedir'] = 'Languages Directory';
 	$txt['attachmentUploadDir'] = 'Attachment Directory';
 	$txt['avatar_url'] = 'Avatar URL';
 	$txt['avatar_directory'] = 'Avatar Directory';
@@ -764,13 +760,9 @@ function template_initialize()
 	global $context, $txt;
 
 	// try to find the logo: could be a .gif or a .png
-	$logo = "themes/default/images/logo.png";
+	$logo = "themes/default/images/logo_elk.png";
 	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/logo_sm.png";
-	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.png";
-	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/smflogo.gif";
+		$logo = "Themes/default/images/logo.png";
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
 	echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
