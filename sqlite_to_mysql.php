@@ -1,16 +1,16 @@
 <?php
 
 /**
- * This file has a single job - database backup.
+ * @name      Elkarte Forum
+ * @copyright Elkarte Forum contributors
+ *
+ * This software is a derived product, based on:
  *
  * Simple Machines Forum (SMF)
+ * copyright:	2011 Simple Machines (http://www.simplemachines.org)
+ * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @package SMF
- * @author Simple Machines http://www.simplemachines.org
- * @copyright 2011 Simple Machines
- * @license http://www.simplemachines.org/about/smf/license.php BSD
- *
- * @version 2.1 Alpha 1
+ * @version 1.0
  */
 
 require_once('SSI.php');
@@ -361,6 +361,3 @@ function exp_db_table_sql($tableName)
 
 	return $schema_create . $index_create;
 }
-
-
-?>

@@ -93,7 +93,7 @@ defaultMaxTopics
 dh_keys
 disable_language_fallback
 disable_log_report
-disable_smf_js
+disable_elk_js
 disable_wysiwyg
 disableCheckUA
 disableCustomPerPage
