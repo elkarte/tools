@@ -41,7 +41,7 @@ class Database_SQLite
 	 * @param string $db_prefix
 	 * @param array $db_options
 	 */
-	function elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_options = array())
+	function initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_options = array())
 	{
 		global $smcFunc, $mysql_set_mode, $db_in_transact, $sqlite_error;
 
@@ -93,14 +93,14 @@ class Database_SQLite
 		@sqlite_query('PRAGMA short_column_names = 1', $connection);
 
 		// Make some user defined functions!
-		sqlite_create_function($connection, 'unix_timestamp', 'elk_udf_runix_timestamp', 0);
-		sqlite_create_function($connection, 'inet_aton', 'elk_udf_rinet_aton', 1);
-		sqlite_create_function($connection, 'inet_ntoa', 'elk_udf_rinet_ntoa', 1);
-		sqlite_create_function($connection, 'find_in_set', 'elk_udf_rfind_in_set', 2);
-		sqlite_create_function($connection, 'year', 'elk_udf_ryear', 1);
-		sqlite_create_function($connection, 'month', 'elk_udf_rmonth', 1);
-		sqlite_create_function($connection, 'dayofmonth', 'elk_udf_rdayofmonth', 1);
-		sqlite_create_function($connection, 'concat', 'elk_udf_rconcat');
+		sqlite_create_function($connection, 'unix_timestamp', 'elk_udf_unix_timestamp', 0);
+		sqlite_create_function($connection, 'inet_aton', 'elk_udf_inet_aton', 1);
+		sqlite_create_function($connection, 'inet_ntoa', 'elk_udf_inet_ntoa', 1);
+		sqlite_create_function($connection, 'find_in_set', 'elk_udf_find_in_set', 2);
+		sqlite_create_function($connection, 'year', 'elk_udf_year', 1);
+		sqlite_create_function($connection, 'month', 'elk_udf_month', 1);
+		sqlite_create_function($connection, 'dayofmonth', 'elk_udf_dayofmonth', 1);
+		sqlite_create_function($connection, 'concat', 'elk_udf_concat');
 		sqlite_create_function($connection, 'locate', 'elk_udf_locate', 2);
 		sqlite_create_function($connection, 'regexp', 'elk_udf_regexp', 2);
 
@@ -114,7 +114,7 @@ class Database_SQLite
 	 * @param type $db_prefix
 	 * @param type $db_name
 	 */
-	function db_fix_prefix(&$db_prefix, $db_name)
+	function fix_prefix(&$db_prefix, $db_name)
 	{
 		return false;
 	}
@@ -129,7 +129,7 @@ class Database_SQLite
 	 *
 	 * @param $matches
 	 */
-	function elk_db_replacement__callback($matches)
+	function replacement__callback($matches)
 	{
 		global $db_callback, $user_info, $db_prefix;
 
@@ -149,10 +149,10 @@ class Database_SQLite
 			return $user_info['query_wanna_see_board'];
 
 		if (!isset($matches[2]))
-			elk_db_error_backtrace('Invalid value inserted or no type specified.', '', E_USER_ERROR, __FILE__, __LINE__);
+			$this->error_backtrace('Invalid value inserted or no type specified.', '', E_USER_ERROR, __FILE__, __LINE__);
 
 		if (!isset($values[$matches[2]]))
-			elk_db_error_backtrace('The database value you\'re trying to insert does not exist: ' . htmlspecialchars($matches[2]), '', E_USER_ERROR, __FILE__, __LINE__);
+			$this->error_backtrace('The database value you\'re trying to insert does not exist: ' . htmlspecialchars($matches[2]), '', E_USER_ERROR, __FILE__, __LINE__);
 
 		$replacement = $values[$matches[2]];
 
@@ -160,7 +160,7 @@ class Database_SQLite
 		{
 			case 'int':
 				if (!is_numeric($replacement) || (string) $replacement !== (string) (int) $replacement)
-					elk_db_error_backtrace('Wrong value type sent to the database. Integer expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+					$this->error_backtrace('Wrong value type sent to the database. Integer expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 				return (string) (int) $replacement;
 			break;
 
@@ -173,12 +173,12 @@ class Database_SQLite
 				if (is_array($replacement))
 				{
 					if (empty($replacement))
-						elk_db_error_backtrace('Database error, given array of integer values is empty. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+						$this->error_backtrace('Database error, given array of integer values is empty. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 
 					foreach ($replacement as $key => $value)
 					{
 						if (!is_numeric($value) || (string) $value !== (string) (int) $value)
-							elk_db_error_backtrace('Wrong value type sent to the database. Array of integers expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+							$this->error_backtrace('Wrong value type sent to the database. Array of integers expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 
 						$replacement[$key] = (string) (int) $value;
 					}
@@ -186,7 +186,7 @@ class Database_SQLite
 					return implode(', ', $replacement);
 				}
 				else
-					elk_db_error_backtrace('Wrong value type sent to the database. Array of integers expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+					$this->error_backtrace('Wrong value type sent to the database. Array of integers expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 
 			break;
 
@@ -194,7 +194,7 @@ class Database_SQLite
 				if (is_array($replacement))
 				{
 					if (empty($replacement))
-						elk_db_error_backtrace('Database error, given array of string values is empty. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+						$this->error_backtrace('Database error, given array of string values is empty. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 
 					foreach ($replacement as $key => $value)
 						$replacement[$key] = sprintf('\'%1$s\'', sqlite_escape_string($value));
@@ -202,19 +202,19 @@ class Database_SQLite
 					return implode(', ', $replacement);
 				}
 				else
-					elk_db_error_backtrace('Wrong value type sent to the database. Array of strings expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+					$this->error_backtrace('Wrong value type sent to the database. Array of strings expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 			break;
 
 			case 'date':
 				if (preg_match('~^(\d{4})-([0-1]?\d)-([0-3]?\d)$~', $replacement, $date_matches) === 1)
 					return sprintf('\'%04d-%02d-%02d\'', $date_matches[1], $date_matches[2], $date_matches[3]);
 				else
-					elk_db_error_backtrace('Wrong value type sent to the database. Date expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+					$this->error_backtrace('Wrong value type sent to the database. Date expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 			break;
 
 			case 'float':
 				if (!is_numeric($replacement))
-					elk_db_error_backtrace('Wrong value type sent to the database. Floating point number expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
+					$this->error_backtrace('Wrong value type sent to the database. Floating point number expected. (' . $matches[2] . ')', '', E_USER_ERROR, __FILE__, __LINE__);
 				return (string) (float) $replacement;
 			break;
 
@@ -227,7 +227,7 @@ class Database_SQLite
 			break;
 
 			default:
-				elk_db_error_backtrace('Undefined type used in the database query. (' . $matches[1] . ':' . $matches[2] . ')', '', false, __FILE__, __LINE__);
+				$this->error_backtrace('Undefined type used in the database query. (' . $matches[1] . ':' . $matches[2] . ')', '', false, __FILE__, __LINE__);
 			break;
 		}
 	}
@@ -240,7 +240,7 @@ class Database_SQLite
 	 * @param string $db_values
 	 * @param resource $connection
 	 */
-	function elk_db_quote($db_string, $db_values, $connection = null)
+	function quote($db_string, $db_values, $connection = null)
 	{
 		global $db_callback, $db_connection;
 
@@ -268,7 +268,7 @@ class Database_SQLite
 	 * @param string $db_values
 	 * @param resource $connection
 	 */
-	function elk_db_query($identifier, $db_string, $db_values = array(), $connection = null)
+	function query($identifier, $db_string, $db_values = array(), $connection = null)
 	{
 		global $db_cache, $db_count, $db_connection, $db_show_debug, $time_start;
 		global $db_unbuffered, $db_callback, $modSettings;
@@ -357,7 +357,7 @@ class Database_SQLite
 		$db_count = !isset($db_count) ? 1 : $db_count + 1;
 
 		if (empty($modSettings['disableQueryCheck']) && strpos($db_string, '\'') !== false && empty($db_values['security_override']))
-			elk_db_error_backtrace('Hacking attempt...', 'Illegal character (\') used in query...', true, __FILE__, __LINE__);
+			$this->error_backtrace('Hacking attempt...', 'Illegal character (\') used in query...', true, __FILE__, __LINE__);
 
 		if (empty($db_values['security_override']) && (!empty($db_values) || strpos($db_string, '{db_prefix}') !== false))
 		{
@@ -375,7 +375,7 @@ class Database_SQLite
 		if (isset($db_show_debug) && $db_show_debug === true)
 		{
 			// Get the file and line number this function was called.
-			list ($file, $line) = elk_db_error_backtrace('', '', 'return', __FILE__, __LINE__);
+			list ($file, $line) = $this->error_backtrace('', '', 'return', __FILE__, __LINE__);
 
 			// Initialize $db_cache if not already initialized.
 			if (!isset($db_cache))
@@ -398,7 +398,7 @@ class Database_SQLite
 
 		$ret = @sqlite_query($db_string, $connection, SQLITE_BOTH, $err_msg);
 		if ($ret === false && empty($db_values['db_error_skip']))
-			$ret = elk_db_error($db_string . '#!#' . $err_msg, $connection);
+			$ret = $this->error($db_string . '#!#' . $err_msg, $connection);
 
 		// Debugging.
 		if (isset($db_show_debug) && $db_show_debug === true)
@@ -412,7 +412,7 @@ class Database_SQLite
 	 *
 	 * @param resource $connection
 	 */
-	function elk_db_affected_rows($connection = null)
+	function affected_rows($connection = null)
 	{
 		global $db_connection;
 
@@ -426,7 +426,7 @@ class Database_SQLite
 	 * @param string $field = null
 	 * @param resource $connection = null
 	 */
-	function elk_db_insert_id($table, $field = null, $connection = null)
+	function insert_id($table, $field = null, $connection = null)
 	{
 		global $db_connection, $db_prefix;
 
@@ -439,7 +439,7 @@ class Database_SQLite
 	/**
 	 * Last error on SQLite
 	 */
-	function elk_db_last_error()
+	function last_error()
 	{
 		global $db_connection, $sqlite_error;
 
@@ -453,7 +453,7 @@ class Database_SQLite
 	 * @param string $type - the step to perform (i.e. 'begin', 'commit', 'rollback')
 	 * @param resource $connection = null
 	 */
-	function elk_db_transaction($type = 'commit', $connection = null)
+	function do_transaction($type = 'commit', $connection = null)
 	{
 		global $db_connection, $db_in_transact;
 
@@ -486,7 +486,7 @@ class Database_SQLite
 	 * @param string $db_string
 	 * @param resource $connection = null
 	 */
-	function elk_db_error($db_string, $connection = null)
+	function error($db_string, $connection = null)
 	{
 		global $txt, $context, $webmaster_email, $modSettings;
 		global $forum_version, $db_connection, $db_last_error, $db_persist;
@@ -494,7 +494,7 @@ class Database_SQLite
 		global $smcFunc;
 
 		// We'll try recovering the file and line number the original db query was called from.
-		list ($file, $line) = elk_db_error_backtrace('', '', 'return', __FILE__, __LINE__);
+		list ($file, $line) = $this->error_backtrace('', '', 'return', __FILE__, __LINE__);
 
 		// Decide which connection to use
 		$connection = $connection === null ? $db_connection : $connection;
@@ -568,7 +568,7 @@ class Database_SQLite
 	 * @param bool $disable_trans = false
 	 * @param resource $connection = null
 	 */
-	function elk_db_insert($method = 'replace', $table, $columns, $data, $keys, $disable_trans = false, $connection = null)
+	function insert($method = 'replace', $table, $columns, $data, $keys, $disable_trans = false, $connection = null)
 	{
 		global $db_in_transact, $db_connection, $smcFunc, $db_prefix;
 
@@ -610,7 +610,7 @@ class Database_SQLite
 			// Here's where the variables are injected to the query.
 			$insertRows = array();
 			foreach ($data as $dataRow)
-				$insertRows[] = elk_db_quote($insertData, array_combine($indexed_columns, $dataRow), $connection);
+				$insertRows[] = $this->quote($insertData, array_combine($indexed_columns, $dataRow), $connection);
 
 			foreach ($insertRows as $entry)
 				// Do the insert.
@@ -635,7 +635,7 @@ class Database_SQLite
 	 *
 	 * @param resource $handle = false
 	 */
-	function elk_db_free_result($handle = false)
+	function free_result($handle = false)
 	{
 		return true;
 	}
@@ -646,7 +646,7 @@ class Database_SQLite
 	 *
 	 * @param $handle
 	 */
-	function elk_db_fetch_row($handle)
+	function fetch_row($handle)
 	{
 		return sqlite_fetch_array($handle, SQLITE_NUM);
 	}
@@ -656,7 +656,7 @@ class Database_SQLite
 	 *
 	 * @param $string
 	 */
-	function elk_db_unescape_string($string)
+	function unescape_string($string)
 	{
 		return strtr($string, array('\'\'' => '\''));
 	}
@@ -670,7 +670,7 @@ class Database_SQLite
 	 * @param $file
 	 * @param $line
 	 */
-	function elk_db_error_backtrace($error_message, $log_message = '', $error_type = false, $file = null, $line = null)
+	function error_backtrace($error_message, $log_message = '', $error_type = false, $file = null, $line = null)
 	{
 		if (empty($log_message))
 			$log_message = $error_message;
@@ -715,7 +715,7 @@ class Database_SQLite
 	/**
 	 * Emulate UNIX_TIMESTAMP.
 	 */
-	function elk_udf_runix_timestamp()
+	function udf_unix_timestamp()
 	{
 		return strftime('%s', 'now');
 	}
@@ -725,7 +725,7 @@ class Database_SQLite
 	 *
 	 * @param $ip
 	 */
-	function elk_udf_rinet_aton($ip)
+	function udf_inet_aton($ip)
 	{
 		$chunks = explode('.', $ip);
 		return @$chunks[0] * pow(256, 3) + @$chunks[1] * pow(256, 2) + @$chunks[2] * 256 + @$chunks[3];
@@ -736,7 +736,7 @@ class Database_SQLite
 	 *
 	 * @param $n
 	 */
-	function elk_udf_rinet_ntoa($n)
+	function udf_inet_ntoa($n)
 	{
 		$t = array(0, 0, 0, 0);
 		$msk = 16777216.0;
@@ -762,7 +762,7 @@ class Database_SQLite
 	 * @param $find
 	 * @param $groups
 	 */
-	function elk_udf_rfind_in_set($find, $groups)
+	function udf_find_in_set($find, $groups)
 	{
 		foreach (explode(',', $groups) as $key => $group)
 		{
@@ -778,7 +778,7 @@ class Database_SQLite
 	 *
 	 * @param $date
 	 */
-	function elk_udf_ryear($date)
+	function udf_year($date)
 	{
 		return substr($date, 0, 4);
 	}
@@ -788,7 +788,7 @@ class Database_SQLite
 	 *
 	 * @param $date
 	 */
-	function elk_udf_rmonth($date)
+	function udf_month($date)
 	{
 		return substr($date, 5, 2);
 	}
@@ -798,7 +798,7 @@ class Database_SQLite
 	 *
 	 * @param $date
 	 */
-	function elk_udf_rdayofmonth($date)
+	function udf_dayofmonth($date)
 	{
 		return substr($date, 8, 2);
 	}
@@ -808,7 +808,7 @@ class Database_SQLite
 	 *
 	 * @param $void
 	 */
-	function elk_db_libversion($void = null)
+	function libversion($void = null)
 	{
 		return sqlite_libversion();
 	}
@@ -817,7 +817,7 @@ class Database_SQLite
 	 * This function uses variable argument lists so that it can handle more then two parameters.
 	 * Emulates the CONCAT function.
 	 */
-	function elk_udf_rconcat()
+	function udf_concat()
 	{
 		// Since we didn't specify any arguments we must get them from PHP.
 		$args = func_get_args();
@@ -832,7 +832,7 @@ class Database_SQLite
 	 * @param string $find
 	 * @param string $string
 	 */
-	function elk_udf_locate($find, $string)
+	function udf_locate($find, $string)
 	{
 		return strpos($string, $find);
 	}
@@ -843,7 +843,7 @@ class Database_SQLite
 	 * @param string $exp
 	 * @param string $search
 	 */
-	function elk_udf_regexp($exp, $search)
+	function udf_regexp($exp, $search)
 	{
 		if (preg_match($exp, $match))
 			return 1;
@@ -854,7 +854,7 @@ class Database_SQLite
 	 * Escape the LIKE wildcards so that they match the character and not the wildcard.
 	 * The optional second parameter turns human readable wildcards into SQL wildcards.
 	 */
-	function elk_db_escape_wildcard_string($string, $translate_human_wildcards=false)
+	function escape_wildcard_string($string, $translate_human_wildcards=false)
 	{
 		$replacements = array(
 			'%' => '\%',

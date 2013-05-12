@@ -30,7 +30,7 @@ function db_fix_prefix(&$db_prefix, $db_name)
 {
 	global $db;
 
-	$db->db_fix_prefix(&$db_prefix, $db_name);
+	$db->fix_prefix(&$db_prefix, $db_name);
 }
 
 /**
@@ -45,7 +45,7 @@ function elk_db_replacement__callback($matches)
 {
 	global $db;
 
-	return $db->elk_db_replacement__callback($matches);
+	return $db->replacement__callback($matches);
 }
 
 /**
@@ -59,7 +59,7 @@ function elk_db_quote($db_string, $db_values, $connection = null)
 {
 	global $db;
 
-	return $db->elk_db_quote($db_string, $db_values, $connection);
+	return $db->quote($db_string, $db_values, $connection);
 }
 
 /**
@@ -74,7 +74,7 @@ function elk_db_query($identifier, $db_string, $db_values = array(), $connection
 {
 	global $db;
 
-	return $db->elk_db_query($identifier, $db_string, $db_values, $connection);
+	return $db->query($identifier, $db_string, $db_values, $connection);
 }
 
 /**
@@ -85,7 +85,7 @@ function elk_db_affected_rows($connection = null)
 {
 	global $db;
 
-	return $db->elk_db_affected_rows($connection);
+	return $db->affected_rows($connection);
 }
 
 /**
@@ -99,7 +99,7 @@ function elk_db_insert_id($table, $field = null, $connection = null)
 {
 	global $db;
 
-	return $db->elk_db_insert_id($table, $field, $connection);
+	return $db->insert_id($table, $field, $connection);
 }
 
 /**
@@ -112,7 +112,7 @@ function elk_db_transaction($type = 'commit', $connection = null)
 {
 	global $db;
 
-	return $db->elk_db_transaction($type, $connection);
+	return $db->do_transaction($type, $connection);
 }
 
 /**
@@ -126,7 +126,7 @@ function elk_db_error($db_string, $connection = null)
 {
 	global $db;
 
-	return $db->elk_db_error($db_string, $connection);
+	return $db->error($db_string, $connection);
 }
 
 /**
@@ -144,7 +144,7 @@ function elk_db_insert($method = 'replace', $table, $columns, $data, $keys, $dis
 {
 	global $db;
 
-	return $db->elk_db_insert($method, $table, $columns, $data, $keys, $disable_trans, $connection);
+	return $db->insert($method, $table, $columns, $data, $keys, $disable_trans, $connection);
 }
 
 /**
@@ -160,17 +160,17 @@ function elk_db_error_backtrace($error_message, $log_message = '', $error_type =
 {
 	global $db;
 
-	return $db->elk_db_error_backtrace($error_message, $log_message, $error_type, $file, $line);
+	return $db->error_backtrace($error_message, $log_message, $error_type, $file, $line);
 }
 
 /**
  * Emulate UNIX_TIMESTAMP.
  */
-function elk_udf_runix_timestamp()
+function elk_udf_unix_timestamp()
 {
 	global $db;
 
-	return $db->elk_udf_runix_timestamp();
+	return $db->udf_unix_timestamp();
 }
 
 /**
@@ -178,11 +178,11 @@ function elk_udf_runix_timestamp()
  *
  * @param $ip
  */
-function elk_udf_rinet_aton($ip)
+function elk_udf_inet_aton($ip)
 {
 	global $db;
 
-	return $db->elk_udf_rinet_aton($ip);
+	return $db->udf_inet_aton($ip);
 }
 
 /**
@@ -190,11 +190,11 @@ function elk_udf_rinet_aton($ip)
  *
  * @param $n
  */
-function elk_udf_rinet_ntoa($n)
+function elk_udf_inet_ntoa($n)
 {
 	global $db;
 
-	return $db->elk_udf_rinet_ntoa($n);
+	return $db->udf_inet_ntoa($n);
 }
 
 /**
@@ -203,11 +203,11 @@ function elk_udf_rinet_ntoa($n)
  * @param $find
  * @param $groups
  */
-function elk_udf_rfind_in_set($find, $groups)
+function elk_udf_find_in_set($find, $groups)
 {
 	global $db;
 
-	return $db->elk_udf_rfind_in_set($find, $groups);
+	return $db->udf_find_in_set($find, $groups);
 }
 
 /**
@@ -215,11 +215,11 @@ function elk_udf_rfind_in_set($find, $groups)
  *
  * @param $date
  */
-function elk_udf_ryear($date)
+function elk_udf_year($date)
 {
 	global $db;
 
-	return $db->elk_udf_ryear($date);
+	return $db->udf_year($date);
 }
 
 /**
@@ -227,11 +227,11 @@ function elk_udf_ryear($date)
  *
  * @param $date
  */
-function elk_udf_rmonth($date)
+function elk_udf_month($date)
 {
 	global $db;
 
-	return $db->elk_udf_rmonth($date);
+	return $db->udf_month($date);
 }
 
 /**
@@ -239,11 +239,11 @@ function elk_udf_rmonth($date)
  *
  * @param $date
  */
-function elk_udf_rdayofmonth($date)
+function elk_udf_dayofmonth($date)
 {
 	global $db;
 
-	return $db->elk_udf_rdayofmonth($date);
+	return $db->udf_dayofmonth($date);
 }
 
 /**
@@ -255,18 +255,18 @@ function elk_db_libversion($void = null)
 {
 	global $db;
 
-	return $db->elk_db_libversion($void);
+	return $db->libversion($void);
 }
 
 /**
  * This function uses variable argument lists so that it can handle more then two parameters.
  * Emulates the CONCAT function.
  */
-function elk_udf_rconcat()
+function elk_udf_concat()
 {
 	global $db;
 
-	return $db->elk_udf_rconcat();
+	return $db->udf_concat();
 }
 
 /**
@@ -279,7 +279,7 @@ function elk_udf_locate($find, $string)
 {
 	global $db;
 
-	return $db->elk_udf_locate($find, $string);
+	return $db->udf_locate($find, $string);
 }
 
 /**
@@ -292,7 +292,7 @@ function elk_udf_regexp($exp, $search)
 {
 	global $db;
 
-	return $db->elk_udf_regexp($exp, $search);
+	return $db->udf_regexp($exp, $search);
 }
 
 /**
@@ -305,5 +305,5 @@ function elk_db_escape_wildcard_string($string, $translate_human_wildcards=false
 {
 	global $db;
 
-	return $db->elk_db_escape_wildcard_string($string, $translate_human_wildcards);
+	return $db->escape_wildcard_string($string, $translate_human_wildcards);
 }
