@@ -409,7 +409,7 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.simplemachines.org/" target="_blank"><img src="./Themes/default/images/smflogo.gif" style="width: 258px; float: right;" alt="Simple Machines" border="0" /></a>
+			<a href="http://www.simplemachines.org/" target="_blank"><img src="./Themes/default/images/elklogo.gif" style="width: 258px; float: right;" alt="Simple Machines" border="0" /></a>
 			<div>', $txt['title'], '</div>
 		</div>
 		<div id="content">';

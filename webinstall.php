@@ -1076,7 +1076,7 @@ function extract_gzip($data)
 
 	// crc32 doesn't work as expected on 64-bit functions - make our own.
 	// http://www.php.net/crc32#79567
-	function smf_crc32_check($data, $verify)
+	function crc32_compat_check($data, $verify)
 	{
 		$crc = crc32($data);
 		if ($crc == $verify)
@@ -1092,7 +1092,7 @@ function extract_gzip($data)
 		return $crc == $verify;
 	}
 
-	if (!smf_crc32_check($data, $crc['crc32']))
+	if (!crc32_compat_check($data, $crc['crc32']))
 		return false;
 
 	return $data;

@@ -1,13 +1,16 @@
 <?php
 /**
-* Simple Machines Forum (SMF)
+* ElkArte community forum
 *
-* @package SMF
-* @author Simple Machines
+* @package tools
+* @author ElkArte forum contributors
+* @license http://www.simplemachines.org/about/smf/license.php BSD
+*
+* Based off SMF databasecleanup script
 * @copyright 2011 Simple Machines
 * @license http://www.simplemachines.org/about/smf/license.php BSD
 *
-* This file resets a database back to SMF default by removing rows / cols / tables / settigns added by mods
+* This file resets a database back to SMF/Elk defaults by removing rows / cols / tables / settigns added by mods
 * http://www.simplemachines.org/community/index.php?topic=249192.0
 *
 */
@@ -36,23 +39,14 @@ obExit(true);
 function file_source()
 {
 	global $smcFunc, $context, $table_prefix, $version;
-	
+
 	// You have to be allowed to do this
 	isAllowedTo('admin_forum');
-	
-	// SMF 1 or 2 ?
-	if (isset($smcFunc))
-	{
-		db_extend('packages');
-		$version = 2;
-		$table_prefix = '{db_prefix}';
-	}
-	else
-	{
-		db_compat();
-		$version = 1;
-		$table_prefix = '';
-	}
+
+	// SMF 2
+	db_extend('packages');
+	$version = 2;
+	$table_prefix = '{db_prefix}';
 
 	$actions = array(
 		'examine' => 'examine',
@@ -116,7 +110,7 @@ function file_source()
 function examine()
 {
 	global $smcFunc, $db_prefix, $extra, $table_prefix, $version;
-	
+
 	// will allow for this == THIS and thisVar == this_var on col / index names to avoid false positives, set to true for more hits
 	$strict_case = false;
 
@@ -149,7 +143,7 @@ function examine()
 			$extra['columns'][$table][] = $column;
 		elseif (!$strict_case && !isset($tables[$table]['columns'][strtolower($column)]))
 			$extra['columns'][$table][] = $column;
-			
+
 		// or extra indexes taking up space
 		$current_indexes = $smcFunc['db_list_indexes']($table_prefix . $table, true);
 		foreach ($current_indexes as $key => $index)
@@ -347,7 +341,7 @@ function execute()
 		if (isset($todo['settings']) && count($todo['settings']) != 0)
 		{
 			global $modSettings;
-			
+
 			// Settings, do these as a 'single' step, first remove them from memory
 			foreach ($todo['settings'] as $setting)
 			if (isset($modSettings[$setting]))
@@ -460,311 +454,6 @@ function sql_to_array($file)
 		fatal_error($txt['no_sql_file'], false);
 
 	return $tables;
-}
-
-/**
-* db_compat()
-*
-* - creates a compatable smcFunc array for smf 1
-* - uses smf1_db_list_tables, smf1_db_list_columns, smf1_db_list_indexes, smf1_db_drop_table, smf1_db_remove_column, 
-* smf1_db_remove_index smf1_db_query & smf1_db_replacement__callback which provide the approriate mysql functions for the array.
-*
-* @return
-*/
-function db_compat()
-{
-	global $smcFunc, $db_prefix, $reservedTables;
-
-	// Set up an smcFunc array with SMF1 database commands
-	$smcFunc = array();
-	$smcFunc += array(
-		'db_list_tables' => 'smf1_db_list_tables',
-		'db_list_columns' => 'smf1_db_list_columns',
-		'db_list_indexes' => 'smf1_db_list_indexes',
-		'db_drop_table' => 'smf1_db_drop_table',
-		'db_remove_column' => 'smf1_db_remove_column',
-		'db_remove_index' => 'smf1_db_remove_index',
-		'db_query' => 'smf1_db_query',
-		);
-
-	$reservedTables = array('attachments', 'ban_groups', 'ban_items', 'board_permissions',
-		'boards', 'calendar', 'calendar_holidays', 'categories', 'collapsed_categories',
-		'log_actions', 'log_activity', 'log_banned', 'log_boards', 'log_errors',
-		'log_floodcontrol', 'log_karma', 'log_mark_read', 'log_notify', 'log_online',
-		'log_polls', 'log_search_messages', 'log_search_results', 'log_search_subjects',
-		'log_search_topics', 'log_topics', 'membergroups', 'members', 'message_icons',
-		'messages', 'moderators', 'package_servers', 'permissions', 'personal_messages',
-		'pm_recipients', 'poll_choices', 'polls', 'sessions', 'settings', 'smileys',
-		'themes', 'topics');
-
-	foreach ($reservedTables as $k => $table_name)
-		$reservedTables[$k] = strtolower($db_prefix . $table_name);
-}
-
-/**
-* smf1_db_list_tables()
-*
-* @return
-*/
-function smf1_db_list_tables()
-{
-	global $db_name;
-
-	$db = $db_name;
-	$db = trim($db);
-	$db = $db{0} == '`' ? strtr($db, array('`' => '')) : $db;
-
-	$request = db_query("
-		SHOW TABLES
-		FROM `$db`", __FILE__, __LINE__);
-	$tables = array();
-	while ($row = mysql_fetch_row($request))
-	$tables[] = $row[0];
-	mysql_free_result($request);
-
-	return $tables;
-}
-
-/**
-* smf1_db_list_columns()
-*
-* @param mixed $table_name
-* @return
-*/
-function smf1_db_list_columns($table_name)
-{
-	global $db_prefix;
-
-	if (strpos($table_name, $db_prefix) === false)
-		$table_name = $db_prefix . $table_name;
-
-	$table_name = substr($table_name, 0, 1) == '`' ? $table_name : '`' . $table_name . '`';
-
-	$request = db_query("
-		SHOW FIELDS
-		FROM $table_name", __FILE__, __LINE__);
-	$columns = array();
-	while ($row = mysql_fetch_assoc($request))
-	$columns[] = $row['Field'];
-	mysql_free_result($request);
-
-	return $columns;
-}
-
-/**
-* smf1_db_list_indexes()
-*
-* @param mixed $table_name
-* @param mixed $detail
-* @return
-*/
-function smf1_db_list_indexes($table_name, $detail = false)
-{
-	global $smcFunc, $db_prefix;
-	$indexes = array();
-
-	if (strpos($table_name, $db_prefix) === false)
-		$table_name = $db_prefix . $table_name;
-
-	$table_name = substr($table_name, 0, 1) == '`' ? $table_name : '`' . $table_name . '`';
-
-	$request = db_query("
-		SHOW KEYS
-		FROM $table_name", __FILE__, __LINE__);
-
-	while ($row = mysql_fetch_assoc($request))
-	{
-		if (!$detail)
-			$indexes[] = $row['Key_name'];
-		else
-		{
-			// What is the type?
-			if ($row['Key_name'] == 'PRIMARY')
-				$type = 'primary';
-			elseif (empty($row['Non_unique']))
-				$type = 'unique';
-			elseif (isset($row['Index_type']) && $row['Index_type'] == 'FULLTEXT')
-				$type = 'fulltext';
-			else
-				$type = 'index';
-
-			// This is the first column we've seen?
-			if (empty($indexes[$row['Key_name']]))
-			{
-				$indexes[$row['Key_name']] = array(
-					'name' => $row['Key_name'],
-					'type' => $type,
-					'columns' => array(),
-					);
-			}
-
-			// Is it a partial index?
-			if (!empty($row['Sub_part']))
-				$indexes[$row['Key_name']]['columns'][] = $row['Column_name'] . '(' . $row['Sub_part'] . ')';
-			else
-				$indexes[$row['Key_name']]['columns'][] = $row['Column_name'];
-		}
-	}
-	mysql_free_result($request);
-
-	return $indexes;
-}
-
-/**
-* smf1_db_drop_table()
-*
-* @param mixed $table_name
-* @return
-*/
-function smf1_db_drop_table($table_name)
-{
-	global $reservedTables, $smcFunc, $db_prefix;
-
-	$real_prefix = preg_match('~^(`?)(.+?)\\1\\.(.*?)$~', $db_prefix, $match) === 1 ? $match[3] : $db_prefix;
-
-	$complete_table_name = $db_prefix . $table_name;
-	$full_table_name = $real_prefix . $table_name;
-
-	if (in_array(strtolower($complete_table_name), $reservedTables))
-		return false;
-
-	if (in_array($full_table_name, $smcFunc['db_list_tables']()))
-	{
-		db_query("
-			DROP TABLE $complete_table_name", __FILE__, __LINE__);
-
-		return true;
-	}
-
-	return false;
-}
-
-/**
-* smf1_db_remove_column()
-*
-* @param mixed $table_name
-* @param mixed $column_name
-* @return
-*/
-function smf1_db_remove_column($table_name, $column_name)
-{
-	global $smcFunc, $db_prefix;
-
-	if (strpos($table_name, $db_prefix) === false)
-		$table_name = $db_prefix . $table_name;
-
-	$columns = $smcFunc['db_list_columns']($table_name);
-	if (in_array($column_name, $columns))
-	{
-		db_query("
-			ALTER TABLE $table_name
-			DROP COLUMN $column_name", __FILE__, __LINE__);
-
-		return true;
-	}
-
-	return false;
-}
-
-/**
-* smf1_db_remove_index()
-*
-* @param mixed $table_name
-* @param mixed $index_name
-* @return
-*/
-function smf1_db_remove_index($table_name, $index_name)
-{
-	global $smcFunc, $db_prefix;
-
-	if (strpos($table_name, $db_prefix) === false)
-		$table_name = $db_prefix . $table_name;
-
-	$indexes = $smcFunc['db_list_indexes']($table_name);
-
-	foreach ($indexes as $index)
-	{
-		if ($index == 'PRIMARY' && $index_name == 'PRIMARY')
-		{
-			db_query("
-				ALTER TABLE $table_name
-				DROP PRIMARY KEY", __FILE__, __LINE__);
-
-			return true;
-		}
-
-		if ($index == $index_name)
-		{
-			db_query("
-				ALTER TABLE $table_name
-				DROP INDEX $index_name", __FILE__, __LINE__);
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
-* smf1_db_query()
-*
-* @param mixed $identifier
-* @param mixed $db_string
-* @param array $db_values
-* @return
-*/
-function smf1_db_query($identifier, $db_string, $db_values = array())
-{
-	global $db_prefix, $db_connection;
-
-	// if there's something to replace we better do it :)
-	if (strpos($db_string, '{') !== false)
-	{
-		// This is needed by the callback function.
-		$db_callback = array($db_values, $db_connection);
-
-		// Do the swap out ....
-		$db_string = preg_replace_callback('~{([a-z_]+)(?::([a-zA-Z0-9_-]+))?}~', 'smf1_db_replacement__callback', $db_string);
-
-		// Clear this global variable.
-		$db_callback = array();
-	}
-
-	return mysql_query($db_string, $db_connection);
-}
-
-/**
-* smf1_db_replacement__callback()
-*
-* @param mixed $matches
-* @return
-*/
-function smf1_db_replacement__callback($matches)
-{
-	global $db_callback, $db_prefix;
-
-	// This my friends is a q&d of db_replacement__callback for just what THIS tool needs and NOTHING more
-	list ($values, $db_connection) = $db_callback;
-	$replacement = $values[$matches[2]];
-
-	// Only doing two things for now ....
-	switch ($matches[1])
-	{
-		case 'db_prefix':
-			return $db_prefix;
-		case 'array_string':
-			if (is_array($replacement))
-			{
-				foreach ($replacement as $key => $value)
-				$replacement[$key] = sprintf('\'%1$s\'', mysql_real_escape_string($value, $db_connection));
-				return implode(', ', $replacement);
-			}
-			break;
-		default:
-			return $replacement;
-			break;
-	}
 }
 
 /**
@@ -951,7 +640,7 @@ function template_execute()
 	<div class="cat_bar">
 		<h3 class="catbg ">', $txt['execute_report'], '</h3>
 	</div>
-	
+
 	<div class="title_bar">
 		<h4 class="titlebg ">', $txt['extra_tables'], '</h4>
 	</div>
@@ -972,7 +661,7 @@ function template_execute()
 		</ul>
 	</div>
 
-	
+
 	<div class="title_bar">
 		<h4 class="titlebg">', $txt['extra_columns'], '</h4>
 	</div>
@@ -1004,7 +693,7 @@ function template_execute()
 		</ul>
 	</div>
 
-	
+
 	<div class="title_bar">
 		<h4 class="titlebg">', $txt['extra_indexes'], '</h4>
 	</div>
@@ -1035,8 +724,8 @@ function template_execute()
 	echo '
 		</ul>
 	</div>
-	
-	
+
+
 	<div class="title_bar">
 		<h4 class="titlebg ">', $txt['extra_settings'], '</h4>
 	</div>
@@ -1056,8 +745,8 @@ function template_execute()
 	echo '
 		</ul>
 	</div>
-	
-	
+
+
 	<br class="clear" />
 </div>';
 }

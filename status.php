@@ -1201,7 +1201,7 @@ function show_header()
 	</head>
 	<body>
 		<div id="header">
-			', file_exists(dirname(__FILE__) . '/Themes/default/images/smflogo.gif') ? '<a href="http://www.simplemachines.org/" target="_blank"><img src="Themes/default/images/smflogo.gif" style="width: 250px; float: right;" alt="Simple Machines" border="0" /></a>
+			', file_exists(dirname(__FILE__) . '/Themes/default/images/elklogo.gif') ? '<a href="http://www.simplemachines.org/" target="_blank"><img src="Themes/default/images/elklogo.gif" style="width: 250px; float: right;" alt="Simple Machines" border="0" /></a>
 			' : '', '<div title="Wheat Thins">Server Status</div>
 		</div>
 		<div id="content">';

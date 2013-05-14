@@ -1,5 +1,5 @@
 #### ATTENTION: You do not need to run or use this file!  The install.php script does everything for you!
-#### Install script for MySQL 4.0.18+
+#### Install script for MySQL 4.1+
 
 #
 # Table structure for table `admin_info_files`
