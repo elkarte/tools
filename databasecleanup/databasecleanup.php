@@ -324,6 +324,7 @@ function execute()
 	$work = $_SESSION['db_cleaner']['work'];
 
 	// Do some database work, but not to much :)
+	$db_table = db_table();
 	$this_loop = 0;
 	$done = (isset($_SESSION['db_cleaner']['done'])) ? $_SESSION['db_cleaner']['done'] : 0;
 	for ($i = $done; ($i < $work && $this_loop < $chunk); $i++, $this_loop++)
