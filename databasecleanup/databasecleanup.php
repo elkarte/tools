@@ -124,7 +124,7 @@ function examine()
 		unset($_SESSION['db_cleaner']);
 
 	// examine each table in this installation
-	$current_tables = $smcFunc['db_list_tables']();
+	$current_tables = $db->list_tables();
 	foreach ($current_tables as $table)
 	{
 		$table = preg_replace('~^' . $real_prefix . '~', '', $table);
@@ -137,7 +137,7 @@ function examine()
 		}
 
 		// It exists in a fresh install, lets check if there are any extra columns in it
-		$current_columns = $smcFunc['db_list_columns']($table_prefix . $table, false);
+		$current_columns = $db->list_columns($table_prefix . $table, false);
 		foreach ($current_columns as $column)
 		if ((!isset($tables[$table]['columns'][$column])) && $strict_case)
 			$extra['columns'][$table][] = $column;
@@ -145,7 +145,7 @@ function examine()
 			$extra['columns'][$table][] = $column;
 
 		// or extra indexes taking up space
-		$current_indexes = $smcFunc['db_list_indexes']($table_prefix . $table, true);
+		$current_indexes = $db->list_indexes($table_prefix . $table, true);
 		foreach ($current_indexes as $key => $index)
 		{
 			if (!isset($tables[$table]['indexes'][$key]))
@@ -173,16 +173,16 @@ function examine()
 
 	// modSettings that are not from standard SMF
 	$current_settings = array();
-	$request = $smcFunc['db_query']('', '
+	$request = $db->query('', '
 		SELECT variable
 		FROM {db_prefix}settings',
 		array(
 			)
 		);
 
-	while ($row = ($version == 1 ? mysql_fetch_row($request) : $smcFunc['db_fetch_row']($request)))
+	while ($row = ($version == 1 ? mysql_fetch_row($request) : $db->fetch_row($request)))
 	$current_settings[$row[0]] = $row[0];
-	($version == 1) ? mysql_free_result($request) : $smcFunc['db_free_result']($request);
+	($version == 1) ? mysql_free_result($request) : $db->free_result($request);
 
 	// check what could be there vs what it ;)
 	foreach ($current_settings as $mod)
@@ -333,11 +333,11 @@ function execute()
 
 		// remove index, then columns, then tables
 		if (isset($todo['index']))
-			$execute['results']['index'][$todo['table']][$todo['index']] = $smcFunc['db_remove_index']($todo['prefix'] . $todo['table'], $todo['index']);
+			$execute['results']['index'][$todo['table']][$todo['index']] = $db_table->db_remove_index($todo['prefix'] . $todo['table'], $todo['index']);
 		if (isset($todo['column']))
-			$execute['results']['column'][$todo['table']][$todo['column']] = $smcFunc['db_remove_column']($todo['prefix'] . $todo['table'], $todo['column']);
+			$execute['results']['column'][$todo['table']][$todo['column']] = $db_table->db_remove_column($todo['prefix'] . $todo['table'], $todo['column']);
 		if (isset($todo['table']))
-			$execute['results']['table'][$todo['table']] = $smcFunc['db_drop_table']($todo['prefix'] . $todo['table']);
+			$execute['results']['table'][$todo['table']] = $db_table->db_drop_table($todo['prefix'] . $todo['table']);
 		if (isset($todo['settings']) && count($todo['settings']) != 0)
 		{
 			global $modSettings;
@@ -348,7 +348,7 @@ function execute()
 				unset($modSettings[$setting]);
 
 			// And now from sight
-			$execute['results']['settings'] = $smcFunc['db_query']('', 'DELETE FROM ' . $todo['prefix'] . 'settings WHERE variable IN ({array_string:variables})', array('variables' => $todo['settings']));
+			$execute['results']['settings'] = $db->query('', 'DELETE FROM ' . $todo['prefix'] . 'settings WHERE variable IN ({array_string:variables})', array('variables' => $todo['settings']));
 
 			// And let SMF know we have been mucking about
 			updateSettings(array('settings_updated' => time()));

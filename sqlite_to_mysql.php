@@ -31,6 +31,8 @@ function DumpDatabase2()
 {
 	global $db_name, $scripturl, $context, $modSettings, $crlf, $smcFunc, $db_prefix, $db_show_debug;
 
+	$db = database;
+
 	// Administrators only!
 	if (!allowedTo('admin_forum'))
 		fatal_lang_error('no_dump_database', 'critical');
@@ -44,10 +46,7 @@ function DumpDatabase2()
 		$_REQUEST['data'] = true;
 		//$_REQUEST['struct'] = false;
 
-// 	checkSession('post');
-
-	// We will need this, badly!
-	db_extend();
+	// checkSession('post');
 
 	$smcFunc['db_table_sql'] = 'exp_db_table_sql';
 	$smcFunc['db_insert_sql'] = 'exp_db_insert_sql';
@@ -57,7 +56,7 @@ function DumpDatabase2()
 	@set_time_limit(600);
 	$time_limit = ini_get('max_execution_time');
 	$start_time = time();
-	
+
 	// @todo ... fail on not getting the requested memory?
 	@set_time_limit(600);
 	if (@ini_get('memory_limit') < 256)
@@ -96,7 +95,7 @@ function DumpDatabase2()
 	$crlf = "\r\n";
 
 	// SQL Dump Header.
-	$db_chunks = 
+	$db_chunks =
 		'-- ==========================================================' . $crlf .
 		'--' . $crlf .
 		'-- Database dump of tables in `' . $db_name . '`' . $crlf .
@@ -118,13 +117,13 @@ function DumpDatabase2()
 	}
 
 	// Dump each table.
-	$tables = $smcFunc['db_list_tables'](false, $db_prefix . '%');
+	$tables = $db->list_tables(false, $db_prefix . '%');
 	foreach ($tables as $tableName)
 	{
 		// Are we dumping the structures?
 		if (isset($_REQUEST['struct']))
 		{
-			$db_chunks .= 
+			$db_chunks .=
 				$crlf .
 				'--' . $crlf .
 				'-- Table structure for table `' . $tableName . '`' . $crlf .
@@ -160,7 +159,7 @@ function DumpDatabase2()
 
 			if ($first_round)
 			{
-				$db_chunks .= 
+				$db_chunks .=
 					$crlf .
 					'--' . $crlf .
 					'-- Dumping data in `' . $tableName . '`' . $crlf .
@@ -168,9 +167,9 @@ function DumpDatabase2()
 					$crlf;
 				$first_round = false;
 			}
-			$db_chunks .= 
+			$db_chunks .=
 				$get_rows;
-			$current_used_memory += $smcFunc['strlen']($db_chunks);
+			$current_used_memory += Util::strlen($db_chunks);
 
 			$db_backup .= $db_chunks;
 			unset($db_chunks);
@@ -188,11 +187,11 @@ function DumpDatabase2()
 
 		// No rows to get - skip it.
 		if ($close_table)
-			$db_backup .= 
+			$db_backup .=
 			'-- --------------------------------------------------------' . $crlf;
 	}
 
-	$db_backup .= 
+	$db_backup .=
 		$crlf .
 		'-- Done' . $crlf;
 
@@ -221,8 +220,10 @@ function un_compressed($string = '')
  */
 function exp_db_insert_sql($tableName, $new_table = false)
 {
-	global $smcFunc, $db_prefix, $detected_id;
+	global $db_prefix, $detected_id;
 	static $start = 0, $num_rows, $fields, $limit, $last_id;
+
+	$db = database();
 
 	if ($new_table)
 	{
@@ -240,7 +241,7 @@ function exp_db_insert_sql($tableName, $new_table = false)
 	// This is done this way because retrieve data only with LIMIT will become slower after each query
 	// and for long tables (e.g. {db_prefix}messages) it could be a pain...
 	// Instead using WHERE speeds up thing *a lot* (especially after the first 50'000 records)
-	$result = $smcFunc['db_query']('', '
+	$result = $db->query('', '
 		SELECT /*!40001 SQL_NO_CACHE */ *
 		FROM ' . $tableName . '' .
 		(!empty($last_id) && !empty($detected_id) ? '
@@ -252,28 +253,28 @@ function exp_db_insert_sql($tableName, $new_table = false)
 	);
 
 	// The number of rows, just for record keeping and breaking INSERTs up.
-	$num_rows = $smcFunc['db_num_rows']($result);
+	$num_rows = $db->num_rows($result);
 
 	if ($num_rows == 0)
 		return false;
 
 	if ($new_table)
 	{
-		$fields = array_keys($smcFunc['db_fetch_assoc']($result));
+		$fields = array_keys($db->fetch_assoc($result));
 
 		// SQLite fetches an array so we need to filter out the numberic index for the columns.
 		foreach ($fields as $key => $name)
 			if (is_numeric($name))
 				unset($fields[$key]);
 
-		$smcFunc['db_data_seek']($result, 0);
+		$db->data_seek($result, 0);
 
 	}
 		// Start it off with the basic INSERT INTO.
 		$data = 'INSERT INTO `' . $tableName . '`' . $crlf . "\t" . '(`' . implode('`, `', $fields) . '`)' . $crlf . 'VALUES ';
 
 	// Loop through each row.
-	while ($row = $smcFunc['db_fetch_assoc']($result))
+	while ($row = $db->fetch_assoc($result))
 	{
 		// Get the fields in this row...
 		$field_list = array();
@@ -297,7 +298,7 @@ function exp_db_insert_sql($tableName, $new_table = false)
 		$data .= '(' . implode(', ', $field_list) . ')' . ',' . $crlf . "\t";
 	}
 
-	$smcFunc['db_free_result']($result);
+	$db->free_result($result);
 	$data = substr(trim($data), 0, -1) . ';' . $crlf;
 
 	$start += $limit;
@@ -313,7 +314,9 @@ function exp_db_insert_sql($tableName, $new_table = false)
  */
 function exp_db_table_sql($tableName)
 {
-	global $smcFunc, $db_prefix, $detected_id;
+	global $db_prefix, $detected_id;
+
+	$db = database();
 
 	$tableName = str_replace('{db_prefix}', $db_prefix, $tableName);
 	$detected_id = '';
@@ -326,7 +329,7 @@ function exp_db_table_sql($tableName)
 	$index_create = '';
 
 	// Let's get the create statement directly from SQLite.
-	$result = $smcFunc['db_query']('', '
+	$result = $db->query('', '
 		SELECT sql
 		FROM sqlite_master
 		WHERE type = {string:type}
@@ -336,11 +339,11 @@ function exp_db_table_sql($tableName)
 			'table_name' => $tableName,
 		)
 	);
-	list ($schema_create) = $smcFunc['db_fetch_row']($result);
-	$smcFunc['db_free_result']($result);
+	list ($schema_create) = $db->fetch_row($result);
+	$db->free_result($result);
 
 	// Now the indexes.
-	$result = $smcFunc['db_query']('', '
+	$result = $db->query('', '
 		SELECT sql
 		FROM sqlite_master
 		WHERE type = {string:type}
@@ -351,10 +354,10 @@ function exp_db_table_sql($tableName)
 		)
 	);
 	$indexes = array();
-	while ($row = $smcFunc['db_fetch_assoc']($result))
+	while ($row = $db->fetch_assoc($result))
 		if (trim($row['sql']) != '')
 			$indexes[] = $row['sql'];
-	$smcFunc['db_free_result']($result);
+	$db->free_result($result);
 
 	$index_create .= implode(';' . $crlf, $indexes);
 	$schema_create = empty($indexes) ? rtrim($schema_create) : $schema_create . ';' . $crlf . $crlf;
