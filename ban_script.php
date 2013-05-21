@@ -5,13 +5,13 @@
  *
  * @package bans
  * @author emanuele
- * @copyright 2011 emanuele, Simple Machines
- * @license http://www.simplemachines.org/about/smf/license.php BSD
+ * @copyright 2011 emanuele
+ * @license http://opensource.org/licenses/BSD-3-Clause
  *
  * @version 0.1
  */
 
-define('SMF_INTEGRATION_SETTINGS', serialize(array(
+define('ELKARTE_INTEGRATION_SETTINGS', serialize(array(
 	'integrate_menu_buttons' => 'bans_menu_button',)));
 // If SSI.php is in the same place as this file, this is being run standalone.
 if (file_exists(dirname(__FILE__) . '/SSI.php'))
@@ -97,7 +97,9 @@ function bans_loadLanguage ()
 
 function bans_main ()
 {
-	global $txt, $sourcedir, $boardurl, $context, $forum_version, $user_info, $smcFunc;
+	global $txt, $sourcedir, $boardurl, $context, $forum_version, $user_info;
+
+	$db = database();
 
 	loadLanguage('Admin');
 	bans_loadLanguage();
@@ -230,7 +232,7 @@ function bans_main ()
 
 function bans_getBanNames ()
 {
-	global $smcFunc;
+	$db = database();
 
 	$request = $db->query('', '
 		SELECT id_ban_group, name
@@ -248,7 +250,9 @@ function bans_getBanNames ()
 
 function list_getToBeBans ($start, $items_per_page, $sort)
 {
-	global $smcFunc, $context, $user_info;
+	global $context, $user_info;
+
+	$db = database();
 
 	if (empty($context['id_topic_to_start']))
 	{
@@ -298,7 +302,9 @@ function list_getToBeBans ($start, $items_per_page, $sort)
 
 function list_getNumToBeBans ()
 {
-	global $smcFunc, $context, $user_info;
+	global $context, $user_info;
+
+	$db = database();
 
 	if (empty($context['id_topic_to_start']))
 	{
@@ -668,7 +674,7 @@ function banScript ()
 
 function bans_checkExistingTriggerIP($fullip = '')
 {
-	global $smcFunc, $user_info;
+	global $user_info;
 
 	if (empty($fullip))
 		return false;
@@ -715,7 +721,7 @@ function bans_checkExistingTriggerIP($fullip = '')
 }
 function bans_checkExistingTriggerMail($address = '')
 {
-	global $smcFunc, $user_info, $context;
+	global $user_info, $context;
 	static $bannedEmails;
 
 	if (empty($address))
@@ -750,7 +756,7 @@ function bans_checkExistingTriggerMail($address = '')
 }
 function bans_checkExistingTriggerName($member_id = '')
 {
-	global $smcFunc, $user_info, $context;
+	global $user_info, $context;
 	static $bannedIDs;
 
 	if (empty($member_id))

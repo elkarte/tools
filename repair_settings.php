@@ -69,8 +69,6 @@ function initialize_inputs()
 	}
 
 	$db_connection = false;
-	if (empty($smcFunc))
-			$smcFunc = array();
 
 	if (isset($sourcedir) && file_exists($sourcedir))
 	{
@@ -83,10 +81,8 @@ function initialize_inputs()
 		require_once($sourcedir . '/Load.php');
 		// require_once($librarydir . '/Auth.subs.php');
 
-		require_once($sourcedir . '/database/Db-' . $db_type . '.subs.php');
-		require_once($sourcedir . '/database/DbExtra-' . $db_type . '.php');
-		$db_connection = smf_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
-		db_extra_init();
+		require_once($sourcedir . '/database/Database.subs.php');
+		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
 	}
 }
 

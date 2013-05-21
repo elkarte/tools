@@ -31,7 +31,7 @@ function DumpDatabase2()
 {
 	global $db_name, $scripturl, $context, $modSettings, $crlf, $smcFunc, $db_prefix, $db_show_debug;
 
-	$db = database;
+	$db = database();
 
 	// Administrators only!
 	if (!allowedTo('admin_forum'))

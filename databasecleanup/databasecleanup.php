@@ -38,7 +38,7 @@ obExit(true);
 */
 function file_source()
 {
-	global $smcFunc, $context, $table_prefix, $version;
+	global $context, $table_prefix, $version;
 
 	// You have to be allowed to do this
 	isAllowedTo('admin_forum');
@@ -109,7 +109,7 @@ function file_source()
 */
 function examine()
 {
-	global $smcFunc, $db_prefix, $extra, $table_prefix, $version;
+	global $db_prefix, $extra, $table_prefix, $version;
 
 	// will allow for this == THIS and thisVar == this_var on col / index names to avoid false positives, set to true for more hits
 	$strict_case = false;
@@ -205,7 +205,7 @@ function examine()
 */
 function execute()
 {
-	global $smcFunc, $execute, $table_prefix;
+	global $execute, $table_prefix;
 
 	checkSession();
 
