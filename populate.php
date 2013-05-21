@@ -67,9 +67,9 @@ class Populate
 		// Determine our 'currents'
 		foreach ($this->counters as $key => $val)
 		{
-			$request = $smcFunc['db_query']('', 'SELECT COUNT(*) FROM {db_prefix}' . $key);
-			list($this->counters[$key]['current']) = $smcFunc['db_fetch_row']($request);
-			$smcFunc['db_free_result']($request);
+			$request = $db->query('', 'SELECT COUNT(*) FROM {db_prefix}' . $key);
+			list($this->counters[$key]['current']) = $db->fetch_row($request);
+			$db->free_result($request);
 			if ($key != 'topics' && $this->counters[$key]['current'] < $this->counters[$key]['max'])
 			{
 				$func = 'make'.ucfirst($key);
@@ -210,7 +210,7 @@ class Populate
 	{
 		global $smcFunc;
 
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			UPDATE {db_prefix}messages as mes, {db_prefix}topics as top
 			SET mes.id_board = top.id_board
 			WHERE mes.id_topic = top.id_topic',

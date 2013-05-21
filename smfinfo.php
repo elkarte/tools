@@ -1454,7 +1454,7 @@ function get_database_version()
 	else
 	{
 		db_extend();
-		$context['database_version'] = $smcFunc['db_title'] . ' ' . $smcFunc['db_get_version']();
+		$context['database_version'] = $db->db_title . ' ' . $db->db_server_version();
 	}
 }
 
@@ -2478,19 +2478,19 @@ function get_error_log()
 	else
 	{
 		// Just how many errors are there?
-		$result = $smcFunc['db_query']('', '
+		$result = $db->query('', '
 			SELECT COUNT(*)
 			FROM {db_prefix}log_errors',
 			array()
 		);
-		list ($context['num_errors']) = $smcFunc['db_fetch_row']($result);
-		$smcFunc['db_free_result']($result);
+		list ($context['num_errors']) = $db->fetch_row($result);
+		$db->free_result($result);
 
 		if ($context['num_errors'] == 0)
 			return;
 
 		// Find and sort out the errors.
-		$request = $smcFunc['db_query']('', '
+		$request = $db->query('', '
 			SELECT id_error, id_member, url, log_time, message, error_type, file, line
 			FROM {db_prefix}log_errors
 			ORDER BY id_error DESC
@@ -2498,7 +2498,7 @@ function get_error_log()
 			array()
 		);
 
-		while ($row = $smcFunc['db_fetch_assoc']($request))
+		while ($row = $db->fetch_assoc($request))
 		{
 			$show_message = strtr(strtr(preg_replace('~&lt;span class=&quot;remove&quot;&gt;(.+?)&lt;/span&gt;~', '$1', $row['message']), array("\r" => '', '<br />' => "\n", '<' => '&lt;', '>' => '&gt;', '"' => '&quot;')), array("\n" => '<br />'));
 			if (!empty($row['file']) && !empty($row['line']))
@@ -2515,7 +2515,7 @@ function get_error_log()
 				'line' => $row['line'],
 			);
 		}
-		$smcFunc['db_free_result']($request);
+		$db->free_result($request);
 	}
 }
 

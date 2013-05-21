@@ -114,7 +114,7 @@ function fixp_main ()
 			if (isset($id) && is_numeric($id))
 			{
 				if (!empty($context['install']))
-					$smcFunc['db_query']('', '
+					$db->query('', '
 						UPDATE {db_prefix}log_packages
 						SET
 							id_member_removed = {int:id_member},
@@ -129,7 +129,7 @@ function fixp_main ()
 							'inst_package_id' => $id,
 					));
 				else
-					$smcFunc['db_query']('', '
+					$db->query('', '
 						UPDATE {db_prefix}log_packages
 						SET
 							id_member_removed = 0,
@@ -228,7 +228,7 @@ function list_getPacks ()
 {
 	global $smcFunc, $context;
 
-	$request = $smcFunc['db_query']('', '
+	$request = $db->query('', '
 		SELECT id_install, name, version, time_installed, time_removed
 		FROM {db_prefix}log_packages
 		WHERE install_state = {int:inst_state}
@@ -237,10 +237,10 @@ function list_getPacks ()
 			'inst_state' => $context['install'],
 	));
 	$installed = array();
-	while ($row = $smcFunc['db_fetch_assoc']($request))
+	while ($row = $db->fetch_assoc($request))
 		$installed[] = $row;
 
-	$smcFunc['db_free_result']($request);
+	$db->free_result($request);
 
 	return $installed;
 }
@@ -249,15 +249,15 @@ function list_getNumPacks ()
 {
 	global $smcFunc, $context;
 
-	$request = $smcFunc['db_query']('', '
+	$request = $db->query('', '
 		SELECT COUNT(*)
 		FROM {db_prefix}log_packages
 		WHERE install_state = {int:inst_state}',
 		array(
 			'inst_state' => $context['install'],
 	));
-	list ($numPacks) = $smcFunc['db_fetch_row']($request);
-	$smcFunc['db_free_result']($request);
+	list ($numPacks) = $db->fetch_row($request);
+	$db->free_result($request);
 
 	return $numPacks;
 }
@@ -266,7 +266,7 @@ function remove_hooks()
 {
 	global $smcFunc;
 
-	$smcFunc['db_query']('', '
+	$db->query('', '
 		DELETE FROM {db_prefix}settings
 		WHERE variable LIKE {string:variable}',
 		array(

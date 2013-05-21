@@ -39,6 +39,8 @@ function initialize_inputs()
 {
 	global $smcFunc, $db_connection, $sourcedir, $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type;
 
+	$db = database();
+
 	// Turn off magic quotes runtime and enable error reporting.
 	@set_magic_quotes_runtime(0);
 	error_reporting(E_ALL);
@@ -67,8 +69,6 @@ function initialize_inputs()
 	}
 
 	$db_connection = false;
-	if (empty($smcFunc))
-			$smcFunc = array();
 
 	if (isset($sourcedir) && file_exists($sourcedir))
 	{
@@ -81,10 +81,8 @@ function initialize_inputs()
 		require_once($sourcedir . '/Load.php');
 		// require_once($librarydir . '/Auth.subs.php');
 
-		require_once($sourcedir . '/database/Db-' . $db_type . '.subs.php');
-		require_once($sourcedir . '/database/DbExtra-' . $db_type . '.php');
-		$db_connection = smf_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
-		db_extra_init();
+		require_once($sourcedir . '/database/Database.subs.php');
+		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
 	}
 }
 
@@ -95,7 +93,9 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $smcFunc, $db_connection, $db_type, $db_name, $db_prefix;
+	global $txt, $db_connection, $db_type, $db_name, $db_prefix;
+
+	$db = database();
 
 	// Check to make sure Settings.php exists!
 	if (file_exists(dirname(__FILE__) . '/Settings.php'))
@@ -136,7 +136,7 @@ function action_show_settings()
 
 	if ($db_connection == true)
 	{
-		$request = $smcFunc['db_query'](true, '
+		$request = $db->query(true, '
 			SELECT DISTINCT variable, value
 			FROM {db_prefix}settings',
 			array(
@@ -144,12 +144,12 @@ function action_show_settings()
 			),
 			$db_connection
 		);
-		while ($row = $smcFunc['db_fetch_assoc']($request))
+		while ($row = $db->fetch_assoc($request))
 			$settings[$row['variable']] = $row['value'];
-		$smcFunc['db_free_result']($request);
+		$db->free_result($request);
 
 		// Load all the themes.
-		$request = $smcFunc['db_query'](true, '
+		$request = $db->query(true, '
 			SELECT variable, value, id_theme
 			FROM {db_prefix}themes
 			WHERE id_member = 0
@@ -161,9 +161,9 @@ function action_show_settings()
 		);
 
 		$theme_settings = array();
-		while ($row = $smcFunc['db_fetch_row']($request))
+		while ($row = $db->fetch_row($request))
 			$theme_settings[$row[2]][$row[0]] = $row[1];
-		$smcFunc['db_free_result']($request);
+		$db->free_result($request);
 
 		$show_db_settings = $request;
 	}
@@ -279,7 +279,7 @@ function action_show_settings()
 
 	if ($db_connection == true)
 	{
-		$request = $smcFunc['db_list_tables']('', '
+		$request = $db->list_tables('', '
 			{db_prefix}log_topics',
 			array(
 				'db_error_skip' => true,
@@ -287,9 +287,9 @@ function action_show_settings()
 		);
 		if ($request == true)
 		{
-			if ($smcFunc['db_num_rows']($request) == 1)
-				list ($known_settings['database_settings']['db_prefix'][2]) = preg_replace('~log_topics$~', '', $smcFunc['db_fetch_row']($request));
-			$smcFunc['db_free_result']($request);
+			if ($db->num_rows($request) == 1)
+				list ($known_settings['database_settings']['db_prefix'][2]) = preg_replace('~log_topics$~', '', $db->fetch_row($request));
+			$db->free_result($request);
 		}
 	}
 	elseif (empty($show_db_settings))
@@ -459,13 +459,14 @@ function action_show_settings()
 
 function guess_attachments_directories($id, $array_setting)
 {
-	global $smcFunc;
 	static $usedDirs;
+
+	$db = database();
 
 	if (empty($usedDirs))
 	{
 		$usedDirs = array();
-		$request = $smcFunc['db_query'](true, '
+		$request = $db->query(true, '
 			SELECT {raw:select_tables}, file_hash
 			FROM {db_prefix}attachments',
 			array(
@@ -473,11 +474,11 @@ function guess_attachments_directories($id, $array_setting)
 			)
 		);
 
-		if ($smcFunc['db_num_rows']($request) > 0)
+		if ($db->num_rows($request) > 0)
 		{
-			while ($row = $smcFunc['db_fetch_assoc']($request))
+			while ($row = $db->fetch_assoc($request))
 				$usedDirs[$row['id_folder']] = $row;
-			$smcFunc['db_free_result']($request);
+			$db->free_result($request);
 		}
 	}
 
@@ -522,7 +523,7 @@ function guess_attachments_directories($id, $array_setting)
 
 function action_set_settings()
 {
-	global $smcFunc, $db_connection;
+	global $db_connection;
 
 	$db_updates = isset($_POST['dbsettings']) ? $_POST['dbsettings'] : array();
 	$theme_updates = isset($_POST['themesettings']) ? $_POST['themesettings'] : array();
@@ -534,7 +535,7 @@ function action_set_settings()
 	else
 	{
 		$db_updates['theme_guests'] = 1;
-		$smcFunc['db_query'](true, '
+		$db->query(true, '
 			UPDATE {db_prefix}members
 			SET {raw:theme_column} = 0',
 			array(
@@ -626,7 +627,7 @@ function action_set_settings()
 	}
 
 	if ($db_connection && !empty($setString))
-		$smcFunc['db_insert']('replace',
+		$db->insert('replace',
 			'{db_prefix}settings',
 			array('variable' => 'string', 'value' => 'string-65534'),
 			$setString,
@@ -645,7 +646,7 @@ function action_set_settings()
 	}
 
 	if ($db_connection && !empty($setString))
-		$smcFunc['db_insert']('replace',
+		$db->insert('replace',
 			'{db_prefix}themes',
 			array('id_theme' => 'int', 'id_member' => 'int', 'variable' => 'string', 'value' => 'string-65534'),
 			$setString,
@@ -655,10 +656,12 @@ function action_set_settings()
 
 function action_remove_hooks()
 {
-	global $smcFunc, $db_connection;
+	global $db_connection;
+
+	$db = database();
 
 	if ($db_connection)
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			DELETE FROM {db_prefix}settings
 			WHERE variable LIKE {string:variable}',
 			array(
@@ -779,7 +782,7 @@ function template_initialize()
 			}
 			body, td
 			{
-				font: 90.33%/150% "Segoe UI","Helvetica Neue","Liberation Sans","Nimbus Sans L",Arial,sans-serif;	
+				font: 90.33%/150% "Segoe UI","Helvetica Neue","Liberation Sans","Nimbus Sans L",Arial,sans-serif;
 				color: #333;
 			}
 			div#header
