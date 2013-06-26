@@ -44,8 +44,9 @@ class Populate
 
 	public function __construct ($options = array())
 	{
-		global $smcFunc;
 
+		$db = database();
+		
 		$this->counters['categories']['max'] = 10;
 		$this->counters['categories']['current'] = 0;
 		$this->counters['boards']['max'] = 100;
@@ -67,9 +68,9 @@ class Populate
 		// Determine our 'currents'
 		foreach ($this->counters as $key => $val)
 		{
-			$request = $smcFunc['db_query']('', 'SELECT COUNT(*) FROM {db_prefix}' . $key);
-			list($this->counters[$key]['current']) = $smcFunc['db_fetch_row']($request);
-			$smcFunc['db_free_result']($request);
+			$request = $db->query('', 'SELECT COUNT(*) FROM {db_prefix}' . $key);
+			list($this->counters[$key]['current']) = $db->fetch_row($request);
+			$db->free_result($request);
 			if ($key != 'topics' && $this->counters[$key]['current'] < $this->counters[$key]['max'])
 			{
 				$func = 'make'.ucfirst($key);
@@ -87,8 +88,7 @@ class Populate
 
 	private function makeCategories ()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Categories.php');
+		require_once(SUBSDIR . '/Categories.subs.php');
 
 		while ($this->counters['categories']['current'] < $this->counters['categories']['max'] && $this->blockSize--)
 		{
@@ -105,8 +105,7 @@ class Populate
 
 	private function makeBoards ()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Boards.php');
+		require_once(SUBSDIR . '/Boards.subs.php');
 
 		while ($this->counters['boards']['current'] < $this->counters['boards']['max'] && $this->blockSize--)
 		{
@@ -132,8 +131,8 @@ class Populate
 
 	private function makeMembers ()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Members.php');
+
+		require_once(SUBSDIR . '/Members.subs.php');
 
 		while ($this->counters['members']['current'] < $this->counters['members']['max'] && $this->blockSize--)
 		{
@@ -153,8 +152,7 @@ class Populate
 
 	private function makeMessages ()
 	{
-		global $sourcedir;
-		require_once($sourcedir . '/Subs-Post.php');
+		require_once(SUBSDIR . '/Post.subs.php');
 
 		while ($this->counters['messages']['current'] < $this->counters['messages']['max'] && $this->blockSize--)
 		{
@@ -212,9 +210,9 @@ class Populate
 
 	private function fixupTopicsBoards ()
 	{
-		global $smcFunc, $sourcedir;
+		$db = database();
 
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			UPDATE {db_prefix}messages as mes, {db_prefix}topics as top
 			SET mes.id_board = top.id_board
 			WHERE mes.id_topic = top.id_topic',
