@@ -16,56 +16,45 @@
  *
  */
 
-if (!defined('ELKARTE'))
+if (!defined('ELK'))
 	die('No access...');
 
-/**
- * Add the file functions to the $smcFunc array.
- */
-function db_packages_init()
-{
-	global $smcFunc, $reservedTables, $db_package_log, $db_prefix;
-
-	if (!isset($smcFunc['db_create_table']) || $smcFunc['db_create_table'] != 'elk_db_create_table')
-	{
-		$smcFunc += array(
-			'db_add_column' => 'elk_db_add_column',
-			'db_add_index' => 'elk_db_add_index',
-			'db_alter_table' => 'elk_db_alter_table',
-			'db_calculate_type' => 'elk_db_calculate_type',
-			'db_change_column' => 'elk_db_change_column',
-			'db_create_table' => 'elk_db_create_table',
-			'db_drop_table' => 'elk_db_drop_table',
-			'db_table_structure' => 'elk_db_table_structure',
-			'db_list_columns' => 'elk_db_list_columns',
-			'db_list_indexes' => 'elk_db_list_indexes',
-			'db_remove_column' => 'elk_db_remove_column',
-			'db_remove_index' => 'elk_db_remove_index',
-		);
-		$db_package_log = array();
-	}
-
-	// We setup an array of tables we can't do auto-remove on - in case a mod writer cocks it up!
-	$reservedTables = array('admin_info_files', 'approval_queue', 'attachments', 'ban_groups', 'ban_items',
-		'board_permissions', 'boards', 'calendar', 'calendar_holidays', 'categories', 'collapsed_categories',
-		'custom_fields', 'group_moderators', 'log_actions', 'log_activity', 'log_banned', 'log_boards',
-		'log_digest', 'log_errors', 'log_floodcontrol', 'log_group_requests', 'log_karma', 'log_mark_read',
-		'log_notify', 'log_online', 'log_packages', 'log_polls', 'log_reported', 'log_reported_comments',
-		'log_scheduled_tasks', 'log_search_messages', 'log_search_results', 'log_search_subjects',
-		'log_search_topics', 'log_topics', 'mail_queue', 'membergroups', 'members', 'message_icons',
-		'messages', 'moderators', 'package_servers', 'permission_profiles', 'permissions', 'personal_messages',
-		'pm_recipients', 'poll_choices', 'polls', 'scheduled_tasks', 'sessions', 'settings', 'smileys',
-		'themes', 'topics');
-	foreach ($reservedTables as $k => $table_name)
-		$reservedTables[$k] = strtolower($db_prefix . $table_name);
-
-	// We in turn may need the extra stuff.
-	db_extend('extra');
-}
-
-class DbTable_SQLite
+class DbTable_SQLite extends DbTable
 {
 	private static $_tbl = null;
+
+	/**
+	 * Array of table names we don't allow to be removed by addons.
+	 * @var array
+	 */
+	private $_reservedTables = null;
+
+	/**
+	 * Keeps a (reverse) log of changes to the table structure, to be undone.
+	 * This is used by Packages admin installation/uninstallation/upgrade.
+	 *
+	 * @var array
+	 */
+	private $_package_log = null;
+
+	private function __construct()
+	{
+		global $db_prefix;
+
+		// We won't do any remove on these
+		$this->_reservedTables = array('admin_info_files', 'approval_queue', 'attachments', 'ban_groups', 'ban_items',
+			'board_permissions', 'boards', 'calendar', 'calendar_holidays', 'categories', 'collapsed_categories',
+			'custom_fields', 'group_moderators', 'log_actions', 'log_activity', 'log_banned', 'log_boards',
+			'log_digest', 'log_errors', 'log_floodcontrol', 'log_group_requests', 'log_karma', 'log_mark_read',
+			'log_notify', 'log_online', 'log_packages', 'log_polls', 'log_reported', 'log_reported_comments',
+			'log_scheduled_tasks', 'log_search_messages', 'log_search_results', 'log_search_subjects',
+			'log_search_topics', 'log_topics', 'mail_queue', 'membergroups', 'members', 'message_icons',
+			'messages', 'moderators', 'package_servers', 'permission_profiles', 'permissions', 'personal_messages',
+			'pm_recipients', 'poll_choices', 'polls', 'scheduled_tasks', 'sessions', 'settings', 'smileys',
+			'themes', 'topics');
+		foreach ($this->_reservedTables as $k => $table_name)
+			$this->_reservedTables[$k] = strtolower($db_prefix . $table_name);
+	}
 
 	/**
 	 * This function can be used to create a table without worrying about schema
@@ -100,7 +89,7 @@ class DbTable_SQLite
 	 */
 	function db_create_table($table_name, $columns, $indexes = array(), $parameters = array(), $if_exists = 'ignore', $error = 'fatal')
 	{
-		global $reservedTables, $smcFunc, $db_package_log, $db_prefix;
+		global $db_prefix;
 
 		// With or without the database name, the full name looks like this.
 		$real_prefix = preg_match('~^(`?)(.+?)\\1\\.(.*?)$~', $db_prefix, $match) === 1 ? $match[3] : $db_prefix;
@@ -110,20 +99,23 @@ class DbTable_SQLite
 		// First - no way do we touch our own tables.
 		// Commented out for now. We need to alter our tables in order to use this in the upgrade.
 	/*
-		if (in_array(strtolower($table_name), $reservedTables))
+		if (in_array(strtolower($table_name), $this->_reservedTables))
 			return false;
 	*/
 
 		// Log that we'll want to remove this on uninstall.
-		$db_package_log[] = array('remove_table', $table_name);
+		$this->_package_log[] = array('remove_table', $table_name);
+
+		// Grab ourselves one o'these.
+		$db = database();
 
 		// Does this table exist or not?
-		$tables = $smcFunc['db_list_tables']();
+		$tables = $db->db_list_tables();
 		if (in_array($full_table_name, $tables))
 		{
 			// This is a sad day... drop the table? If not, return false (error) by default.
 			if ($if_exists == 'overwrite')
-				$smcFunc['db_drop_table']($table_name);
+				$this->db_drop_table($table_name);
 			else
 				return $if_exists == 'ignore';
 		}
@@ -141,13 +133,13 @@ class DbTable_SQLite
 				continue;
 			}
 			elseif (isset($column['default']) && $column['default'] !== null)
-				$default = 'default \'' . $smcFunc['db_escape_string']($column['default']) . '\'';
+				$default = 'default \'' . $db->escape_string($column['default']) . '\'';
 			else
 				$default = '';
 
 			// Sort out the size... and stuff...
 			$column['size'] = isset($column['size']) && is_numeric($column['size']) ? $column['size'] : null;
-			list ($type, $size) = $smcFunc['db_calculate_type']($column['type'], $column['size']);
+			list ($type, $size) = $this->db_calculate_type($column['type'], $column['size']);
 			if ($size !== null)
 				$type = $type . '(' . $size . ')';
 
@@ -183,23 +175,23 @@ class DbTable_SQLite
 		$table_query .= ')';
 
 		if (empty($parameters['skip_transaction']))
-			$smcFunc['db_transaction']('begin');
+			$db->db_transaction('begin');
 
 		// Do the table and indexes...
-		$smcFunc['db_query']('', $table_query,
+		$db->query('', $table_query,
 			array(
 				'security_override' => true,
 			)
 		);
 		foreach ($index_queries as $query)
-			$smcFunc['db_query']('', $query,
+			$db->query('', $query,
 			array(
 				'security_override' => true,
 			)
 		);
 
 		if (empty($parameters['skip_transaction']))
-			$smcFunc['db_transaction']('commit');
+			$db->db_transaction('commit');
 	}
 
 	/**
@@ -212,7 +204,7 @@ class DbTable_SQLite
 	 */
 	function db_drop_table($table_name, $parameters = array(), $error = 'fatal')
 	{
-		global $reservedTables, $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		// Strip out the table name, we might not need it in some cases
 		$real_prefix = preg_match('~^(`?)(.+?)\\1\\.(.*?)$~', $db_prefix, $match) === 1 ? $match[3] : $db_prefix;
@@ -220,14 +212,17 @@ class DbTable_SQLite
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
 		// God no - dropping one of these = bad.
-		if (in_array(strtolower($table_name), $reservedTables))
+		if (in_array(strtolower($table_name), $this->_reservedTables))
 			return false;
 
+		// working hard with the db!
+		$db = database();
+
 		// Does it exist?
-		if (in_array($full_table_name, $smcFunc['db_list_tables']()))
+		if (in_array($full_table_name, $db->db_list_tables()))
 		{
 			$query = 'DROP TABLE ' . $table_name;
-			$smcFunc['db_query']('', $query,
+			$db->query('', $query,
 				array(
 					'security_override' => true,
 				)
@@ -251,27 +246,27 @@ class DbTable_SQLite
 	 */
 	function db_add_column($table_name, $column_info, $parameters = array(), $if_exists = 'update', $error = 'fatal')
 	{
-		global $smcFunc, $db_package_log, $txt, $db_prefix;
+		global $txt, $db_prefix;
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
 		// Log that we will want to uninstall this!
-		$db_package_log[] = array('remove_column', $table_name, $column_info['name']);
+		$this->_package_log[] = array('remove_column', $table_name, $column_info['name']);
 
 		// Does it exist - if so don't add it again!
-		$columns = $smcFunc['db_list_columns']($table_name, false);
+		$columns = $this->db_list_columns($table_name, false);
 		foreach ($columns as $column)
 			if ($column == $column_info['name'])
 			{
 				// If we're going to overwrite then use change column.
 				if ($if_exists == 'update')
-					return $smcFunc['db_change_column']($table_name, $column_info['name'], $column_info);
+					return $this->db_change_column($table_name, $column_info['name'], $column_info);
 				else
 					return false;
 			}
 
 		// Alter the table to add the column.
-		if ($smcFunc['db_alter_table']($table_name, array('add' => array($column_info))) === false)
+		if ($this->db_alter_table($table_name, array('add' => array($column_info))) === false)
 			return false;
 
 		return true;
@@ -288,11 +283,11 @@ class DbTable_SQLite
 	 */
 	function db_remove_column($table_name, $column_name, $parameters = array(), $error = 'fatal')
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
-		if ($smcFunc['db_alter_table']($table_name, array('remove' => array(array('name' => $column_name)))))
+		if ($this->db_alter_table($table_name, array('remove' => array(array('name' => $column_name)))))
 			return true;
 		else
 			return false;
@@ -309,11 +304,11 @@ class DbTable_SQLite
 	 */
 	function db_change_column($table_name, $old_column, $column_info, $parameters = array(), $error = 'fatal')
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
-		if ($smcFunc['db_alter_table']($table_name, array('change' => array(array('name' => $old_column) + $column_info))))
+		if ($this->db_alter_table($table_name, array('change' => array(array('name' => $old_column) + $column_info))))
 			return true;
 		else
 			return false;
@@ -330,7 +325,7 @@ class DbTable_SQLite
 	 */
 	function db_add_index($table_name, $index_info, $parameters = array(), $if_exists = 'update', $error = 'fatal')
 	{
-		global $smcFunc, $db_package_log, $db_prefix;
+		global $db_prefix;
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
@@ -352,10 +347,10 @@ class DbTable_SQLite
 			$index_info['name'] = $index_info['name'];
 
 		// Log that we are going to want to remove this!
-		$db_package_log[] = array('remove_index', $table_name, $index_info['name']);
+		$this->_package_log[] = array('remove_index', $table_name, $index_info['name']);
 
 		// Let's get all our indexes.
-		$indexes = $smcFunc['db_list_indexes']($table_name, true);
+		$indexes = $this->db_list_indexes($table_name, true);
 		// Do we already have it?
 		foreach ($indexes as $index)
 		{
@@ -365,7 +360,7 @@ class DbTable_SQLite
 				if ($if_exists != 'update' || $index['type'] == 'primary')
 					return false;
 				else
-					$smcFunc['db_remove_index']($table_name, $index_info['name']);
+					$this->db_remove_index($table_name, $index_info['name']);
 			}
 		}
 
@@ -376,7 +371,8 @@ class DbTable_SQLite
 		}
 		else
 		{
-			$smcFunc['db_query']('', '
+			$db = database();
+			$db->query('', '
 				CREATE ' . (isset($index_info['type']) && $index_info['type'] == 'unique' ? 'UNIQUE' : '') . ' INDEX ' . $index_info['name'] . ' ON ' . $table_name . ' (' . $columns . ')',
 				array(
 					'security_override' => true,
@@ -395,12 +391,15 @@ class DbTable_SQLite
 	 */
 	function db_remove_index($table_name, $index_name, $parameters = array(), $error = 'fatal')
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
+
+		// database work, what did ya think we do
+		$db = database();
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
 		// Better exist!
-		$indexes = $smcFunc['db_list_indexes']($table_name, true);
+		$indexes = $this->db_list_indexes($table_name, true);
 
 		foreach ($indexes as $index)
 		{
@@ -408,7 +407,7 @@ class DbTable_SQLite
 			if ($index['type'] != 'primary' && $index['name'] == $index_name)
 			{
 				// Drop the bugger...
-				$smcFunc['db_query']('', '
+				$db->query('', '
 					DROP INDEX ' . $index_name,
 					array(
 						'security_override' => true,
@@ -473,14 +472,14 @@ class DbTable_SQLite
 	 */
 	function db_table_structure($table_name, $parameters = array())
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
 		return array(
 			'name' => $table_name,
-			'columns' => $smcFunc['db_list_columns']($table_name, true),
-			'indexes' => $smcFunc['db_list_indexes']($table_name, true),
+			'columns' => $this->db_list_columns($table_name, true),
+			'indexes' => $this->db_list_indexes($table_name, true),
 		);
 	}
 
@@ -495,11 +494,14 @@ class DbTable_SQLite
 	 */
 	function db_list_columns($table_name, $detail = false, $parameters = array())
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
+
+		// Need this
+		$db = database();
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
-		$result = $smcFunc['db_query']('', '
+		$result = $db->query('', '
 			PRAGMA table_info(' . $table_name . ')',
 			array(
 				'security_override' => true,
@@ -508,7 +510,7 @@ class DbTable_SQLite
 		$columns = array();
 
 		$primaries = array();
-		while ($row = $smcFunc['db_fetch_assoc']($result))
+		while ($row = $db->fetch_assoc($result))
 		{
 			if (!$detail)
 			{
@@ -542,7 +544,7 @@ class DbTable_SQLite
 				);
 			}
 		}
-		$smcFunc['db_free_result']($result);
+		$db->free_result($result);
 
 		// Put in our guess at auto_inc.
 		if (count($primaries) == 1)
@@ -561,30 +563,33 @@ class DbTable_SQLite
 	 */
 	function db_list_indexes($table_name, $detail = false, $parameters = array())
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
+
+		// Need this
+		$db = database();
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
-		$result = $smcFunc['db_query']('', '
+		$result = $db->query('', '
 			PRAGMA index_list(' . $table_name . ')',
 			array(
 				'security_override' => true,
 			)
 		);
 		$indexes = array();
-		while ($row = $smcFunc['db_fetch_assoc']($result))
+		while ($row = $db->fetch_assoc($result))
 		{
 			if (!$detail)
 				$indexes[] = $row['name'];
 			else
 			{
-				$result2 = $smcFunc['db_query']('', '
+				$result2 = $db->query('', '
 					PRAGMA index_info(' . $row['name'] . ')',
 					array(
 						'security_override' => true,
 					)
 				);
-				while ($row2 = $smcFunc['db_fetch_assoc']($result2))
+				while ($row2 = $db->fetch_assoc($result2))
 				{
 					// What is the type?
 					if ($row['unique'])
@@ -605,10 +610,10 @@ class DbTable_SQLite
 					// Add the column...
 					$indexes[$row['name']]['columns'][] = $row2['name'];
 				}
-				$smcFunc['db_free_result']($result2);
+				$db->free_result($result2);
 			}
 		}
-		$smcFunc['db_free_result']($result);
+		$db->free_result($result);
 
 		return $indexes;
 	}
@@ -621,14 +626,14 @@ class DbTable_SQLite
 	 */
 	function db_alter_table($table_name, $columns)
 	{
-		global $smcFunc, $db_prefix, $db_name;
+		global $db_prefix, $db_name;
 
 		$db_file = substr($db_name, -3) === '.db' ? $db_name : $db_name . '.db';
 
 		$table_name = str_replace('{db_prefix}', $db_prefix, $table_name);
 
 		// Let's get the current columns for the table.
-		$current_columns = $smcFunc['db_list_columns']($table_name, true);
+		$current_columns = $this->db_list_columns($table_name, true);
 
 		// Let's get a list of columns for the temp table.
 		$temp_table_columns = array();
@@ -663,7 +668,7 @@ class DbTable_SQLite
 			return true;
 
 		// Drop the temp table.
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			DROP TABLE {raw:temp_table_name}',
 			array(
 				'temp_table_name' => $table_name . '_tmp',
@@ -687,10 +692,10 @@ class DbTable_SQLite
 			return false;
 
 		// Start
-		$smcFunc['db_transaction']('begin');
+		$db->db_transaction('begin');
 
 		// Let's create the temporary table.
-		$createTempTable = $smcFunc['db_query']('', '
+		$createTempTable = $db->query('', '
 			CREATE TEMPORARY TABLE {raw:temp_table_name}
 			(
 				{raw:columns}
@@ -706,7 +711,7 @@ class DbTable_SQLite
 			return false;
 
 		// Insert into temp table.
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			INSERT INTO {raw:temp_table_name}
 				({raw:columns})
 			SELECT {raw:columns}
@@ -719,7 +724,7 @@ class DbTable_SQLite
 		);
 
 		// Drop the current table.
-		$dropTable = $smcFunc['db_query']('', '
+		$dropTable = $db->query('', '
 			DROP TABLE {raw:table_name}',
 			array(
 				'table_name' => $table_name,
@@ -785,14 +790,14 @@ class DbTable_SQLite
 					);
 
 		// Now let's create the table.
-		$createTable = $smcFunc['db_create_table']($table_name, $new_columns, array(), array('skip_transaction' => true));
+		$createTable = $this->db_create_table($table_name, $new_columns, array(), array('skip_transaction' => true));
 
 		// Did it create correctly?
 		if ($createTable === false)
 			return false;
 
 		// Back to it's original table.
-		$insertData = $smcFunc['db_query']('', '
+		$insertData = $db->query('', '
 			INSERT INTO {raw:table_name}
 				({raw:columns})
 			SELECT ' . implode(', ', $column_names) . '
@@ -811,7 +816,7 @@ class DbTable_SQLite
 			return false;
 
 		// Drop the temp table.
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			DROP TABLE {raw:temp_table_name}',
 			array(
 				'temp_table_name' => $table_name . '_tmp',
@@ -820,7 +825,7 @@ class DbTable_SQLite
 		);
 
 		// Commit or else there is no point in doing the previous steps.
-		$smcFunc['db_transaction']('commit');
+		$db->db_transaction('commit');
 
 		// We got here so we're good.  The temp table should be deleted, if not it will be gone later on >:D.
 		return true;
@@ -829,101 +834,7 @@ class DbTable_SQLite
 	public static function db_table()
 	{
 		if (is_null(self::$_tbl))
-		{
 			self::$_tbl = new DbTable_MySQL();
-			db_packages_init();
-		}
 		return self::$_tbl;
 	}
-}
-
-function elk_db_create_table($table_name, $columns, $indexes = array(), $parameters = array(), $if_exists = 'ignore', $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_create_table($table_name, $columns, $indexes, $parameters, $if_exists, $error);
-}
-
-function elk_db_drop_table($table_name, $parameters = array(), $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_drop_table($table_name, $parameters, $error);
-}
-
-function elk_db_add_column($table_name, $column_info, $parameters = array(), $if_exists = 'update', $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_add_column($table_name, $column_info, $parameters, $if_exists, $error);
-}
-
-function elk_db_remove_column($table_name, $column_name, $parameters = array(), $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_remove_column($table_name, $column_name, $parameters, $error);
-}
-
-function elk_db_change_column($table_name, $old_column, $column_info, $parameters = array(), $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_change_column($table_name, $old_column, $column_info, $parameters, $error);
-}
-
-function elk_db_add_index($table_name, $index_info, $parameters, $if_exists = 'update', $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_add_index($table_name, $index_info, $parameters, $if_exists, $error);
-}
-
-function elk_db_remove_index($table_name, $index_name, $parameters = array(), $error = 'fatal')
-{
-	$tbl = db_table();
-
-	return $tbl->db_remove_index($table_name, $index_name, $parameters, $error);
-}
-
-function elk_db_calculate_type($type_name, $type_size = null, $reverse = false)
-{
-	$tbl = db_table();
-
-	return $tbl->db_calculate_type($type_name, $type_size, $reverse);
-}
-
-function elk_db_table_structure($table_name, $parameters = array())
-{
-	$tbl = db_table();
-
-	return $tbl->db_table_structure($table_name, $parameters);
-}
-
-function elk_db_list_columns($table_name, $detail = false, $parameters = array())
-{
-	$tbl = db_table();
-
-	return $tbl->db_list_columns($table_name, $detail, $parameters);
-}
-
-function elk_db_list_indexes($table_name, $detail = false, $parameters = array())
-{
-	$tbl = db_table();
-
-	return $tbl->db_list_indexes($table_name, $detail, $parameters);
-}
-
-function elk_db_create_query_column($column)
-{
-	$tbl = db_table();
-
-	return $tbl->db_create_query_column($column);
-}
-
-function elk_db_alter_table($table_name, $columns)
-{
-	$tbl = db_table();
-
-	return $tbl->db_alter_table($table_name, $columns);
 }

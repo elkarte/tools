@@ -15,24 +15,22 @@
  *
  */
 
-if (!defined('ELKARTE'))
+if (!defined('ELK'))
 	die('No access...');
 
-class Database_SQLite extends Database
+class Database_SQLite implements Database
 {
 	private static $_db = null;
 
-	function __construct()
+	private function __construct()
 	{
-		// make this thing
-
-		// initialize the instance.
-		self::$_db = $this;
+		// Private constructor.
+		// Objects should be created through initiate().
 	}
 
 	/**
-	 * Maps the implementations in the legacy subs file (smf_db_function_name)
-	 * to the $smcFunc['db_function_name'] variable.
+	 * Initializes a database connection.
+	 * It returns the connection, if successful.
 	 *
 	 * @param string $db_server
 	 * @param string $db_name
@@ -40,46 +38,19 @@ class Database_SQLite extends Database
 	 * @param string $db_passwd
 	 * @param string $db_prefix
 	 * @param array $db_options
+	 *
+	 * @return resource
 	 */
-	function initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_options = array())
+	static function initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_options = array())
 	{
-		global $smcFunc, $mysql_set_mode, $db_in_transact, $sqlite_error;
-
-		// Map some database specific functions, only do this once.
-		if (!isset($smcFunc['db_fetch_assoc']) || $smcFunc['db_fetch_assoc'] != 'sqlite_fetch_array')
-			$smcFunc += array(
-				'db_query' => 'elk_db_query',
-				'db_quote' => 'elk_db_quote',
-				'db_fetch_assoc' => 'sqlite_fetch_array',
-				'db_fetch_row' => 'elk_db_fetch_row',
-				'db_free_result' => 'elk_db_free_result',
-				'db_insert' => 'elk_db_insert',
-				'db_insert_id' => 'elk_db_insert_id',
-				'db_num_rows' => 'sqlite_num_rows',
-				'db_data_seek' => 'sqlite_seek',
-				'db_num_fields' => 'sqlite_num_fields',
-				'db_escape_string' => 'sqlite_escape_string',
-				'db_unescape_string' => 'elk_db_unescape_string',
-				'db_server_info' => 'elk_db_libversion',
-				'db_affected_rows' => 'elk_db_affected_rows',
-				'db_transaction' => 'elk_db_transaction',
-				'db_error' => 'elk_db_last_error',
-				'db_select_db' => '',
-				'db_title' => 'SQLite',
-				'db_sybase' => true,
-				'db_case_sensitive' => true,
-				'db_escape_wildcard_string' => 'elk_db_escape_wildcard_string',
-				'db_backup_table' => 'elk_db_backup_table',
-				'db_optimize_table' => 'elk_db_optimize_table',
-				'db_insert_sql' => 'elk_db_insert_sql',
-				'db_table_sql' => 'elk_db_table_sql',
-				'db_list_tables' => 'elk_db_list_tables',
-				'db_get_backup' => 'elk_db_get_backup',
-				'db_get_version' => 'elk_db_get_version',
-			);
+		global $db_in_transact, $sqlite_error;
 
 		if (substr($db_name, -3) != '.db')
 			$db_name .= '.db';
+
+		// initialize the instance... if not done already!
+		if (self::$_db === null)
+			self::$_db = new self();
 
 		if (!empty($db_options['persist']))
 			$connection = @sqlite_popen($db_name, 0666, $sqlite_error);
@@ -120,10 +91,12 @@ class Database_SQLite extends Database
 	 *
 	 * @param type $db_prefix
 	 * @param type $db_name
+	 *
+	 * @return string
 	 */
-	function fix_prefix(&$db_prefix, $db_name)
+	function fix_prefix($db_prefix, $db_name)
 	{
-		return false;
+		return $db_prefix;
 	}
 
 	/**
@@ -240,8 +213,8 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * Just like the db_query, escape and quote a string,
-	 * but not executing the query.
+	 * This function works like $this->query(), escapes and quotes a string,
+	 * but it doesn't execute the query.
 	 *
 	 * @param string $db_string
 	 * @param string $db_values
@@ -417,13 +390,13 @@ class Database_SQLite extends Database
 	/**
 	 * Affected rows from previous operation.
 	 *
-	 * @param resource $connection
+	 * @param $database
 	 */
-	function affected_rows($connection = null)
+	function affected_rows($database = null)
 	{
 		global $db_connection;
 
-		return sqlite_changes($connection === null ? $db_connection : $connection);
+		return sqlite_changes($database === null ? $db_connection : $database);
 	}
 
 	/**
@@ -444,23 +417,12 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * Last error on SQLite.
-	 */
-	function last_error()
-	{
-		global $db_connection, $sqlite_error;
-
-		$query_errno = sqlite_last_error($db_connection);
-		return $query_errno || empty($sqlite_error) ? sqlite_error_string($query_errno) : $sqlite_error;
-	}
-
-	/**
 	 * Do a transaction.
 	 *
 	 * @param string $type - the step to perform (i.e. 'begin', 'commit', 'rollback')
 	 * @param resource $connection = null
 	 */
-	function do_transaction($type = 'commit', $connection = null)
+	function db_transaction($type = 'commit', $connection = null)
 	{
 		global $db_connection, $db_in_transact;
 
@@ -487,6 +449,19 @@ class Database_SQLite extends Database
 	}
 
 	/**
+	 * Return last error string from the database server
+	 *
+	 * @param resource $database = null
+	 */
+	function last_error($database = null)
+	{
+		global $db_connection, $sqlite_error;
+
+		$query_errno = sqlite_last_error(empty($database) ? $db_connection : $database);
+		return $query_errno || empty($sqlite_error) ? sqlite_error_string($query_errno) : $sqlite_error;
+	}
+
+	/**
 	 * Database error!
 	 * Backtrace, log, try to fix.
 	 *
@@ -498,7 +473,6 @@ class Database_SQLite extends Database
 		global $txt, $context, $webmaster_email, $modSettings;
 		global $forum_version, $db_connection, $db_last_error, $db_persist;
 		global $db_server, $db_user, $db_passwd, $db_name, $db_show_debug, $ssi_db_user, $ssi_db_passwd;
-		global $smcFunc;
 
 		// We'll try recovering the file and line number the original db query was called from.
 		list ($file, $line) = $this->error_backtrace('', '', 'return', __FILE__, __LINE__);
@@ -551,9 +525,9 @@ class Database_SQLite extends Database
 		else
 			$context['error_message'] = $txt['try_again'];
 
-		// A database error is often the sign of a database in need of updgrade.  Check forum versions, and if not identical suggest an upgrade... (not for Demo/CVS versions!)
-		if (allowedTo('admin_forum') && !empty($forum_version) && $forum_version != 'ELKARTE ' . @$modSettings['elkVersion'] && strpos($forum_version, 'Demo') === false && strpos($forum_version, 'CVS') === false)
-			$context['error_message'] .= '<br /><br />' . sprintf($txt['database_error_versions'], $forum_version, $modSettings['elkVersion']);
+		// Add database version that we know of, for the admin to know. (and ask for support)
+		if (allowedTo('admin_forum'))
+			$context['error_message'] .= '<br /><br />' . sprintf($txt['database_error_versions'], $modSettings['elkVersion']);
 
 		if (allowedTo('admin_forum') && isset($db_show_debug) && $db_show_debug === true)
 		{
@@ -565,7 +539,7 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * insert
+	 * Insert data.
 	 *
 	 * @param string $method, options 'replace', 'ignore', 'insert'
 	 * @param $table
@@ -577,7 +551,7 @@ class Database_SQLite extends Database
 	 */
 	function insert($method = 'replace', $table, $columns, $data, $keys, $disable_trans = false, $connection = null)
 	{
-		global $db_in_transact, $db_connection, $smcFunc, $db_prefix;
+		global $db_in_transact, $db_connection, $db_prefix;
 
 		$connection = $connection === null ? $db_connection : $connection;
 
@@ -593,7 +567,7 @@ class Database_SQLite extends Database
 		$priv_trans = false;
 		if (count($data) > 1 && !$db_in_transact && !$disable_trans)
 		{
-			$smcFunc['db_transaction']('begin', $connection);
+			$this->db_transaction('begin', $connection);
 			$priv_trans = true;
 		}
 
@@ -621,7 +595,7 @@ class Database_SQLite extends Database
 
 			foreach ($insertRows as $entry)
 				// Do the insert.
-				$smcFunc['db_query']('',
+				$this->query('',
 					(($method === 'replace') ? 'REPLACE' : (' INSERT' . ($method === 'ignore' ? ' OR IGNORE' : ''))) . ' INTO ' . $table . '(' . implode(', ', $indexed_columns) . ')
 					VALUES
 						' . $entry,
@@ -634,7 +608,7 @@ class Database_SQLite extends Database
 		}
 
 		if ($priv_trans)
-			$smcFunc['db_transaction']('commit', $connection);
+			$this->db_transaction('commit', $connection);
 	}
 
 	/**
@@ -648,13 +622,47 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * fetch_row
-	 * Make sure we return no string indexes!
+	 * Get the number of rows in the result.
 	 *
-	 * @param $handle
+	 * @param resource $result
 	 */
-	function fetch_row($handle)
+	function num_rows($result)
 	{
+		// simply delegate to the native function
+		return sqlite_num_rows($result);
+	}
+
+	/**
+	 * Get the number of fields in the resultset.
+	 */
+	function num_fields($request)
+	{
+		return sqlite_num_fields($request);
+	}
+
+	/**
+	 * Reset the internal result pointer.
+	 * SQLite implementation does not use the $request parameter, and will ignore it.
+	 *
+	 * @param $request
+	 * @param $counter
+	 */
+	function data_seek($request, $counter)
+	{
+		// delegate to native sqlite function
+		return sqlite_seek($counter);
+	}
+
+	/**
+	 * Fetch a row of next data.
+	 * SQLite method doesn't use the second parameter.
+	 *
+	 * @param $request
+	 * @param bool $counter = false
+	 */
+	function fetch_row($handle, $counter = false)
+	{
+		// Make sure we return no string indexes
 		return sqlite_fetch_array($handle, SQLITE_NUM);
 	}
 
@@ -685,7 +693,7 @@ class Database_SQLite extends Database
 		foreach (debug_backtrace() as $step)
 		{
 			// Found it?
-			if (strpos($step['function'], 'query') === false && !in_array(substr($step['function'], 0, 7), array('smf_db_', 'preg_re', 'db_erro', 'call_us')) && strpos($step['function'], '__') !== 0)
+			if (!method_exists($this, $step['function']) && !in_array(substr($step['function'], 0, 7), array('elk_db_', 'preg_re', 'db_erro', 'call_us')))
 			{
 				$log_message .= '<br />Function: ' . $step['function'];
 				break;
@@ -811,16 +819,6 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * We need this since sqlite_libversion() doesn't take any parameters.
-	 *
-	 * @param $void
-	 */
-	function libversion($void = null)
-	{
-		return sqlite_libversion();
-	}
-
-	/**
 	 * This function uses variable argument lists so that it can handle more then two parameters.
 	 * Emulates the CONCAT function.
 	 */
@@ -896,7 +894,8 @@ class Database_SQLite extends Database
 	 */
 	function insert_sql($tableName, $new_table = false)
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
+
 		static $start = 0, $num_rows, $fields, $limit;
 
 		if ($new_table)
@@ -911,7 +910,7 @@ class Database_SQLite extends Database
 		// This will be handy...
 		$crlf = "\r\n";
 
-		$result = $smcFunc['db_query']('', '
+		$result = $this->query('', '
 			SELECT *
 			FROM ' . $tableName . '
 			LIMIT ' . $start . ', ' . $limit,
@@ -921,21 +920,21 @@ class Database_SQLite extends Database
 		);
 
 		// The number of rows, just for record keeping and breaking INSERTs up.
-		$num_rows = $smcFunc['db_num_rows']($result);
+		$num_rows = $this->num_rows($result);
 
 		if ($num_rows == 0)
 			return '';
 
 		if ($new_table)
 		{
-			$fields = array_keys($smcFunc['db_fetch_assoc']($result));
+			$fields = array_keys($this->fetch_assoc($result));
 
 			// SQLite fetches an array so we need to filter out the numberic index for the columns.
 			foreach ($fields as $key => $name)
 				if (is_numeric($name))
 					unset($fields[$key]);
 
-			$smcFunc['db_data_seek']($result, 0);
+			$this->data_seek($result, 0);
 		}
 
 		// Start it off with the basic INSERT INTO.
@@ -943,7 +942,7 @@ class Database_SQLite extends Database
 		$insert_msg = $crlf . 'INSERT INTO ' . $tableName . $crlf . "\t" . '(' . implode(', ', $fields) . ')' . $crlf . 'VALUES ' . $crlf . "\t";
 
 		// Loop through each row.
-		while ($row = $smcFunc['db_fetch_assoc']($result))
+		while ($row = $this->fetch_assoc($result))
 		{
 			// Get the fields in this row...
 			$field_list = array();
@@ -956,13 +955,13 @@ class Database_SQLite extends Database
 				elseif (is_numeric($item) && (int) $item == $item)
 					$field_list[] = $item;
 				else
-					$field_list[] = '\'' . $smcFunc['db_escape_string']($item) . '\'';
+					$field_list[] = '\'' . $this->escape_string($item) . '\'';
 			}
 
 			// 'Insert' the data.
 			$data .= $insert_msg . '(' . implode(', ', $field_list) . ');' . $crlf;
 		}
-		$smcFunc['db_free_result']($result);
+		$this->free_result($result);
 
 		$data .= $crlf;
 
@@ -979,7 +978,7 @@ class Database_SQLite extends Database
 	 */
 	function db_table_sql($tableName)
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$tableName = str_replace('{db_prefix}', $db_prefix, $tableName);
 
@@ -991,7 +990,7 @@ class Database_SQLite extends Database
 		$index_create = '';
 
 		// Let's get the create statement directly from SQLite.
-		$result = $smcFunc['db_query']('', '
+		$result = $this->query('', '
 			SELECT sql
 			FROM sqlite_master
 			WHERE type = {string:type}
@@ -1001,11 +1000,11 @@ class Database_SQLite extends Database
 				'table_name' => $tableName,
 			)
 		);
-		list ($schema_create) = $smcFunc['db_fetch_row']($result);
-		$smcFunc['db_free_result']($result);
+		list ($schema_create) = $this->fetch_row($result);
+		$this->free_result($result);
 
 		// Now the indexes.
-		$result = $smcFunc['db_query']('', '
+		$result = $this->query('', '
 			SELECT sql
 			FROM sqlite_master
 			WHERE type = {string:type}
@@ -1016,10 +1015,10 @@ class Database_SQLite extends Database
 			)
 		);
 		$indexes = array();
-		while ($row = $smcFunc['db_fetch_assoc']($result))
+		while ($row = $this->fetch_assoc($result))
 			if (trim($row['sql']) != '')
 				$indexes[] = $row['sql'];
-		$smcFunc['db_free_result']($result);
+		$this->free_result($result);
 
 		$index_create .= implode(';' . $crlf, $indexes);
 		$schema_create = empty($indexes) ? rtrim($schema_create) : $schema_create . ';' . $crlf . $crlf;
@@ -1035,13 +1034,11 @@ class Database_SQLite extends Database
 	 * @param mixed $filter string to filter by, or false, default false
 	 * @return array an array of table names. (strings)
 	 */
-	function elk_db_list_tables($db_name_str = false, $filter = false)
+	function db_list_tables($db_name_str = false, $filter = false)
 	{
-		global $smcFunc;
-
 		$filter = $filter == false ? '' : ' AND name LIKE \'' . str_replace("\_", "_", $filter) . '\'';
 
-		$request = $smcFunc['db_query']('', '
+		$request = $this->query('', '
 			SELECT name
 			FROM sqlite_master
 			WHERE type = {string:type}
@@ -1053,9 +1050,9 @@ class Database_SQLite extends Database
 			)
 		);
 		$tables = array();
-		while ($row = $smcFunc['db_fetch_row']($request))
+		while ($row = $this->fetch_row($request))
 			$tables[] = $row[0];
-		$smcFunc['db_free_result']($request);
+		$this->free_result($request);
 
 		return $tables;
 	}
@@ -1068,11 +1065,11 @@ class Database_SQLite extends Database
 	 */
 	function db_optimize_table($table)
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$table = str_replace('{db_prefix}', $db_prefix, $table);
 
-		$request = $smcFunc['db_query']('', '
+		$request = $this->query('', '
 			VACUUM {raw:table}',
 			array(
 				'table' => $table,
@@ -1081,8 +1078,8 @@ class Database_SQLite extends Database
 		if (!$request)
 			return -1;
 
-		$row = $smcFunc['db_fetch_assoc']($request);
-		$smcFunc['db_free_result']($request);
+		$row = $this->fetch_assoc($request);
+		$this->free_result($request);
 
 		// The function returns nothing.
 		return 0;
@@ -1097,11 +1094,11 @@ class Database_SQLite extends Database
 	 */
 	function db_backup_table($table, $backup_table)
 	{
-		global $smcFunc, $db_prefix;
+		global $db_prefix;
 
 		$table = str_replace('{db_prefix}', $db_prefix, $table);
 
-		$result = $smcFunc['db_query']('', '
+		$result = $this->query('', '
 			SELECT sql
 			FROM sqlite_master
 			WHERE type = {string:txttable}
@@ -1111,8 +1108,8 @@ class Database_SQLite extends Database
 				'txttable' => 'table'
 			)
 		);
-		list ($create) = $smcFunc['db_fetch_row']($result);
-		$smcFunc['db_free_result']($result);
+		list ($create) = $this->fetch_row($result);
+		$this->free_result($result);
 
 		$create = preg_split('/[\n\r]/', $create);
 		$auto_inc = '';
@@ -1148,7 +1145,7 @@ class Database_SQLite extends Database
 		if (substr($create, -2) == '))')
 			$create = substr($create, 0, -1);
 
-		$smcFunc['db_query']('', '
+		$this->query('', '
 			DROP TABLE {raw:backup_table}',
 			array(
 				'backup_table' => $backup_table,
@@ -1156,21 +1153,21 @@ class Database_SQLite extends Database
 			)
 		);
 
-		$request = $smcFunc['db_quote']('
+		$request = $this->quote('
 			CREATE TABLE {raw:backup_table} {raw:create}',
 			array(
 				'backup_table' => $backup_table,
 				'create' => $create,
 		));
 
-		$smcFunc['db_query']('', '
+		$this->query('', '
 			CREATE TABLE {raw:backup_table} {raw:create}',
 			array(
 				'backup_table' => $backup_table,
 				'create' => $create,
 		));
 
-		$request = $smcFunc['db_query']('', '
+		$request = $this->query('', '
 			INSERT INTO {raw:backup_table}
 			SELECT *
 			FROM {raw:table}',
@@ -1183,7 +1180,8 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 * Simply return the database - and die!
+	 * Simply return the database - and die.
+	 * Only needed for SQLite.
 	 * Used by DumpDatabase.php.
 	 */
 	function db_get_backup()
@@ -1210,12 +1208,88 @@ class Database_SQLite extends Database
 	}
 
 	/**
-	 *  Get the version number.
-	 *  @return string - the version
+	 * Get the server version number.
+	 * For sqlite, that means the library version.
+	 *
+	 * @return string - the version
 	 */
-	function db_get_version()
+	function db_server_version()
 	{
 		return sqlite_libversion();
+	}
+
+	/**
+	 * Escape string for the database input
+	 *
+	 * @param string $string
+	 */
+	function escape_string($string)
+	{
+		return sqlite_escape_string($string);
+	}
+
+	/**
+	 * Fetch next result as association.
+	 * The sqlite implementation simply delegates to sqlite_fetch_array().
+	 * It requires $request parameter to be int.
+	 * It ignores $counter parameter.
+	 *
+	 * @param int $request
+	 * @param mixed counter = false
+	 */
+	function fetch_assoc($request, $counter = false)
+	{
+		return sqlite_fetch_array($request);
+	}
+
+	/**
+	 * Return server info.
+	 *
+	 * @return string - the version
+	 */
+	function db_server_info()
+	{
+		// give info on library version
+		return sqlite_libversion();
+	}
+
+	/**
+	 * Get the client version number.
+	 *
+	 * @return string - the version
+	 */
+	function db_client_version()
+	{
+		return sqlite_libversion();
+	}
+
+	/**
+	 * Get the name (title) of the database system.
+	 */
+	function db_title()
+	{
+		return 'SQLite';
+	}
+
+	/**
+	 * Whether the database system is case sensitive.
+	 *
+	 * @return bool
+	 */
+	function db_case_sensitive()
+	{
+		return true;
+	}
+
+/**
+	 * Select database.
+	 *
+	 * @param string $dbName = null
+	 * @param resource $connection = null
+	 */
+	function select_db($dbName = null, $connection = null)
+	{
+		return true;
 	}
 
 	/**

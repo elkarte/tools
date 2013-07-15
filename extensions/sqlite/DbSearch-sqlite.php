@@ -11,18 +11,12 @@
  *
  */
 
-if (!defined('ELKARTE'))
+if (!defined('ELK'))
 	die('No access...');
 
-class DbSearch_SQLite
+class DbSearch_SQLite implements DbSearch
 {
-	/**
-	 * Initialize. (if necessary)
-	 */
-	function initialize()
-	{
-		// initialize or let it go :P
-	}
+	private static $_search = null;
 
 	/**
 	 * This function will tell you whether this database type supports this search type.
@@ -46,7 +40,7 @@ class DbSearch_SQLite
 	 */
 	function search_query($identifier, $db_string, $db_values = array(), $connection = null)
 	{
-		global $smcFunc;
+		$db = database();
 
 		$replacements = array(
 			'create_tmp_log_search_topics' => array(
@@ -68,7 +62,7 @@ class DbSearch_SQLite
 			$db_values['db_error_skip'] = true;
 		}
 
-		$return = $smcFunc['db_query']('', $db_string,
+		$return = $db->query('', $db_string,
 			$db_values, $connection
 		);
 
@@ -82,11 +76,11 @@ class DbSearch_SQLite
 	 */
 	function create_word_search($size)
 	{
-		global $smcFunc;
+		$db = database();
 
 		$size = 'int';
 
-		$smcFunc['db_query']('', '
+		$db->query('', '
 			CREATE TABLE {db_prefix}log_search_words (
 				id_word {raw:size} NOT NULL default {string:string_zero},
 				id_msg int(10) NOT NULL default {string:string_zero},
@@ -97,5 +91,17 @@ class DbSearch_SQLite
 				'string_zero' => '0',
 			)
 		);
+	}
+
+	/**
+	 * Static method that allows to retrieve or create an instance of this class.
+	 */
+	public static function db_search()
+	{
+		if (is_null(self::$_search))
+		{
+			self::$_search = new self();
+		}
+		return self::$_search;
 	}
 }
