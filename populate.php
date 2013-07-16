@@ -44,8 +44,6 @@ class Populate
 
 	public function __construct ($options = array())
 	{
-		global $smcFunc;
-
 		$this->counters['categories']['max'] = 6;
 		$this->counters['categories']['current'] = 0;
 		$this->counters['boards']['max'] = 25;
@@ -58,6 +56,7 @@ class Populate
 		$this->counters['messages']['current'] = 0;
 		$this->timeStart = microtime(TRUE);
 
+		$db = database();
 		// Override defaults
 		foreach ($options as $_key => $_value)
 			$this->$_key = $_value;
@@ -113,6 +112,7 @@ class Populate
 				'board_description' => 'I am a sample description...',
 				'target_category' => mt_rand(1, $this->counters['categories']['current']),
 				'move_to' => 'top',
+				'id_profile' => 1,
 			);
 			if (mt_rand() < (mt_getrandmax() / 2))
 			{
