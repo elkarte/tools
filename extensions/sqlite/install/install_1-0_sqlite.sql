@@ -781,7 +781,8 @@ CREATE TABLE {$db_prefix}custom_fields (
   can_search smallint NOT NULL default '0',
   default_value varchar(255) NOT NULL,
   enclose text NOT NULL,
-  placement smallint NOT NULL default '0'
+  placement smallint NOT NULL default '0',
+  vieworder smallint NOT NULL default '0'
 );
 
 #
@@ -789,6 +790,17 @@ CREATE TABLE {$db_prefix}custom_fields (
 #
 
 CREATE UNIQUE INDEX {$db_prefix}custom_fields_col_name ON {$db_prefix}custom_fields (col_name);
+
+#
+# Table structure for table `custom_fields_data`
+#
+
+CREATE TABLE {$db_prefix}custom_fields_data (
+  id_member int NOT NULL default '0',
+  variable varchar(255) NOT NULL default '',
+  value text NOT NULL,
+  PRIMARY KEY (id_member, variable),
+);
 
 #
 # Table structure for table `group_moderators`
@@ -1041,7 +1053,7 @@ CREATE INDEX {$db_prefix}log_notify_id_topic ON {$db_prefix}log_notify (id_topic
 
 CREATE TABLE {$db_prefix}log_online (
   session varchar(64) NOT NULL default '',
-  log_time int(10) NOT NULL default '0',
+  log_time int NOT NULL default '0',
   id_member int NOT NULL default '0',
   id_spider smallint NOT NULL default '0',
   ip int NOT NULL default '0',
@@ -1074,9 +1086,9 @@ CREATE TABLE {$db_prefix}log_packages (
   time_removed int NOT NULL default '0',
   install_state smallint NOT NULL default '1',
   failed_steps text NOT NULL,
+  themes_installed varchar(255) NOT NULL,
   db_changes text NOT NULL,
-  credits varchar(255) NOT NULL,
-  themes_installed varchar(255) NOT NULL
+  credits varchar(255) NOT NULL
 );
 
 #
@@ -1252,7 +1264,7 @@ CREATE TABLE {$db_prefix}log_spider_stats (
 
 CREATE TABLE {$db_prefix}log_subscribed (
   id_sublog integer primary key,
-  id_subscribe smallint unsigned NOT NULL default '0',
+  id_subscribe smallint NOT NULL default '0',
   id_member int NOT NULL default '0',
   old_id_group int NOT NULL default '0',
   start_time int NOT NULL default '0',
@@ -1447,7 +1459,7 @@ CREATE INDEX {$db_prefix}members_id_theme ON {$db_prefix}members (id_theme);
 CREATE TABLE {$db_prefix}member_logins (
   id_login integer primary key,
   id_member int NOT NULL default '0',
-  time int(10) NOT NULL default '0',
+  time int NOT NULL default '0',
   ip varchar(255) NOT NULL default '0',
   ip2 varchar(255) NOT NULL default '0'
 );
@@ -1537,6 +1549,7 @@ CREATE INDEX {$db_prefix}messages_id_topic ON {$db_prefix}messages (id_topic);
 CREATE INDEX {$db_prefix}messages_id_member_msg ON {$db_prefix}messages (id_member, approved, id_msg);
 CREATE INDEX {$db_prefix}messages_current_topic ON {$db_prefix}messages (id_topic, id_msg, id_member, approved);
 CREATE INDEX {$db_prefix}messages_related_ip ON {$db_prefix}messages (id_member, poster_ip, id_msg);
+
 #
 # Dumping data for table `messages`
 #
@@ -1663,8 +1676,8 @@ INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'profile_v
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'profile_view_any');
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'pm_read');
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'pm_send');
-INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'pm_draft');
-INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'pm_autosave_draft');
+INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (0, 'pm_draft');
+INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (0, 'pm_autosave_draft');
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'calendar_view');
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'view_stats');
 INSERT INTO {$db_prefix}permissions (id_group, permission) VALUES (2, 'who_view');
@@ -1963,6 +1976,7 @@ INSERT INTO {$db_prefix}settings (variable, value) VALUES ('defaultMaxMessages',
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('defaultMaxTopics', '20');
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('defaultMaxMembers', '30');
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('enableParticipation', '1');
+INSERT INTO {$db_prefix}settings (variable, value) VALUES ('enableFollowup', '1');
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('recycle_enable', '0');
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('recycle_board', '0');
 INSERT INTO {$db_prefix}settings (variable, value) VALUES ('maxMsgID', '1');
@@ -2105,6 +2119,8 @@ CREATE TABLE {$db_prefix}spiders (
 #
 # Dumping data for table `spiders`
 #
+
+BEGIN TRANSACTION;
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (1, 'Google', 'googlebot', '');
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (2, 'Yahoo!', 'Yahoo! Slurp', '');
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (3, 'MSN', 'msnbot', '');
@@ -2132,6 +2148,7 @@ INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VA
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (25, 'Yandex (Video)', 'YandexVideo', '');
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (26, 'Yandex (Blogs)', 'YandexBlogs', '');
 INSERT INTO {$db_prefix}spiders (id_spider, spider_name, user_agent, ip_info) VALUES (27, 'Yandex (Media)', 'YandexMedia', '');
+COMMIT;
 
 #
 # Table structure for table `subscriptions`
@@ -2265,12 +2282,12 @@ VALUES (1, 1, 1, 1, 0, 0);
 
 CREATE TABLE {$db_prefix}user_drafts (
   id_draft integer primary key,
-  id_topic int unsigned NOT NULL default '0',
-  id_board smallint unsigned NOT NULL default '0',
-  id_reply int unsigned NOT NULL default '0',
+  id_topic int NOT NULL default '0',
+  id_board smallint NOT NULL default '0',
+  id_reply int NOT NULL default '0',
   type smallint NOT NULL default '0',
-  poster_time int unsigned NOT NULL default '0',
-  id_member int unsigned NOT NULL default '0',
+  poster_time int NOT NULL default '0',
+  id_member int NOT NULL default '0',
   subject varchar(255) NOT NULL default '',
   smileys_enabled smallint NOT NULL default '1',
   body text NOT NULL,
@@ -2303,9 +2320,9 @@ CREATE TABLE {$db_prefix}log_badbehavior (
 	user_agent varchar(255) NOT NULL,
 	request_entity varchar(255) NOT NULL,
 	valid varchar(255) NOT NULL,
-	id_member int unsigned NOT NULL,
-	session char(64) NOT NULL default '',
-)
+	id_member int NOT NULL,
+	session char(64) NOT NULL default ''
+);
 
 #
 # Indexes for table `log_badbehavior`
@@ -2321,7 +2338,7 @@ CREATE INDEX {$db_prefix}user_agent ON {$db_prefix}log_badbehavior (user_agent);
 CREATE TABLE {$db_prefix}postby_emails (
 	id_email varchar(50) primary key,
 	time_sent int NOT NULL,
-	email_to varchar(50) NOT NULL,
+	email_to varchar(50) NOT NULL
 );
 
 #
@@ -2337,7 +2354,7 @@ CREATE TABLE {$db_prefix}postby_emails_error
 	id_board smallint(5) NOT NULL default '0',
 	email_from varchar(50) NOT NULL default '',
 	message_type char(10) NOT NULL default '',
-	message text NOT NULL default '',
+	message text NOT NULL
 );
 
 #
@@ -2350,7 +2367,7 @@ CREATE TABLE {$db_prefix}postby_emails_filter
 	filter_type varchar(255) NOT NULL default '',
 	filter_to varchar(255) NOT NULL default '',
 	filter_from varchar(255) NOT NULL default '',
-	filter_name varchar(255) NOT NULL default '',
+	filter_name varchar(255) NOT NULL default ''
 );
 
 #
@@ -2378,5 +2395,13 @@ CREATE INDEX {$db_prefix}log_likes_log_time ON {$db_prefix}log_likes (log_time);
 CREATE TABLE {$db_prefix}message_likes (
   id_member int NOT NULL default '0',
   id_msg int NOT NULL default '0',
+  id_poster int NOT NULL default '0',
   PRIMARY KEY (id_msg, id_member)
 );
+
+#
+# Indexes for table `message_likes`
+#
+
+CREATE INDEX {$db_prefix}message_likes_id_member ON {$db_prefix}message_likes (id_member);
+CREATE INDEX {$db_prefix}message_likes_id_poster ON {$db_prefix}message_likes (id_poster);
