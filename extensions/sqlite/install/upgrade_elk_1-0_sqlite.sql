@@ -6,14 +6,11 @@
 
 ---# Adding login history...
 CREATE TABLE IF NOT EXISTS {$db_prefix}member_logins (
-	id_login integer NOT NULL auto_increment,
-	id_member integer NOT NULL,
-	time integer NOT NULL,
+	id_login integer  primary key,
+	id_member int NOT NULL,
+	time int NOT NULL,
 	ip varchar(255) NOT NULL default '',
-	ip2 varchar(255) NOT NULL default '',
-	PRIMARY KEY id_login(id_login)
-	KEY id_member (id_member)
-	KEY time (time)
+	ip2 varchar(255) NOT NULL default ''
 );
 ---#
 
@@ -68,8 +65,8 @@ VALUES
 $request = upgrade_query("
 	SELECT MAX(id_attach)
 	FROM {$db_prefix}attachments");
-list ($step_progress['total']) = $smcFunc['db_fetch_row']($request);
-$smcFunc['db_free_result']($request);
+list ($step_progress['total']) = $db->fetch_row($request);
+$db->free_result($request);
 
 $_GET['a'] = isset($_GET['a']) ? (int) $_GET['a'] : 0;
 $step_progress['name'] = 'Converting legacy attachments';
@@ -87,14 +84,14 @@ while (!$is_done)
 	$request = upgrade_query("
 		SELECT id_attach, id_folder, filename, file_hash
 		FROM {$db_prefix}attachments
-		WHERE file_hash = ''
+		WHERE file_hash != ''
 		LIMIT $_GET[a], 100");
 
 	// Finished?
-	if ($smcFunc['db_num_rows']($request) == 0)
+	if ($db->num_rows($request) == 0)
 		$is_done = true;
 
-	while ($row = $smcFunc['db_fetch_assoc']($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		// The current folder.
 		$current_folder = !empty($modSettings['currentAttachmentUploadDir']) ? $modSettings['attachmentUploadDir'][$row['id_folder']] : $modSettings['attachmentUploadDir'];
@@ -106,18 +103,18 @@ while (!$is_done)
 		$file_hash = getAttachmentFilename($row['filename'], $row['id_attach'], $row['id_folder'], true);
 
 		// And we try to move it.
-		rename($old_location, $current_folder . '/' . $row['id_attach'] . '_' . $file_hash);
+		rename($old_location, $current_folder . '/' . $row['id_attach'] . '_' . $file_hash . '.elk');
 
 		// Only update thif if it was successful.
-		if (file_exists($current_folder . '/' . $row['id_attach'] . '_' . $file_hash) && !file_exists($old_location))
+		if (file_exists($current_folder . '/' . $row['id_attach'] . '_' . $file_hash . '.elk') && !file_exists($old_location))
 			upgrade_query("
 				UPDATE {$db_prefix}attachments
 				SET file_hash = '$file_hash'
 				WHERE id_attach = $row[id_attach]");
 	}
-	$smcFunc['db_free_result']($request);
+	$db->free_result($request);
 
-	$_GET['a'] += 100;
+	$_GET['a'] += 200;
 	$step_progress['current'] = $_GET['a'];
 }
 
@@ -131,14 +128,14 @@ unset($_GET['a']);
 
 ---# Adding new columns to ban items...
 ALTER TABLE {$db_prefix}ban_items
-ADD COLUMN ip_low5 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_high5 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_low6 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_high6 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_low7 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_high7 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_low8 smallint(255) unsigned NOT NULL DEFAULT '0',
-ADD COLUMN ip_high8 smallint(255) unsigned NOT NULL DEFAULT '0';
+ADD COLUMN ip_low5 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_high5 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_low6 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_high6 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_low7 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_high7 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_low8 smallint NOT NULL DEFAULT '0',
+ADD COLUMN ip_high8 smallint NOT NULL DEFAULT '0';
 ---#
 
 ---# Changing existing columns to ban items...
@@ -180,7 +177,7 @@ CHANGE `session_id` `session_id` char(64) NOT NULL;
 /******************************************************************************/
 ---# Adding new custom fields columns.
 ---{
-$smcFunc['db_alter_table']('{db_prefix}topics', array(
+$db->alter_table('{db_prefix}topics', array(
 	'add' => array(
 		'redirect_expires' => array(
 			'name' => 'redirect_expires',
@@ -191,7 +188,7 @@ $smcFunc['db_alter_table']('{db_prefix}topics', array(
 		),
 	)
 ));
-$smcFunc['db_alter_table']('{db_prefix}topics', array(
+$db->alter_table('{db_prefix}topics', array(
 	'add' => array(
 		'id_redirect_topic' => array(
 			'name' => 'id_redirect_topic',
@@ -236,7 +233,7 @@ VALUES
 /******************************************************************************/
 ---# Adding new columns to boards...
 ---{
-$smcFunc['db_alter_table']('{db_prefix}boards', array(
+$db->alter_table('{db_prefix}boards', array(
 	'add' => array(
 		'deny_member_groups' => array(
 			'name' => 'deny_member_groups',
@@ -256,7 +253,7 @@ $smcFunc['db_alter_table']('{db_prefix}boards', array(
 /******************************************************************************/
 ---# Adding new columns to log_topics...
 ---{
-$smcFunc['db_alter_table']('{db_prefix}log_topics', array(
+$db->alter_table('{db_prefix}log_topics', array(
 	'add' => array(
 		'disregarded' => array(
 			'name' => 'disregarded',
@@ -278,10 +275,17 @@ SET disregarded = 0;
 /******************************************************************************/
 ---# Adding new columns to boards...
 ---{
-$smcFunc['db_alter_table']('{db_prefix}custom_fields', array(
+$db->alter_table('{db_prefix}custom_fields', array(
 	'add' => array(
 		'show_memberlist' => array(
 			'name' => 'show_memberlist',
+			'null' => false,
+			'default' => 0,
+			'type' => 'smallint',
+			'auto' => false,
+		),
+		'vieworder' => array(
+			'name' => 'vieworder',
 			'null' => false,
 			'default' => 0,
 			'type' => 'smallint',
@@ -330,7 +334,7 @@ CREATE TABLE IF NOT EXISTS {$db_prefix}user_drafts (
 ---# Adding draft permissions...
 ---{
 // We cannot do this twice
-if (@$modSettings['smfVersion'] < '2.1')
+if (@$modSettings['elkVersion'] < '1.0')
 {
 	// Anyone who can currently post unapproved topics we assume can create drafts as well ...
 	$request = upgrade_query("
@@ -338,12 +342,12 @@ if (@$modSettings['smfVersion'] < '2.1')
 		FROM {$db_prefix}board_permissions
 		WHERE permission = 'post_unapproved_topics'");
 	$inserts = array();
-	while ($row = $smcFunc['db_fetch_assoc']($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		$inserts[] = "($row[id_group], $row[id_board], 'post_draft', $row[add_deny])";
 		$inserts[] = "($row[id_group], $row[id_board], 'post_autosave_draft', $row[add_deny])";
 	}
-	$smcFunc['db_free_result']($request);
+	$db->free_result($request);
 
 	if (!empty($inserts))
 		upgrade_query("
@@ -358,12 +362,12 @@ if (@$modSettings['smfVersion'] < '2.1')
 		FROM {$db_prefix}permissions
 		WHERE permission = 'pm_send'");
 	$inserts = array();
-	while ($row = $smcFunc['db_fetch_assoc']($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		$inserts[] = "($row[id_group], 'pm_draft', $row[add_deny])";
 		$inserts[] = "($row[id_group], 'pm_autosave_draft', $row[add_deny])";
 	}
-	$smcFunc['db_free_result']($request);
+	$db->free_result($request);
 
 	if (!empty($inserts))
 		upgrade_query("
@@ -371,6 +375,37 @@ if (@$modSettings['smfVersion'] < '2.1')
 				(id_group, permission, add_deny)
 			VALUES
 				" . implode(',', $inserts));
+}
+---}
+---#
+
+/******************************************************************************/
+--- Adding support for custom profile fields data
+/******************************************************************************/
+---# Creating custom profile fields data table
+CREATE TABLE IF NOT EXISTS {$db_prefix}custom_fields_data (
+  id_member int NOT NULL default '0',
+  variable varchar(255) NOT NULL default '',
+  value text NOT NULL,
+  PRIMARY KEY (id_member, variable),
+);
+---#
+
+---# Move existing custom profile values...
+---{
+$request = upgrade_query("
+	INSERT INTO {$db_prefix}custom_fields_data
+		(id_member, variable, value)
+	SELECT id_member, variable, value
+	FROM {$db_prefix}themes
+	WHERE SUBSTRING(variable, 1, 5) = 'cust_'");
+
+// remove the moved rows from themes
+if ($db->num_rows($request) != 0)
+{
+	upgrade_query("
+		DELETE FROM {$db_prefix}themes
+		SUBSTRING(variable,1,5) = 'cust_'");
 }
 ---}
 ---#
@@ -407,7 +442,7 @@ if (@$modSettings['elkVersion'] < '1.0')
 		SELECT id_member, aim, icq, msn, yim
 		FROM {$db_prefix}members");
 	$inserts = array();
-	while ($row = mysql_fetch_assoc($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		if (!empty($row[aim]))
 			$inserts[] = "($row[id_member], -1, 'cust_aim', $row[aim])";
@@ -421,7 +456,7 @@ if (@$modSettings['elkVersion'] < '1.0')
 		if (!empty($row[yim]))
 			$inserts[] = "($row[id_member], -1, 'cust_yim', $row[yim])";
 	}
-	mysql_free_result($request);
+	$db->free_result($request);
 
 	if (!empty($inserts))
 		upgrade_query("
@@ -452,11 +487,11 @@ if (@$modSettings['elkVersion'] < '1.0')
 		FROM {$db_prefix}permissions
 		WHERE permission = 'profile_remote_avatar'");
 	$inserts = array();
-	while ($row = mysql_fetch_assoc($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		$inserts[] = "($row[id_group], 'profile_gravatar', $row[add_deny])";
 	}
-	mysql_free_result($request);
+	$db->free_result($request);
 
 	if (!empty($inserts))
 		upgrade_query("
@@ -502,7 +537,7 @@ CREATE TABLE IF NOT EXISTS {$db_prefix}antispam_questions (
   language varchar(50) NOT NULL default '',
   PRIMARY KEY (id_question),
   KEY language (language(30))
-) ENGINE=MyISAM;
+);
 ---#
 
 ---# Move existing values...
@@ -513,11 +548,11 @@ $request = upgrade_query("
 	SELECT id_comment, recipient_name as answer, body as question
 	FROM {$db_prefix}log_comments
 	WHERE comment_type = 'ver_test'");
-if (mysql_num_rows($request) != 0)
+if ($db->num_rows($request) != 0)
 {
 	$values = array();
 	$id_comments = array();
-	while ($row = mysql_fetch_assoc($request))
+	while ($row = $db->fetch_assoc($request))
 	{
 		upgrade_query("
 			INSERT INTO {$db_prefix}antispam_questions
@@ -540,9 +575,18 @@ if (mysql_num_rows($request) != 0)
 INSERT INTO `{$db_prefix}custom_fields`
 	(`col_name`, `field_name`, `field_desc`, `field_type`, `field_length`, `field_options`, `mask`, `show_reg`, `show_display`, `show_profile`, `private`, `active`, `bbc`, `can_search`, `default_value`, `enclose`, `placement`)
 VALUES
-	('cust_aim', 'AOL Instant Messenger', 'This is your AOL Instant Messenger nickname.', 'text', 50, '', 'regex~[a-z][0-9a-z.-]{1,31}~i', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="aim" href="aim:goim?screenname={INPUT}&message=Hello!+Are+you+there?" target="_blank" title="AIM - {INPUT}"><img src="{IMAGES_URL}/aim.png" alt="AIM - {INPUT}"></a>', 1),
-	('cust_icq', 'ICQ', 'This is your ICQ number.', 'text', 12, '', 'regex~[1-9][0-9]{4,9}~i', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="icq" href="http://www.icq.com/whitepages/about_me.php?uin={INPUT}" target="_blank" title="ICQ - {INPUT}"><img src="http://status.icq.com/online.gif?img=5&icq={INPUT}" alt="ICQ - {INPUT}" width="18" height="18"></a>', 1),
-	('cust_msn', 'MSN/Live', 'Your Live Messenger email address', 'text', 50, '', 'email', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="msn" href="http://members.msn.com/{INPUT}" target="_blank" title="Live - {INPUT}"><img src="{IMAGES_URL}/msntalk.png" alt="Live - {INPUT}"></a>', 1),
+	('cust_aim', 'AOL Instant Messenger', 'This is your AOL Instant Messenger nickname.', 'text', 50, '', 'regex~[a-z][0-9a-z.-]{1,31}~i', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="aim" href="aim:goim?screenname={INPUT}&message=Hello!+Are+you+there?" target="_blank" title="AIM - {INPUT}"><img src="{IMAGES_URL}/aim.png" alt="AIM - {INPUT}"></a>', 1);
+INSERT INTO `{$db_prefix}custom_fields`
+	(`col_name`, `field_name`, `field_desc`, `field_type`, `field_length`, `field_options`, `mask`, `show_reg`, `show_display`, `show_profile`, `private`, `active`, `bbc`, `can_search`, `default_value`, `enclose`, `placement`)
+VALUES
+	('cust_icq', 'ICQ', 'This is your ICQ number.', 'text', 12, '', 'regex~[1-9][0-9]{4,9}~i', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="icq" href="http://www.icq.com/whitepages/about_me.php?uin={INPUT}" target="_blank" title="ICQ - {INPUT}"><img src="http://status.icq.com/online.gif?img=5&icq={INPUT}" alt="ICQ - {INPUT}" width="18" height="18"></a>', 1);
+INSERT INTO `{$db_prefix}custom_fields`
+	(`col_name`, `field_name`, `field_desc`, `field_type`, `field_length`, `field_options`, `mask`, `show_reg`, `show_display`, `show_profile`, `private`, `active`, `bbc`, `can_search`, `default_value`, `enclose`, `placement`)
+VALUES
+	('cust_msn', 'MSN/Live', 'Your Live Messenger email address', 'text', 50, '', 'email', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="msn" href="http://members.msn.com/{INPUT}" target="_blank" title="Live - {INPUT}"><img src="{IMAGES_URL}/msntalk.png" alt="Live - {INPUT}"></a>', 1)
+INSERT INTO `{$db_prefix}custom_fields`
+	(`col_name`, `field_name`, `field_desc`, `field_type`, `field_length`, `field_options`, `mask`, `show_reg`, `show_display`, `show_profile`, `private`, `active`, `bbc`, `can_search`, `default_value`, `enclose`, `placement`)
+VALUES
 	('cust_yim', 'Yahoo! Messenger', 'This is your Yahoo! Instant Messenger nickname.', 'text', 50, '', 'email', 0, 1, 'forumprofile', 0, 1, 0, 0, '', '<a class="yim" href="http://edit.yahoo.com/config/send_webmesg?.target={INPUT}" target="_blank" title="Yahoo! Messenger - {INPUT}"><img src="http://opi.yahoo.com/online?m=g&t=0&u={INPUT}" alt="Yahoo! Messenger - {INPUT}"></a>', 1);
 ---#
 
@@ -595,16 +639,16 @@ ALTER TABLE `{$db_prefix}members`
 /******************************************************************************/
 ---# Creating postby_emails table
 CREATE TABLE IF NOT EXISTS {$db_prefix}postby_emails (
-	id_email varchar(50) NOT NULL,
+	id_email varchar(50) NOT NULL default '',
 	time_sent int NOT NULL default '0',
-	email_to varchar(50) NOT NULL,
+	email_to varchar(50) NOT NULL default '',
 	PRIMARY KEY (id_email)
 );
 ---#
 
 ---# Creating postby_emails_error table
-CREATE TABLE IF NOT EXISTS {$db_prefix}postby_emails_error (
-	id_email int NOT NULL auto_increment,
+CREATE TABLE {$db_prefix}postby_emails_error
+	id_email integer primary key,
 	error varchar(255) NOT NULL default '',
 	data_id varchar(255) NOT NULL default '0',
 	subject varchar(255) NOT NULL default '',
@@ -612,32 +656,55 @@ CREATE TABLE IF NOT EXISTS {$db_prefix}postby_emails_error (
 	id_board smallint NOT NULL default '0',
 	email_from varchar(50) NOT NULL default '',
 	message_type char(10) NOT NULL default '',
-	message text NOT NULL default '',
-	PRIMARY KEY (id_email),
+	message text NOT NULL
 );
 ---#
 
 ---# Creating postby_emails_filters table
 CREATE TABLE IF NOT EXISTS {$db_prefix}postby_emails_filters (
-	id_filter int NOT NULL auto_increment,
+	id_filter integer primary key,
 	filter_style char(5) NOT NULL default '',
 	filter_type varchar(255) NOT NULL default '',
 	filter_to varchar(255) NOT NULL default '',
 	filter_from varchar(255) NOT NULL default '',
-	filter_name varchar(255) NOT NULL default '',
-	PRIMARY KEY (id_filter),
+	filter_name varchar(255) NOT NULL default ''
 );
 ---#
 
 ---# Adding new columns to log_activity...
-ALTER TABLE {$db_prefix}log_activity
-ADD COLUMN pm smallint unsigned NOT NULL DEFAULT '0',
-ADD COLUMN email smallint unsigned NOT NULL DEFAULT '0';
+$db->alter_table('{db_prefix}log_activity', array(
+	'add' => array(
+		'pm' => array(
+			'name' => 'pm',
+			'null' => false,
+			'default' => '0',
+			'type' => 'int',
+			'auto' => false,
+		),
+	),
+		'email' => array(
+			'name' => 'email',
+			'null' => false,
+			'default' => '0',
+			'type' => 'int',
+			'auto' => false,
+		),
+	),
+));
 ---#
 
 ---# Adding new columns to mail_queue...
-ALTER TABLE {$db_prefix}mail_queue
-ADD COLUMN message_id int  NOT NULL DEFAULT '0';
+$db->alter_table('{db_prefix}mail_queue', array(
+	'add' => array(
+		'message_id' => array(
+			'name' => 'message_id',
+			'null' => false,
+			'default' => '0',
+			'type' => 'int',
+			'auto' => false,
+		),
+	)
+));
 ---#
 
 ---# Updating board profiles...
@@ -666,8 +733,14 @@ CREATE INDEX {$db_prefix}log_likes_log_time ON {$db_prefix}log_likes (log_time);
 CREATE TABLE IF NOT EXISTS {$db_prefix}message_likes (
   id_member int NOT NULL default '0',
   id_msg int NOT NULL default '0',
+  id_poster int NOT NULL default '0',
   PRIMARY KEY (id_msg, id_member)
 );
+---#
+
+---# Creating message_likes index ...
+CREATE INDEX {$db_prefix}message_likes_id_member ON {$db_prefix}message_likes (id_member);
+CREATE INDEX {$db_prefix}message_likes_id_poster ON {$db_prefix}message_likes (id_poster);
 ---#
 
 ---# Adding new columns to topics...
