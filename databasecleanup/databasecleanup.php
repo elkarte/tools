@@ -1,29 +1,32 @@
 <?php
+
 /**
-* ElkArte community forum
-*
-* @package tools
-* @author ElkArte forum contributors
-* @license http://www.simplemachines.org/about/smf/license.php BSD
-*
-* Based off SMF databasecleanup script
-* @copyright 2011 Simple Machines
-* @license http://www.simplemachines.org/about/smf/license.php BSD
-*
-* This file resets a database back to SMF/Elk defaults by removing rows / cols / tables / settigns added by mods
-* http://www.simplemachines.org/community/index.php?topic=249192.0
-*
-*/
+ * Database Cleanup
+ *
+ * @name      ElkArte Forum
+ * @copyright ElkArte Forum contributors
+ * @license   BSD http://opensource.org/licenses/BSD-3-Clause
+ *
+ * This software is a derived product, based on:
+ *
+ * Simple Machines Forum (SMF)
+ * copyright:	2011 Simple Machines (http://www.simplemachines.org)
+ * license:		BSD, See included LICENSE.TXT for terms and conditions.
+ *
+ * This file resets a database back to Elkarte defaults by removing
+ * rows / cols / tables / indexes and modsettings that addons added
+ *
+ */
 
 if (!file_exists(dirname(__FILE__) . '/SSI.php'))
 	exit('Please verify you put this in the same place as SSI.php file.');
+
 require_once(dirname(__FILE__) . '/SSI.php');
 
 // Memory is always good
-if (@ini_get('memory_limit') < 128)
-	@ini_set('memory_limit', '128M');
+setMemoryLimit('128M');
 
-// now get to work ...
+// Now get to work ...
 file_source();
 obExit(true);
 
@@ -38,25 +41,22 @@ obExit(true);
 */
 function file_source()
 {
-	global $context, $table_prefix, $version;
+	global $context, $table_prefix;
 
 	// You have to be allowed to do this
 	isAllowedTo('admin_forum');
 
-	// SMF 2
-	db_extend('packages');
-	$version = 2;
 	$table_prefix = '{db_prefix}';
 
 	$actions = array(
 		'examine' => 'examine',
 		'execute' => 'execute',
-		);
+	);
 
 	$titles = array(
 		'examine' => 'Examine Database',
 		'execute' => 'Execute Changes',
-		);
+	);
 
 	// Set a default action if none or an unsupported one is given
 	if (!isset($_GET['action']) || !isset($actions[$_GET['action']]))
@@ -66,31 +66,30 @@ function file_source()
 
 	// Set up the template information and language
 	loadtext();
+
 	$context['sub_template'] = $current_action;
 	$context['page_title'] = $titles[$current_action];
 	$context['page_title_html_safe'] = $titles[$current_action];
 	$context['robot_no_index'] = true;
 	$context['html_headers'] .= '
 	<style type="text/css">
-		.normallist li
-		{
-			list-style: circle;
+		ul, ol {
+			padding: 0px 25px;
+		}
+		.normallist li {
+			list-style: none;
 			line-height: 1.5em;
 		}
-		.submit_button
-		{
+		.submit_button {
 			text-align: center;
 		}
-		.error
-		{
+		.error {
 			background-color: #FFECEC;
 		}
-		.success
-		{
+		.success {
 			color: #00CC00;
 		}
-		.fail
-		{
+		.fail {
 			color: #EE0000;
 		}
 	</style>';
@@ -109,22 +108,36 @@ function file_source()
 */
 function examine()
 {
-	global $db_prefix, $extra, $table_prefix, $version;
+	global $db_prefix, $extra, $table_prefix;
 
-	// will allow for this == THIS and thisVar == this_var on col / index names to avoid false positives, set to true for more hits
+	$db = database();
+	$table_db = db_table();
+
+	// Will allow for this == THIS and thisVar == this_var on col / index names to avoid false positives, set to true for more hits
 	$strict_case = false;
 
-	$tables = sql_to_array(dirname(__FILE__) . '/sql' . $version . '.sql');
-	$mset = file_to_array(dirname(__FILE__) . '/modsettings' . $version . '.txt');
+	// Load in our standards files
+	$tables = sql_to_array(dirname(__FILE__) . '/install_sql.sql');
+
+	// Some tables are created not installed, others?
+	$tables['log_search_words'] = array(
+		'indexes' => array('PRIMARY' => array('name' => 'PRIMARY', 'type' => 'primary', 'columns' => 'id_word, id_msg')),
+		'columns' => array('id_word' => array('name' => 'id_word'), 'id_msg' => array('name' => 'id_msg')),
+	);
+
+	// All of the known modSettings
+	$mset = file_to_array(dirname(__FILE__) . '/modsettings.txt');
+
 	$real_prefix = preg_match('~^(`?)(.+?)\\1\\.(.*?)$~', $db_prefix, $match) === 1 ? $match[3] : $db_prefix;
 	$extra = array();
 
-	// make sure this is gone for a clean run
+	// Make sure this is gone for a clean run
 	if (isset($_SESSION['db_cleaner']))
 		unset($_SESSION['db_cleaner']);
 
-	// examine each table in this installation
-	$current_tables = $db->list_tables();
+	// Examine each table in this installation
+	$current_tables = $db->db_list_tables();
+
 	foreach ($current_tables as $table)
 	{
 		$table = preg_replace('~^' . $real_prefix . '~', '', $table);
@@ -137,21 +150,23 @@ function examine()
 		}
 
 		// It exists in a fresh install, lets check if there are any extra columns in it
-		$current_columns = $db->list_columns($table_prefix . $table, false);
+		$current_columns = $table_db->db_list_columns($table_prefix . $table, false);
 		foreach ($current_columns as $column)
-		if ((!isset($tables[$table]['columns'][$column])) && $strict_case)
-			$extra['columns'][$table][] = $column;
-		elseif (!$strict_case && !isset($tables[$table]['columns'][strtolower($column)]))
-			$extra['columns'][$table][] = $column;
+		{
+			if ((!isset($tables[$table]['columns'][$column])) && $strict_case)
+				$extra['columns'][$table][] = $column;
+			elseif (!$strict_case && !isset($tables[$table]['columns'][strtolower($column)]))
+				$extra['columns'][$table][] = $column;
+		}
 
-		// or extra indexes taking up space
-		$current_indexes = $db->list_indexes($table_prefix . $table, true);
+		// Or extra indexes taking up space
+		$current_indexes = $table_db->db_list_indexes($table_prefix . $table, true);
 		foreach ($current_indexes as $key => $index)
 		{
 			if (!isset($tables[$table]['indexes'][$key]))
 			{
-				// keys don't match ... v1 to v2 upgrade appears to reuse old smf1 index names (upper or camel) ..
-				if ($version == 2 && $key != 'PRIMARY' && !$strict_case)
+				// keys don't match, upgrade issue?
+				if ($key != 'PRIMARY' && !$strict_case)
 				{
 					// lets see if a lowercase or camelCase version of the key will work
 					$tempkey = (isset($tables[$table]['indexes'][strtolower($key)])) ? strtolower($key) : (isset($tables[$table]['indexes'][unCamelCase($key)]) ? unCamelCase($key) : '');
@@ -171,20 +186,21 @@ function examine()
 		}
 	}
 
-	// modSettings that are not from standard SMF
+	// modSettings that are not from standard Elkarte
 	$current_settings = array();
 	$request = $db->query('', '
 		SELECT variable
 		FROM {db_prefix}settings',
 		array(
-			)
-		);
+		)
+	);
 
-	while ($row = ($version == 1 ? mysql_fetch_row($request) : $db->fetch_row($request)))
-	$current_settings[$row[0]] = $row[0];
-	($version == 1) ? mysql_free_result($request) : $db->free_result($request);
+	while ($row = $db->fetch_row($request))
+		$current_settings[$row[0]] = $row[0];
 
-	// check what could be there vs what it ;)
+	$db->free_result($request);
+
+	// Check what could be there vs what it ;)
 	foreach ($current_settings as $mod)
 	{
 		if (!isset($mset[$mod]))
@@ -193,6 +209,7 @@ function examine()
 			$submod = explode('_', $mod);
 			if (isset($mset[$submod[0] . '_']) && (strpos($mod, $mset[$submod[0] . '_']) == 0))
 				continue;
+
 			$extra['settings'][] = $mod;
 		}
 	}
@@ -209,6 +226,9 @@ function execute()
 
 	checkSession();
 
+	$db = database();
+	$table_db = db_table();
+
 	if (empty($_POST['agree']) || empty($_POST['submit_ok']))
 		fatal_error('How did you get here?', false);
 
@@ -218,7 +238,7 @@ function execute()
 	// Only do these steps if we have not already started our loop
 	if (!isset($_SESSION['db_cleaner']))
 	{
-		// init
+		// Init
 		$execute = array(
 			'tables' => array(),
 			'columns' => array(),
@@ -226,9 +246,9 @@ function execute()
 			'settings' => array(),
 			'results' => array(),
 			'actions' => array(),
-			);
+		);
 
-		// build our to do arrays based on what the user selected.
+		// Build the to do arrays based on what the user selected.
 		if (!empty($_POST['columns']))
 		{
 			foreach ($_POST['columns'] as $table_name => $table)
@@ -244,6 +264,7 @@ function execute()
 			}
 		}
 
+		// Remove some indexes?
 		if (!empty($_POST['indexes']))
 		{
 			foreach ($_POST['indexes'] as $table_name => $table)
@@ -259,6 +280,7 @@ function execute()
 			}
 		}
 
+		// Remove tables?
 		if (!empty($_POST['tables']))
 		{
 			foreach ($_POST['tables'] as $table)
@@ -268,6 +290,7 @@ function execute()
 			}
 		}
 
+		// Remove excess settings?
 		if (!empty($_POST['settings']))
 		{
 			foreach ($_POST['settings'] as $table)
@@ -277,7 +300,7 @@ function execute()
 			}
 		}
 
-		// Step 1: build the remove data for extra index's
+		// Step 1: build the remove data for any extra index's
 		foreach ($execute['indexes'] as $table_name => $table)
 		{
 			foreach ($table as $index)
@@ -285,10 +308,10 @@ function execute()
 				'prefix' => $table_prefix,
 				'table' => $table_name,
 				'index' => $index
-				);
+			);
 		}
 
-		// Step 2: build the remove data for extra columns
+		// Step 2: build the remove data for any extra columns
 		foreach ($execute['columns'] as $table_name => $table)
 		{
 			foreach ($table as $column)
@@ -296,7 +319,7 @@ function execute()
 				'prefix' => $table_prefix,
 				'table' => $table_name,
 				'column' => $column
-				);
+			);
 		}
 
 		// Step 3: build the drop data for tables
@@ -304,13 +327,13 @@ function execute()
 		$execute['actions'][] = array(
 			'prefix' => $table_prefix,
 			'table' => $table
-			);
+		);
 
 		// Step 4: All those unused settings
 		$execute['actions'][] = array(
 			'prefix' => $table_prefix,
 			'settings' => $execute['settings']
-			);
+		);
 
 		// save the data for future generations
 		$_SESSION['db_cleaner']['execute'] = $execute;
@@ -318,27 +341,26 @@ function execute()
 		$_SESSION['db_cleaner']['done'] = 0;
 	}
 
-	// load up where we are on this pass
+	// Load up where we are on this pass
 	$execute = $_SESSION['db_cleaner']['execute'];
 	$done = $_SESSION['db_cleaner']['done'];
 	$work = $_SESSION['db_cleaner']['work'];
 
 	// Do some database work, but not to much :)
-	$db_table = db_table();
 	$this_loop = 0;
 	$done = (isset($_SESSION['db_cleaner']['done'])) ? $_SESSION['db_cleaner']['done'] : 0;
-	for ($i = $done; ($i < $work && $this_loop < $chunk); $i++, $this_loop++)
+	for ($i = $done; $i < $work && $this_loop < $chunk; $i++, $this_loop++)
 	{
-		// lazy and don't want to type the whole thing in :)
+		// Lazy and don't want to type the whole thing in :)
 		$todo = $execute['actions'][$i];
 
-		// remove index, then columns, then tables
+		// Remove index, then columns, then tables
 		if (isset($todo['index']))
-			$execute['results']['index'][$todo['table']][$todo['index']] = $db_table->db_remove_index($todo['prefix'] . $todo['table'], $todo['index']);
+			$execute['results']['index'][$todo['table']][$todo['index']] = $table_db->db_remove_index($todo['prefix'] . $todo['table'], $todo['index']);
 		if (isset($todo['column']))
-			$execute['results']['column'][$todo['table']][$todo['column']] = $db_table->db_remove_column($todo['prefix'] . $todo['table'], $todo['column']);
+			$execute['results']['column'][$todo['table']][$todo['column']] = $table_db->db_remove_column($todo['prefix'] . $todo['table'], $todo['column']);
 		if (isset($todo['table']))
-			$execute['results']['table'][$todo['table']] = $db_table->db_drop_table($todo['prefix'] . $todo['table']);
+			$execute['results']['table'][$todo['table']] = $table_db->db_drop_table($todo['prefix'] . $todo['table']);
 		if (isset($todo['settings']) && count($todo['settings']) != 0)
 		{
 			global $modSettings;
@@ -351,7 +373,7 @@ function execute()
 			// And now from sight
 			$execute['results']['settings'] = $db->query('', 'DELETE FROM ' . $todo['prefix'] . 'settings WHERE variable IN ({array_string:variables})', array('variables' => $todo['settings']));
 
-			// And let SMF know we have been mucking about
+			// And let Elkarte know we have been mucking about
 			updateSettings(array('settings_updated' => time()));
 		}
 	}
@@ -367,7 +389,7 @@ function execute()
 /**
 * sql_to_array()
 *
-* - reads in an default SMF SQL file either v1 or v2
+* - reads in an default ElkArte install SQL file
 * - creates arrays to represent all tables, cols and indexes
 * - used in examine function to deterime whats not standard
 *
@@ -376,7 +398,7 @@ function execute()
 */
 function sql_to_array($file)
 {
-	global $db_prefix, $txt;
+	global $txt;
 
 	if (!file_exists($file))
 		fatal_error('Could not locate SQL file.', false);
@@ -390,7 +412,7 @@ function sql_to_array($file)
 	$table_names = array();
 	$table_name = '';
 
-	// go line by line through this smf database definiton
+	// Go line by line through the database definiton
 	foreach ($sql_lines as $line)
 	{
 		$line = trim($line);
@@ -405,7 +427,7 @@ function sql_to_array($file)
 			continue;
 		}
 
-		// column definiton for a table ...
+		// A column definiton for a table ...
 		preg_match_all('~^`?([A-Za-z0-9_]+)`? ([A-Za-z0-9\(\)]+)\s*(unsigned)?\s*(NOT NULL)?\s*(default \'?([A-Za-z0-9-,_ ])*\'?)?(auto_increment)?(/\*.+\*/)?,?$~i', $line, $matches, PREG_SPLIT_DELIM_CAPTURE);
 		if (!empty($matches[0]))
 		{
@@ -420,12 +442,12 @@ function sql_to_array($file)
 				'size' => !empty($type[3]) ? $type[3] : '',
 				'auto' => !empty($column_info[7]),
 				'unsigned' => !empty($column_info[3]),
-				);
+			);
 
 			continue;
 		}
 
-		// index defintion for a table
+		// The index defintions for a table
 		preg_match_all('~^(PRIMARY KEY|KEY|UNIQUE|UNIQUE KEY|INDEX)\s*`?([A-Za-z0-9_]*)`?\s*\((.+)\),?$~i', $line, $matches, PREG_SPLIT_DELIM_CAPTURE);
 		if (!empty($matches[0]))
 		{
@@ -438,13 +460,13 @@ function sql_to_array($file)
 				'UNIQUE INDEX' => 'unique',
 				'KEY' => 'index',
 				'INDEX' => 'index',
-				);
+			);
 
 			$tables[$table_name]['indexes'][$index_info[1] == 'PRIMARY KEY' ? 'PRIMARY' : $index_info[2]] = array(
 				'name' => $index_info[1] == 'PRIMARY KEY' ? 'PRIMARY' : $index_info[2],
 				'type' => $index_types[$index_info[1]],
 				'columns' => $index_columns,
-				);
+			);
 
 			continue;
 		}
@@ -470,7 +492,7 @@ function template_examine()
 	global $context, $extra, $txt;
 
 	echo '
-<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
+<script><!-- // --><![CDATA[
 	function check_agree()
 	{
 		document.forms.cleanup.submit_ok.disabled = !document.forms.cleanup.agree.checked;
@@ -478,149 +500,142 @@ function template_examine()
 			document.forms.cleanup.submit_ok.style.background="#BBBBBB";
 			document.forms.cleanup.submit_ok.style.cursor="none";
 		}
-		else {
+		else
+		{
 			document.forms.cleanup.submit_ok.style.background="#cde7ff";
 			document.forms.cleanup.submit_ok.style.cursor="pointer";
 		}
+
 		setTimeout("check_agree();", 100);
 	}
 	setTimeout("check_agree();", 100);
 // ]]></script>
 
-<form action="?action=execute" method="post" accept-charset="', $context['character_set'], '" name="cleanup" id="cleanup">
+<form action="?action=execute" method="post" accept-charset="UTF-8" name="cleanup" id="cleanup">
+	<h3 class="category_header">', $txt['examine_database'], '</h3>
+	<h4 class="category_header">
+		<input type="checkbox" onclick="invertAll(this, this.form, \'tables\');" /> ', $txt['extra_tables'], '
+	</h4>
+	<div class="content">
+		<ul>';
 
-	<div class="cat_bar">
-		<h3 class="catbg ">Examine Database</h3>
-	</div>
-
-
-	<div class="title_bar">
-		<h4 class="titlebg"><input type="checkbox" onclick="invertAll(this, this.form, \'tables\');" />', $txt['extra_tables'], '</h4>
-	</div>
-	<div class="windowbg2">
-		<span class="topslice"><span></span></span>
-		<div class="content">
-			<ul class="normallist">';
-
+	// Output any tables found that were not part of the normal install
 	if (!empty($extra['tables']))
 	{
 		foreach ($extra['tables'] as $table)
 			echo '
-				<li><input type="checkbox" name="tables[]" value="', $table, '" /> ', $table, '</li>';
+			<li>
+				<input type="checkbox" name="tables[]" value="', $table, '" /> ', $table, '
+			</li>';
 	}
 	else
 		echo '
-				<li>', $txt['no_extra_tables'], '</li>';
+			<li>', $txt['no_extra_tables'], '</li>';
 
 	echo '
-			</ul>
-		</div>
-		<span class="botslice"><span></span></span>
+		</ul>
 	</div>
 
+	<h4 class="category_header">
+		<input type="checkbox" onclick="invertAll(this, this.form, \'columns\');" /> ', $txt['extra_columns'], '
+	</h4>
+	<div class="content">
+		<ul class="nolist">';
 
-	<div class="title_bar">
-		<h4 class="titlebg"><input type="checkbox" onclick="invertAll(this, this.form, \'columns\');" />', $txt['extra_columns'], '</h4>
-	</div>
-	<div class="windowbg">
-		<span class="topslice"><span></span></span>
-		<div class="content">
-			<ul class="normallist">';
-
+	// Columns in tables that are not standard
 	if (!empty($extra['columns']))
 	{
+		// List the table, and then the extra columns in it
 		foreach ($extra['columns'] as $table_name => $table)
 		{
 			echo '
-				<li><input type="checkbox" onclick="invertAll(this, this.form, \'columns[', $table_name, '][]\');" /> ', $table_name, '
-					<ul class="normallist">';
+			<li>
+				<input type="checkbox" onclick="invertAll(this, this.form, \'columns[', $table_name, '][]\');" /> <strong>', $txt['table_name'], ' : ',  $table_name, '</strong>
+				<ul class="normallist">';
 
 			foreach ($table as $column)
 			echo '
-						<li><input type="checkbox" name="columns[', $table_name, '][]" value="', $column, '" /> ', $column, '</li>';
+					<li>
+						<input type="checkbox" name="columns[', $table_name, '][]" value="', $column, '" /> ', $column, '
+					</li>';
 
 			echo '
-					</ul>
-				</li>';
+				</ul>
+			</li>';
 		}
 	}
 	else
 		echo '
-				<li>', $txt['no_extra_columns'], '</li>';
+			<li>', $txt['no_extra_columns'], '</li>';
 
 	echo '
-			</ul>
-		</div>
-		<span class="botslice"><span></span></span>
+		</ul>
 	</div>
 
+	<h4 class="category_header">
+		<input type="checkbox" onclick="invertAll(this, this.form, \'indexes\');" /> ', $txt['extra_indexes'], '
+	</h4>
+	<div class="content">
+		<ul>';
 
-	<div class="title_bar">
-		<h4 class="titlebg"><input type="checkbox" onclick="invertAll(this, this.form, \'indexes\');" />', $txt['extra_indexes'], '</h4>
-	</div>
-	<div class="windowbg2">
-		<span class="topslice"><span></span></span>
-		<div class="content">
-			<ul class="normallist">';
-
+	// Indexes that we did not define
 	if (!empty($extra['indexes']))
 	{
 		foreach ($extra['indexes'] as $table_name => $table)
 		{
 			echo '
-				<li><input type="checkbox" onclick="invertAll(this, this.form, \'indexes[', $table_name, '][]\');" /> ', $table_name, '
-					<ul class="normallist">';
+			<li>
+				<input type="checkbox" onclick="invertAll(this, this.form, \'indexes[', $table_name, '][]\');" /> ', $table_name, '
+				<ul>';
 
 			foreach ($table as $index)
 				echo '
-						<li><input type="checkbox" name="indexes[', $table_name, '][]" value="', $index['name'], '" /> ', $index['name'], '</li>';
+					<li>
+						<input type="checkbox" name="indexes[', $table_name, '][]" value="', $index['name'], '" /> ', $index['name'], '
+					</li>';
 
 			echo '
-					</ul>
-				</li>';
+				</ul>
+			</li>';
 		}
 	}
 	else
 		echo '
-				<li>', $txt['no_extra_indexes'], '</li>';
+			<li>', $txt['no_extra_indexes'], '</li>';
+
 	echo '
-			</ul>
-		</div>
+		</ul>
 	</div>
 
-	<div class="title_bar">
-		<h4 class="titlebg"><input type="checkbox" onclick="invertAll(this, this.form, \'settings\');" />', $txt['extra_settings'], '</h4>
-	</div>
-	<div class="windowbg">
-		<span class="topslice"><span></span></span>
-		<div class="content">
-			<ul class="normallist">';
+	<h4 class="category_header">
+		<input type="checkbox" onclick="invertAll(this, this.form, \'settings\');" /> ', $txt['extra_settings'], '
+	</h4>
+	<div class="content">
+		<ul>';
 
 	if (!empty($extra['settings']))
 	{
 		foreach ($extra['settings'] as $table)
 			echo '
-				<li><input type="checkbox" name="settings[]" value="', $table, '" /> ', $table, '</li>';
+			<li>
+				<input type="checkbox" name="settings[]" value="', $table, '" /> ', $table, '
+			</li>';
 	}
 	else
 		echo '
-				<li>', $txt['no_extra_settings'], '</li>';
+			<li>', $txt['no_extra_settings'], '</li>';
 
 	echo '
-			</ul>
-		</div>
-
-		<div class="error">
-			<input type="checkbox" name="agree" id="agree" onclick="checkAgree();" value="1" /><strong>', $txt['i_promise'], '</strong>
-		</div>
-
-		<div class="windowbg submit_button">
-			<input type="submit" name="submit_ok" class="button_submit" value="', $txt['clean_database'], '" />
-		</div>
-		<span class="botslice"><span></span></span>
+		</ul>
 	</div>
-	<br class="clear" />
-	<input type="hidden" name="', isset($context['session_var']) ? $context['session_var'] : 'sc', '" value="', $context['session_id'], '" />
+
+	<div class="warningbox">
+		<input class="input_check" type="checkbox" name="agree" id="agree" onclick="checkAgree();" value="1" /><strong>&nbsp;', $txt['i_promise'], '</strong>
+		<div class="submit_button">
+			<input type="submit" name="submit_ok" class="button_submit" value="', $txt['clean_database'], '" />
+			<input type="hidden" name="', $context['session_var'], '" value="', $context['session_id'], '" />
+		</div>
+	</div>
 </form>
 ';
 }
@@ -637,14 +652,12 @@ function template_execute()
 	global $execute, $txt;
 
 	echo '
-<div id="results" class="tborder">
-	<div class="cat_bar">
-		<h3 class="catbg ">', $txt['execute_report'], '</h3>
-	</div>
+<div id="results">
+	<h3 class="category_header">', $txt['execute_report'], '</h3>
 
-	<div class="title_bar">
-		<h4 class="titlebg ">', $txt['extra_tables'], '</h4>
-	</div>
+	<h4 class="category_header">
+		', $txt['extra_tables'], '
+	</h4>
 	<div class="windowbg">
 		<ul class="normallist">';
 
@@ -663,9 +676,7 @@ function template_execute()
 	</div>
 
 
-	<div class="title_bar">
-		<h4 class="titlebg">', $txt['extra_columns'], '</h4>
-	</div>
+	<h4 class="category_header">', $txt['extra_columns'], '</h4>
 	<div class="windowbg">
 		<ul class="normallist">';
 
@@ -695,9 +706,7 @@ function template_execute()
 	</div>
 
 
-	<div class="title_bar">
-		<h4 class="titlebg">', $txt['extra_indexes'], '</h4>
-	</div>
+	<h4 class="category_header">', $txt['extra_indexes'], '</h4>
 	<div class="windowbg">
 		<ul class="normallist">';
 
@@ -727,9 +736,7 @@ function template_execute()
 	</div>
 
 
-	<div class="title_bar">
-		<h4 class="titlebg ">', $txt['extra_settings'], '</h4>
-	</div>
+	<h4 class="category_header ">', $txt['extra_settings'], '</h4>
 	<div class="windowbg">
 		<ul class="normallist">';
 
@@ -761,17 +768,14 @@ function template_execute()
 */
 function template_not_done()
 {
-	global $context, $settings, $options, $txt, $scripturl;
+	global $context, $txt;
 
 	echo '
 	<div id="databasecleanup">
-		<div class="cat_bar">
-			<h3 class="catbg">
-				', $txt['not_done_title'], '
-			</h3>
-		</div>
+		<h3 class="category_header">
+			', $txt['not_done_title'], '
+		</h3>
 		<div class="windowbg">
-			<span class="topslice"><span></span></span>
 			<div class="content">
 				', $txt['not_done_reason'];
 
@@ -792,7 +796,6 @@ function template_not_done()
 					', $context['continue_post_data'], '
 				</form>
 			</div>
-			<span class="botslice"><span></span></span>
 		</div>
 	</div>
 	<br class="clear" />
@@ -866,6 +869,7 @@ function loadtext()
 	global $txt;
 
 	// Yup .... needs to go to a language file ... at some point
+	$txt['examine_database'] = 'Examine Database';
 	$txt['not_done_title'] = 'Not done yet!';
 	$txt['not_done_reason'] = 'To avoid overloading your server, the process has been temporarily paused.  It should automatically continue in a few seconds.  If it doesn\'t, please click continue below.';
 	$txt['not_done_continue'] = 'Continue';
@@ -888,6 +892,7 @@ function loadtext()
 	$txt['no_columns_affected'] = 'No columns affected';
 	$txt['no_indexes_affected'] = 'No indexes affected';
 	$txt['no_settings_affected'] = 'No settings affected';
+	$txt['table_name'] = 'In table';
 }
 
 /**
@@ -929,6 +934,7 @@ function file_to_array($file)
 
 		$parts[$line] = $line;
 	}
+
 	fclose($file_handle);
 
 	return $parts;
