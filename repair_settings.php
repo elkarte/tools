@@ -38,8 +38,9 @@ template_show_footer();
 
 /**
  * Start things up
- * It sets up variables for other steps
- * It makes the intial connection to the db
+ *
+ * - It sets up variables for other steps
+ * - It makes the intial connection to the db
  */
 function initialize_inputs()
 {
@@ -491,19 +492,24 @@ function action_show_settings()
 
 	if ($failure)
 		echo '
-				<input type="submit" name="submit" value="', $txt['save_settings'], '" disabled="disabled" class="button_submit" /><br />', $txt['not_writable'];
+						<input type="submit" name="submit" value="', $txt['save_settings'], '" disabled="disabled" class="button_submit" /><br />', $txt['not_writable'];
 	else
 		echo '
-				<a class="linkbutton" href="javascript:restoreAll();">', $txt['restore_all_settings'], '</a>
-				<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />
-				<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />';
+						<a class="linkbutton" href="javascript:restoreAll();">', $txt['restore_all_settings'], '</a>
+						<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />
+						<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />';
 
 	echo '
-				</div>
+					</div>
 				</div>
 			</form>';
 }
 
+/**
+ *
+ * @param type $id
+ * @param type $array_setting
+ */
 function guess_attachments_directories($id, $array_setting)
 {
 	static $usedDirs;
@@ -554,6 +560,7 @@ function guess_attachments_directories($id, $array_setting)
 	elseif (empty($usedDirs) && !empty($availableDirs))
 	{
 		$guesses = array();
+
 		// attachments is the first guess
 		foreach ($availableDirs as $dir)
 			if ($dir == 'attachments')
@@ -655,11 +662,13 @@ function action_set_settings()
 	// Attachments dirs
 	$attach_count = 1;
 	foreach ($setString as $key => $value)
+	{
 		if (strpos($value[0], 'attachmentUploadDir') == 0 && strpos($value[0], 'attachmentUploadDir') !== false)
 		{
 			$attach_dirs[$attach_count++] = $value[1];
 			unset($setString[$key]);
 		}
+	}
 
 	// Only one dir...or maybe nothing at all
 	if (count($attach_dirs) > 1)
@@ -761,7 +770,7 @@ function load_language_data()
 	$txt['database_settings_hidden'] = 'Some settings are not being shown because the database connection information is incorrect.';
 
 	$txt['critical_settings'] = 'Critical Settings';
-	$txt['critical_settings_info'] = 'These are the settings most likely to cuase problems with your board, but try the things below (especially the path and URL ones) if these don\'t help.  You can click on the recommended value to use it.';
+	$txt['critical_settings_info'] = 'These are the settings most likely to cause problems with your board, but try the things below (especially the path and URL ones) if these don\'t help.  You can click on the recommended value to use it.';
 	$txt['maintenance'] = 'Maintenance Mode';
 	$txt['maintenance0'] = 'Off (recommended)';
 	$txt['maintenance1'] = 'Enabled';
@@ -820,6 +829,9 @@ function load_language_data()
 	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.';
 }
 
+/**
+ * Show the main template with the current and suggested values
+ */
 function template_initialize()
 {
 	global $txt, $db_type;
