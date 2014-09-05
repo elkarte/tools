@@ -53,6 +53,9 @@ class Images_To_Sprite
 	// File names to add to sprite
 	protected $sprite_names = array();
 
+	// Pitch correction (optional)
+	protected $correction;
+
 	/**
 	 * Load or set arguments in to the class
 	 */
@@ -78,6 +81,9 @@ class Images_To_Sprite
 
 		// Center to center pitch of the images in the sprite
 		$this->pitch = $this->sprite_key[3];
+
+		// Offset correction if the initial center point of the pattern does not start at pitch/2
+		$this->correction = isset($this->sprite_key[4]) ? $this->sprite_key[4] : 0;
 	}
 
 	/**
@@ -156,6 +162,13 @@ class Images_To_Sprite
 			// Append images to sprite
 			foreach ($this->sprite_names[$col] as $sprite)
 			{
+				if (!isset($this->files[$sprite]))
+				{
+					echo 'Sprite file ', $sprite,' was not loaded (wrong size or name?)';
+					$i++;
+					continue;
+				}
+
 				$file = $this->files[$sprite];
 
 				// Load the image
@@ -165,14 +178,14 @@ class Images_To_Sprite
 				if ($this->direction == 'vertical')
 				{
 					$x = round(($this->size - ($file['x'])) / 2, 0);
-					$x += $this->size * ($col);
+					$x += $this->size * ($col) - $this->correction;
 					$x = max($x, 0);
 					$y = round($this->pitch * $i + $this->pitch / 2 - ($file['y'] / 2), 0);
 					imagecopy($im, $im2, $x, $y, 0, 0, $file['x'], $file['y']);
 				}
 				else
 				{
-					$x = round($this->pitch * $i + $this->pitch / 2 - ($file['y'] / 2), 0);
+					$x = round($this->pitch * $i + $this->pitch / 2 - ($file['x'] / 2), 0) - $this->correction;
 					$y = round(($this->size - $file['x']) / 2, 0);
 					$y += $this->size * ($col);
 					$y = max($y, 0);
@@ -203,6 +216,7 @@ class Images_To_Sprite
 	 *   direction to grow,
 	 *   size (the size opposite the direction to grow),
 	 *   pitch center to center distance of the sprite images
+	 *	 initial offset (optional), if the first sprite position is not pitch/2
 	 * sprite_names =
 	 *   file name of the sprite to add, the order defined is the order they will be added
 	 */
@@ -310,7 +324,7 @@ class Images_To_Sprite
 				);
 				break;
 			case 'board_icons':
-				$this->sprite_key = array('board_icons.png', 'horizontal', 48, 72);
+				$this->sprite_key = array('board_icons.png', 'horizontal', 48, 72, 12);
 				$this->sprite_names = array(
 					0 => array(
 						'on',
