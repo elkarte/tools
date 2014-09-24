@@ -10,147 +10,20 @@
  * copyright:	2011 Simple Machines (http://www.simplemachines.org)
  * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @version 1.0 Alpha
+ * @version 1.0
  */
 
-// If SSI.php is in the same place as this file, and SMF isn't defined, this is being run standalone.
-if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('SMF') && !defined('ELKARTE'))
+// If SSI.php is in the same place as this file, and ELK isn't defined, this is being run standalone.
+if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('ELK'))
 	require_once(dirname(__FILE__) . '/SSI.php');
 
-// Hmm... no SSI.php and no Elkarte?
-elseif(!defined('SMF') && !defined('ELKARTE'))
-	die('<b>Error:</b> Cannot start - please verify you put this in the same place as Elkarte\'s SSI.php.');
+// Hmm... no SSI.php and no ElkArte?
+elseif (!defined('ELK'))
+	die('<b>Error:</b> Cannot start - please verify you put this in the same place as ElkArte\'s SSI.php.');
 
-$smfinfo_version = '1.0';
+$elkinfo_version = '1.0';
 
 initialize();
-
-function load_txt_strings()
-{
-	global $txt, $boardurl;
-
-	// Tabs
-	$txt['title'] = 'Elkarte Info Support Tool';
-	$txt['maininfo'] = 'System Info';
-	$txt['phpinfo'] = 'PHP Info';
-	$txt['detailedinfo'] = 'Detailed File Check';
-	$txt['detailedinfo_db'] = 'Detailed DB Check';
-	$txt['mods_installed'] = 'Mods Installed';
-	$txt['error_log'] = 'Error Log';
-	$txt['status'] = 'System Status';
-
-	// Password form
-	$txt['password_title'] = 'Password Entry';
-	$txt['password'] = 'Password:';
-	$txt['submit'] = 'Submit';
-
-	// Main info
-	$txt['smfinfo_pass'] = 'Below is the password to access this file.  Please share it wisely as this page contains a lot of information about your forum and host.<br /><br />Password: %s <a href="' . $boardurl . '/smfinfo.php?regenerate">(Regenerate)</a><br /><br /><a href="' . $boardurl . '/smfinfo.php?delete">Delete File</a> (This attempts to remove this file from your server)';
-	$txt['smf_version'] = 'SMF/Elkarte Version';
-	$txt['php_version'] = 'PHP Version';
-	$txt['database_version'] = 'Database Version';
-	$txt['webserver_version'] = 'Web Server';
-	$txt['php_api'] = 'PHP/Server Interface';
-	$txt['lang_char_set'] = 'Language Character Set';
-	$txt['db_char_set'] = 'Database Character Set';
-	$txt['db_table_info'] = 'Detailed Table Information';
-
-
-	// Elkarte Specific Info
-	$txt['site_relevant'] = 'Relevant Forum Settings';
-	$txt['sef_urls'] = 'SEF URLs';
-	$txt['time_load'] = 'Display Load Times';
-	$txt['hostname_lookup'] = 'Disable Hostname Lookups';
-	$txt['log_pruning'] = 'Auto Log Pruning (2.0+)';
-	$txt['db_persist'] = 'Persistent DB Connection';
-	$txt['maintenance_mode'] = 'Maintenance Mode';
-	$txt['cookie_name'] = 'Cookie Name';
-	$txt['local_cookies'] = 'Local Cookie Storage';
-	$txt['global_cookies'] = 'Subdomain Ind. Cookies';
-	$txt['compressed_output'] = 'Compressed Output';
-	$txt['database_sessions'] = 'Database Driven Sessions';
-	$txt['database_loose'] = 'Return to cached pages';
-	$txt['session_timeout'] = 'Session Timeout Delay';
-	$txt['db_last_error'] = 'Last Database Error';
-	$txt['db_debug'] = 'Debugging';
-	$txt['enable_error'] = 'Enable Error Logging';
-	$txt['auto_fix_db'] = 'Auto Fix Database';
-	$txt['cache'] = 'Caching';
-	$txt['memcached_settings'] = 'Memcached Settings';
-	$txt['cache_level'] = 'Level';
-	$txt['unknown_db_version'] = 'Database Character Set Unknown';
-	$txt['support_versions_current'] = 'Current SMF Info version';
-	$txt['support_versions_forum'] = 'Your SMF Info version';
-	$txt['previousCharacterSet'] = 'Previous character set';
-
-
-	// PHP Specific Info
-	$txt['relevant_info'] = 'Relevant PHP Settings';
-	$txt['safe_mode'] = 'Safe Mode';
-	$txt['open_base'] = 'Open basedir';
-	$txt['display_errors'] = 'Display Errors';
-	$txt['file_uploads'] = 'File Uploads';
-	$txt['magic_quotes'] = 'Magic Quotes';
-	$txt['register_globals'] = 'Register Globals';
-	$txt['output_buffering'] = 'Output Buffering';
-	$txt['session_save'] = 'Session Save Path';
-	$txt['session_auto'] = 'Session Auto Start';
-	$txt['xml_enabled'] = 'XML Enabled';
-	$txt['zlib_enabled'] = 'Zlib Enabled';
-	$txt['disabled_func'] = 'Disabled Functions';
-
-	// File check
-	$txt['sources_version'] = 'Sources';
-	$txt['template_version'] = 'Default Templates';
-	$txt['language_version'] = 'Language Files';
-	$txt['custom_template_version'] = 'Custom Templates';
-	$txt['file_version'] = 'SMF File';
-	$txt['your_version'] = 'Your Version';
-	$txt['current_version'] = 'Current Version';
-
-	// Database check
-	$txt['no_detailed_db'] = 'Detailed database information is only available on MySQL databases';
-	$txt['db_size'] = 'Database Size';
-	$txt['db_table_name'] = 'Name';
-	$txt['db_table_engine'] = 'Engine';
-	$txt['db_table_rows'] = 'Rows';
-	$txt['db_table_size'] = 'Size';
-	$txt['db_table_max_size'] = 'Max Size';
-	$txt['db_table_overhead'] = 'Overhead';
-	$txt['db_table_auto'] = 'Next Auto';
-	$txt['db_table_collation'] = 'Collation';
-	$txt['db_column_name'] = 'Field Name';
-	$txt['db_column_type'] = 'Type';
-	$txt['db_column_null'] = 'Null';
-	$txt['db_column_default'] = 'Default Value';
-	$txt['db_column_extra'] = 'Extra Info';
-
-	// Mods installed
-	$txt['package_name'] = 'Package Name';
-	$txt['package_id'] = 'Package Id';
-	$txt['package_version'] = 'Package Version';
-
-	// Error log
-	$txt['error_log_count'] = 'Number of Errors';
-	$txt['show_all_errors'] = 'Showing all errors';
-	$txt['show_num_errors'] = 'Showing 100 of %d errors';
-	$txt['error_time'] = 'Time of Error';
-	$txt['error_member'] = 'Member ID that caused error';
-	$txt['error_url'] = 'URL that caused error';
-	$txt['error_message'] = 'Error Message';
-	$txt['error_type'] = 'Error Type';
-	$txt['error_file'] = 'File';
-	$txt['error_line'] = 'Line';
-
-	// Simple Text strings
-	$txt['none'] = 'NONE';
-	$txt['on'] = 'ON';
-	$txt['off'] = 'OFF';
-	$txt['empty'] = 'EMPTY';
-	$txt['seconds'] = 'seconds';
-	$txt['na'] = 'n/a';
-	$txt['recommended'] = 'Recommended Value';
-}
 
 load_txt_strings();
 
@@ -158,7 +31,7 @@ load_txt_strings();
 // The keys on these entries need to match
 // what is in the $txt keys/brackets above
 // Makes for easy adding of extra info, or deleting
-$context['smfinfo'] = array (
+$context['elkinfo'] = array(
 	'db_last_error' => !empty($db_last_error) ? date(DATE_RFC822, $db_last_error) : $txt['none'],
 	'auto_fix_db' => get_forum_setting('autoFixDatabase', 'on'),
 	'db_persist' => get_forum_setting('db_persist', 'off'),
@@ -166,13 +39,13 @@ $context['smfinfo'] = array (
 	'enable_error' => get_forum_setting('enableErrorLogging', 'on'),
 	'database_sessions' => get_forum_setting('databaseSession_enable'),
 	'database_loose' => get_forum_setting('databaseSession_loose'),
-	'session_timeout' => !empty($modSettings['databaseSession_lifetime']) ? $modSettings['databaseSession_lifetime'] . ' ' . $txt['seconds'] : '<i>' . $txt['empty'] . '</i>&nbsp;<strong>(' . $txt['recommended'] . ': >300)</strong>',
+	'session_timeout' => !empty($modSettings['databaseSession_lifetime']) ? $modSettings['databaseSession_lifetime'] . ' ' . $txt['seconds'] : '<em>' . $txt['empty'] . '</em>&nbsp;<strong>(' . $txt['recommended'] . ': >300)</strong>',
 	'maintenance_mode' => get_forum_setting('maintenance'),
 	'time_load' => get_forum_setting('timeLoadPageEnable'),
 	'hostname_lookup' => get_forum_setting('disableHostnameLookup'),
 	'cache' => (!empty($modSettings['cache_enable']) ? $txt['cache_level'] . ' ' . $modSettings['cache_enable'] : $txt['off']) . ($modSettings['cache_enable'] != '1' ? '&nbsp;<strong>(' . $txt['recommended'] . ': ' . $txt['cache_level'] . ' 1)</strong>' : ''),
-	'memcached_settings' => isset($modSettings['cache_memcached']) && trim($modSettings['cache_memcached']) != '' ? trim($modSettings['cache_memcached']) : '<i>' . $txt['empty'] . '</i>',
-	'cookie_name' => !empty($cookiename) ? $cookiename : '<i>' . $txt['empty'] . '</i>&nbsp;<strong>(' . $txt['recommended'] . ': SMFCookie' . rand(100,999) . ')</strong>',
+	'memcached_settings' => isset($modSettings['cache_memcached']) && trim($modSettings['cache_memcached']) != '' ? trim($modSettings['cache_memcached']) : '<em>' . $txt['empty'] . '</em>',
+	'cookie_name' => !empty($cookiename) ? $cookiename : '<em>' . $txt['empty'] . '</em>&nbsp;<strong>(' . $txt['recommended'] . ': ELKCookie' . rand(100, 999) . ')</strong>',
 	'local_cookies' => get_forum_setting('localCookies', 'off'),
 	'global_cookies' => get_forum_setting('globalCookies'),
 	'log_pruning' => get_forum_setting('pruningOptions', 'on'),
@@ -181,7 +54,7 @@ $context['smfinfo'] = array (
 	'previousCharacterSet' => get_forum_setting('previousCharacterSet'),
 );
 
-$context['phpinfo'] = array (
+$context['phpinfo'] = array(
 	'safe_mode' => get_php_setting('safe_mode', 'off'),
 	'open_base' => ($ob = ini_get('open_basedir')) ? $ob : $txt['none'],
 	'display_errors' => get_php_setting('display_errors', 'off'),
@@ -215,89 +88,104 @@ show_footer();
 
 function show_header()
 {
-	global $txt, $smfInfo, $context, $smfinfo_version;
+	global $txt, $elkinfo, $elkinfo_version;
 
-echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+	echo '<!DOCTYPE html>
+<html>
 	<head>
-
 		<meta http-equiv="Content-Type" content="text/html; charset=utf8" />
 		<title>', $txt['title'], '</title>
-		<style type="text/css">
-			body
-			{
-				background-color: #E5E5E8;
-				margin: 0px;
-				padding: 0px;
+		<style>
+			body {
+				background: #555;
+				font: 93.75%/150% "Segoe UI", "Helvetica Neue", "Liberation Sans", "Nimbus Sans L", "Trebuchet MS", Arial, sans-serif;
+				margin: 0;
+				padding: 0;
 			}
-			body, td
-			{
-				color: #000000;
-				font-size: 11px;
-				font-family: verdana, sans-serif;
+			body, td, th {
+				color: #666;
+				font-size: 1em;
 			}
-			div#header
-			{
-				background-image: url(Themes/default/images/catbg.jpg);
-				background-repeat: repeat-x;
-				background-color: #88A6C0;
+			td, th {
+				vertical-align: top;
+				padding: .2em 0;
+				word-wrap: break-word;
+				-webkit-hyphens: auto;
+				-moz-hyphens: auto;
+				-ms-hyphens: auto;
+			}
+			th {
+				width: 30%;
+				min-width: 26em;
+			}
+			#header {
 				padding: 22px 4% 12px 4%;
-				color: white;
-				font-family: Georgia, serif;
-				font-size: xx-large;
-				border-bottom: 1px solid black;
+				color: 49643d;
+				font-size: 2em;
 				height: 40px;
+				margin: 0;
+				background: #f4f4f4;
+				box-shadow: 0 1px 4px rgba(0,0,0,0.3), 0 1px 0 #3a642d inset;
+				border-top: 4px solid #5ba048;
+				border-bottom: 4px solid #3d6e32;
 			}
-			div#content
-			{
-				padding: 20px 30px;
+			#header img {
+			    float: right;
+				margin-top: -15px;
 			}
-			div.panel
-			{
-				position: relative;
-				border: 1px solid gray;
-				background-color: #F6F6F6;
-				margin: 1ex 0;
-				padding: 1.2ex;
-				z-index: 1;
+			#content {
+				margin: 10px auto;
+				width: 95%;
+				background: #fff;
+				padding: 5px;
 			}
-			div.panel h2
-			{
+			.panel {
+				padding: .929em 1.2em;
+				border: none;
+				margin-top: 16px;
+				border-radius: 5px;
+				background: #fafafa;
+				box-shadow: 1px 2px 3px -1px #111;
+			}
+			.panel h2 {
 				margin: 0;
 				margin-bottom: 0.5ex;
 				padding-bottom: 3px;
 				border-bottom: 1px dashed black;
-				font-size: 14pt;
+				font-size: 1.5em;
 				font-weight: normal;
 			}
-			pre
-			{
+			.panel h3 {
+				margin: 0;
+				margin-bottom: 2ex;
+				font-size: 1.5em;
+				font-weight: normal;
+			}
+			pre {
 				border: 1px dotted #aaaaaa;
 				overflow: auto;
 			}
-			tr.row1
-			{
+			tr.row1 {
 				background: #E5E5E8;
 			}
 			/* This is for the tabbed layout */
-			.dynamic-tab-pane-control .tab-pane{
+			.dynamic-tab-pane-control .tab-pane {
 				position:relative;
 			}
-			.dynamic-tab-pane-control .tab-page{
-				border:1px solid #919b9c;
-				background:#f6f6f6;
-				z-index:2;
-				position:relative;
-				top:-2px;
-				font:11px Tahoma;
-				color:#333;
-				padding:5px;
-				width:97%;
-				float:left;
+			.dynamic-tab-pane-control .tab-page {
+				border: 1px solid #919b9c;
+				background: #f6f6f6;
+				z-index: 2;
+				position: relative;
+				top: -2px;
+				color: #333;
+				padding: 5px;
+				margin: 10px;
+				border-radius: 5px;
+				box-shadow: 0 2px 4px #111;
 			}
 			/* This is for phpinfo */
-			table.adminlist
-			{
+			table.adminlist {
 				background-color:#FFF;
 				margin:0;
 				padding:0;
@@ -305,64 +193,58 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 				border-spacing:0;
 				width:100%;
 				border-collapse:collapse;
+				font-size: 0.756em;
 			}
-			table.adminlist th
-			{
-				margin:0;
-				padding:6px 4px 2px 4px;
-				height:25px;
-				background-repeat:repeat;
-				font-size:11px;
-				color:#fff;
+			table.adminlist th {
+				margin: 0;
+				padding: 6px 4px 2px 4px;
+				height: 25px;
+				background-repeat: repeat;
+				color: #fff;
 			}
-			table.adminlist th.title
-			{
+			table.adminlist th.title {
 				text-align:left;
 			}
-			table.adminlist th a
-			{
+			table.adminlist th a {
 				color:#f90;
 			}
-			table.adminlist tr.row0
-			{
-				background-color:#F5F5F5;
+			table.adminlist tr.row0 {
+				background-color: #F5F5F5;
 			}
-			table.adminlist tr.row1
-			{
-				background-color:#FFF;
+			table.adminlist tr.row1 {
+				background-color: #FFF;
 			}
-			table.adminlist td
-			{
-				border-bottom:1px solid #e5e5e5;
-				padding:4px;
+			table.adminlist td {
+				border-bottom: 1px solid #e5e5e5;
+				padding: 4px;
 			}
-			table.adminlist tr.row0:hover
-			{
-				background-color:#f1f1f1;
+			table.adminlist tr.row0:hover {
+				background-color: #f1f1f1;
 			}
-			table.adminlist tr.row1:hover
-			{
-				background-color:#f1f1f1;
+			table.adminlist tr.row1:hover {
+				background-color: #f1f1f1;
 			}
-			table.adminlist td.options
-			{
-				background-color:#fff;
-				font-size:8px;
+			table.adminlist td.options {
+				background-color: #fff;
+				font-size: .9em;
 			}
 		</style>
-		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
-			var sections = new Array();
-			var titles = new Array();
+		<script><!-- // --><![CDATA[
+			var sections = [],
+				titles = [];
+
 			function addSection(name, title)
 			{
-				var drop = document.getElementById("menuDropdown");
-				var option = document.createElement("option");
+				var drop = document.getElementById("menuDropdown"),
+					option = document.createElement("option");
+
 				sections.push(name);
 				titles.push(title);
 				option.text = titles[titles.length-1];
 				option.value = titles.length-1;
 				drop.options.add(option);
 			}
+
 			function swapSection(id)
 			{
 				for (var i = 0; i < sections.length; i++)
@@ -373,11 +255,13 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 						document.getElementById(sections[i]).style.display = "none";
 				}
 			}
-			var onload_events = new Array();
+
+			var onload_events = [];
 			function addLoadEvent(func)
 			{
 				// Get the old event if there is one.
 				var oldOnload = window.onload;
+
 				// Was the old event really an event?
 				if (typeof(oldOnload) != \'function\')
 				{
@@ -409,7 +293,7 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.simplemachines.org/" target="_blank"><img src="./Themes/default/images/elklogo.gif" style="width: 258px; float: right;" alt="Simple Machines" border="0" /></a>
+			<a href="http://www.elkarte.net" target="_blank"><img src="./themes/default/images/logo.png" style="float: right;" alt="ElkArte" border="0" /></a>
 			<div>', $txt['title'], '</div>
 		</div>
 		<div id="content">';
@@ -417,23 +301,23 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 	if (allowedTo('admin_forum'))
 		echo '
 		<div class="windowbg" style="margin: 1ex; padding: 1ex 2ex; border: 1px dashed green; color: green;">
-			', sprintf($txt['smfinfo_pass'], $smfInfo), '<br /><br />
+			', sprintf($txt['elkinfo_pass'], $elkinfo), '<br />
 			', $txt['support_versions_forum'], ':
-			<i id="yourVersion" style="white-space: nowrap;">', $smfinfo_version, '</i><br />
+			<em id="yourVersion" style="white-space: nowrap;">', $elkinfo_version, '</em><br />
 			', $txt['support_versions_current'], ':
-			<i id="smfInfoVersion" style="white-space: nowrap;">??</i><br />
-		<script language="JavaScript" type="text/javascript" src="http://www.simplemachines.org/smf/current-smfinfo.js"></script>
-		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
-			function smfInfoCurrentVersion()
+			<em id="elkinfoVersion" style="white-space: nowrap;">??</em>
+		<script src="http://www.simplemachines.org/smf/current-elkinfo.js"></script>
+		<script><!-- // --><![CDATA[
+			function elkinfoCurrentVersion()
 			{
 				var smfVer, yourVer;
-				if (typeof(window.smfInfoVersion) != "string")
+				if (typeof(window.elkinfoVersion) != "string")
 					return;
-				smfVer = document.getElementById("smfInfoVersion");
+				smfVer = document.getElementById("elkinfoVersion");
 				yourVer = document.getElementById("yourVersion");
-				setInnerHTML(smfVer, window.smfInfoVersion);
+				setInnerHTML(smfVer, window.elkinfoVersion);
 				var currentVersion = getInnerHTML(yourVer);
-				if (currentVersion != window.smfInfoVersion)
+				if (currentVersion != window.elkinfoVersion)
 					setInnerHTML(yourVer, "<span style=\"color: red;\">" + currentVersion + "</span>");
 			}
 			var oldonload;
@@ -441,21 +325,7 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 				oldonload = window.onload;
 			window.onload = function ()
 			{
-				smfInfoCurrentVersion();';
-
-	if ($context['browser']['is_ie'] && !$context['browser']['is_ie4'])
-		echo '
-				if (typeof(smf_codeFix) != "undefined")
-					window.detachEvent("onload", smf_codeFix);
-				window.attachEvent("onload",
-					function ()
-					{
-						with (document.all.supportVersionsTable)
-							style.height = parentNode.offsetHeight;
-					}
-				);
-				if (typeof(smf_codeFix) != "undefined")
-					window.attachEvent("onload", smf_codeFix);';
+				elkinfoCurrentVersion();';
 
 	echo '
 				if (oldonload)
@@ -467,22 +337,26 @@ echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www
 		<select id="menuDropdown" onchange="swapSection(this[this.selectedIndex].value); return true;">
 			<option value="0">-- Menu --</option>
 		</select>
-			<div class="dynamic-tab-pane-control tab-page" id="smfinfo" style="margin-top: 10px;">';
+			<div class="dynamic-tab-pane-control tab-page" id="elkinfo" style="margin-top: 10px;">';
 }
 
 function show_password_form()
 {
 	global $txt, $boardurl;
+
 	load_txt_strings();
 	show_header();
 
 	echo '
-			<div class="tab-page" id="main"><h2 class="tab">', $txt['password_title'], '</h2>
-				<script type="text/javascript">addSection("main", "', $txt['password_title'], '");</script>
-				<form action="', $boardurl, '/smfinfo.php" method="post"
+			<div class="tab-page" id="main">
+				<h2 class="tab">', $txt['password_title'], '</h2>
+				<script>addSection("main", "', $txt['password_title'], '");</script>
+				<form action="', $boardurl, '/elkinfo.php" method="post"
 				<table border="0" width="50%" cellpadding="2" cellspacing="2">
 					<tr>
-						<td>', $txt['password'], '</td><td><input type="text" size="20" name="pass" /></td><td><input type="submit" value="', $txt['submit'], '" /></td>
+						<td>', $txt['password'], '</td>
+						<td><emnput type="text" size="20" name="pass" /></td>
+						<td><emnput type="submit" value="', $txt['submit'], '" /></td>
 					</tr>
 				</table>
 				</form>
@@ -497,17 +371,17 @@ function show_password_form()
 
 function show_system_info()
 {
-	global $txt, $smcFunc, $context, $smfInfo, $modSettings, $forum_version;
-	global $db_persist, $maintenance, $cookiename, $db_last_error, $db_show_debug;
+	global $txt, $context, $forum_version;
 
 	get_database_version();
 
 	echo '
-			<div class="tab-page" id="main"><h2 class="tab">', $txt['maininfo'], '</h2>
-				<script type="text/javascript">addSection("main", "', $txt['maininfo'], '" );</script>
+			<div class="tab-page" id="main">
+				<h2 class="tab">', $txt['maininfo'], '</h2>
+				<script>addSection("main", "', $txt['maininfo'], '" );</script>
 				<table border="0" width="100%" cellpadding="2" cellspacing="2">
 					<tr>
-						<td width="25%"><strong>', $txt['smf_version'], '</strong></td>
+						<td width="25%"><strong>', $txt['elk_version'], '</strong></td>
 						<td>', $forum_version, '</td>
 					</tr>
 					<tr>
@@ -523,7 +397,7 @@ function show_system_info()
 						<td>
 							<table width="100%" cellpadding="2" cellspacing="2">';
 
-	foreach ($context['smfinfo'] as $item => $value)
+	foreach ($context['elkinfo'] as $item => $value)
 		echo '
 								<tr>
 									<td width="25%">', $txt[$item], ':</td>
@@ -585,8 +459,9 @@ function show_php_info()
 	global $txt;
 
 	echo '
-			<div class="tab-page" id="phpinfo"><h2 class="tab">', $txt['phpinfo'], '</h2>
-				<script type="text/javascript">addSection( "phpinfo", "', $txt['phpinfo'], '");</script>';
+			<div class="tab-page" id="phpinfo">
+				<h2 class="tab">', $txt['phpinfo'], '</h2>
+				<script>addSection("phpinfo", "', $txt['phpinfo'], '");</script>';
 
 	// Get the PHP Info
 	ob_start();
@@ -602,17 +477,18 @@ function show_php_info()
 	$output = preg_replace('#<hr />#', '', $output);
 
 	echo
-		$output, '
+	$output, '
 			</div>';
 }
 
 function show_detailed_file()
 {
-	global $context, $boardurl, $txt;
+	global $context, $txt;
 
 	echo '
-			<div class="tab-page" id="detailedinfo"><h2 class="tab">', $txt['detailedinfo'], '</h2>
-				<script type="text/javascript">addSection("detailedinfo", "', $txt['detailedinfo'], '");</script>';
+			<div class="tab-page" id="detailedinfo">
+				<h2 class="tab">', $txt['detailedinfo'], '</h2>
+				<script>addSection("detailedinfo", "', $txt['detailedinfo'], '");</script>';
 
 	get_file_versions();
 
@@ -623,13 +499,15 @@ function show_detailed_file()
 							<td width="50%"><b>', $txt['file_version'], '</b></td><td width="25%"><b>', $txt['your_version'], '</b></td><td width="25%"><b>', $txt['current_version'], '</b></td>
 						</tr>
 						<tr>
-							<td>', $txt['smf_version'], '</td><td><i id="yourSMF">SMF ', $context['forum_version'], '</i></td><td><i id="currentSMF">??</i></td>
+							<td>', $txt['elk_version'], '</td>
+							<td><em id="yourSMF">ELK ', $context['forum_version'], '</em></td>
+							<td><em id="currentSMF">??</em></td>
 						</tr>';
 
 	// Now list all the source file versions, starting with the overall version (if all match!).
 	echo '
 						<tr>
-							<td><a href="javascript:void(0);" onclick="return swapOption(this, \'Sources\');">', $txt['sources_version'], '</a></td><td><i id="yourSources">??</i></td><td><i id="currentSources">??</i></td>
+							<td><a href="javascript:void(0);" onclick="return swapOption(this, \'sources\');">', $txt['sources_version'], '</a></td><td><em id="yourSources">??</em></td><td><em id="currentSources">??</em></td>
 						</tr>
 					</table>
 					<table id="Sources" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
@@ -638,7 +516,9 @@ function show_detailed_file()
 	foreach ($context['file_versions'] as $filename => $version)
 		echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><i id="yourSources', $filename, '">', $version, '</i></td><td width="25%"><i id="currentSources', $filename, '">??</i></td>
+							<td width="50%" style="padding-left: 3ex;">', $filename, '</td>
+							<td width="25%"><em id="yourSources', $filename, '">', $version, '</em></td>
+							<td width="25%"><em id="currentSources', $filename, '">??</em></td>
 						</tr>';
 
 	// Default template files.
@@ -646,7 +526,7 @@ function show_detailed_file()
 					</table>
 					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Default\');">', $txt['template_version'], '</a></td><td width="25%"><i id="yourDefault">??</i></td><td width="25%"><i id="currentDefault">??</i></td>
+							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Default\');">', $txt['template_version'], '</a></td><td width="25%"><em id="yourDefault">??</em></td><td width="25%"><em id="currentDefault">??</em></td>
 						</tr>
 					</table>
 					<table id="Default" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
@@ -654,7 +534,7 @@ function show_detailed_file()
 	foreach ($context['default_template_versions'] as $filename => $version)
 		echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><i id="yourDefault', $filename, '">', $version, '</i></td><td width="25%"><i id="currentDefault', $filename, '">??</i></td>
+							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><em id="yourDefault', $filename, '">', $version, '</em></td><td width="25%"><em id="currentDefault', $filename, '">??</em></td>
 						</tr>';
 
 	// Now the language files...
@@ -662,7 +542,7 @@ function show_detailed_file()
 					</table>
 					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Languages\');">', $txt['language_version'], '</a></td><td width="25%"><i id="yourLanguages">??</i></td><td width="25%"><i id="currentLanguages">??</i></td>
+							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Languages\');">', $txt['language_version'], '</a></td><td width="25%"><em id="yourLanguages">??</em></td><td width="25%"><em id="currentLanguages">??</em></td>
 						</tr>
 					</table>
 					<table id="Languages" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
@@ -672,7 +552,7 @@ function show_detailed_file()
 		foreach ($files as $filename => $version)
 			echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '.<i>', $language, '</i>.php</td><td width="25%"><i id="your', $filename, '.', $language, '">', $version, '</i></td><td width="25%"><i id="current', $filename, '.', $language, '">??</i></td>
+							<td width="50%" style="padding-left: 3ex;">', $filename, '.<em>', $language, '</em>.php</td><td width="25%"><em id="your', $filename, '.', $language, '">', $version, '</em></td><td width="25%"><em id="current', $filename, '.', $language, '">??</em></td>
 						</tr>';
 	}
 
@@ -685,7 +565,7 @@ function show_detailed_file()
 		echo '
 					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Templates\');">', $txt['custom_template_version'], '</a></td><td width="25%"><i id="yourTemplates">??</i></td><td width="25%"><i id="currentTemplates">??</i></td>
+							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Templates\');">', $txt['custom_template_version'], '</a></td><td width="25%"><em id="yourTemplates">??</em></td><td width="25%"><em id="currentTemplates">??</em></td>
 						</tr>
 					</table>
 					<table id="Templates" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
@@ -693,7 +573,7 @@ function show_detailed_file()
 		foreach ($context['template_versions'] as $filename => $version)
 			echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><i id="yourTemplates', $filename, '">', $version, '</i></td><td width="25%"><i id="currentTemplates', $filename, '">??</i></td>
+							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><em id="yourTemplates', $filename, '">', $version, '</em></td><td width="25%"><em id="currentTemplates', $filename, '">??</em></td>
 						</tr>';
 
 		echo '
@@ -712,8 +592,9 @@ function show_detailed_db()
 		get_database_info();
 
 	echo '
-			<div class="tab-page" id="detailedinfo_db"><h2 class="tab">', $txt['detailedinfo_db'], '</h2>
-				<script type="text/javascript">addSection("detailedinfo_db", "', $txt['detailedinfo_db'], '");</script>';
+			<div class="tab-page" id="detailedinfo_db">
+				<h2 class="tab">', $txt['detailedinfo_db'], '</h2>
+				<script>addSection("detailedinfo_db", "', $txt['detailedinfo_db'], '");</script>';
 
 	echo '
 				<table border="0" width="100%" cellpadding="2" cellspacing="2">
@@ -750,17 +631,17 @@ function show_detailed_db()
 								</tr>';
 
 		$table_color = 1;
-		foreach($context['database_tables'] as $table)
+		foreach ($context['database_tables'] as $table)
 		{
 			echo '
 								<tr class="row', $table_color = !$table_color, '">
 									<td>', !empty($table['columns']) ? '<a href="javascript:void(0);" onclick="return swapOption(this, \'' . $table['name'] . '\');">' : '', $table['name'], !empty($table['columns']) ? '</a>' : '', '</td>
-									<td>', isset($table['engine']) ?  $table['engine'] : $txt['na'], '</td>
-									<td>', isset($table['rows']) ?  $table['rows'] : $txt['na'], '</td>
-									<td>', isset($table['size']) ?  $table['size'] : $txt['na'], '</td>
-									<td>', isset($table['overhead']) ?  $table['overhead'] : $txt['na'], '</td>
-									<td>', isset($table['auto_increment']) ?  $table['auto_increment'] : $txt['na'], '</td>
-									<td>', isset($table['collation']) ?  $table['collation'] : $txt['na'], '</td>
+									<td>', isset($table['engine']) ? $table['engine'] : $txt['na'], '</td>
+									<td>', isset($table['rows']) ? $table['rows'] : $txt['na'], '</td>
+									<td>', isset($table['size']) ? $table['size'] : $txt['na'], '</td>
+									<td>', isset($table['overhead']) ? $table['overhead'] : $txt['na'], '</td>
+									<td>', isset($table['auto_increment']) ? $table['auto_increment'] : $txt['na'], '</td>
+									<td>', isset($table['collation']) ? $table['collation'] : $txt['na'], '</td>
 								</tr>';
 			if (!empty($table['columns']))
 			{
@@ -809,7 +690,7 @@ function show_detailed_db()
 
 	// Setup the javascript stuff here
 	echo '
-				<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
+				<script><!-- // --><![CDATA[
 					window.databaseTables = {';
 	foreach ($context['database_tables'] as $table)
 		echo '
@@ -828,8 +709,9 @@ function show_mods()
 	global $txt;
 
 	echo '
-			<div class="tab-page" id="mods_installed"><h2 class="tab">', $txt['mods_installed'], '</h2>
-				<script type="text/javascript">addSection("mods_installed", "', $txt['mods_installed'], '");</script>
+			<div class="tab-page" id="mods_installed">
+				<h2 class="tab">', $txt['mods_installed'], '</h2>
+				<script>addSection("mods_installed", "', $txt['mods_installed'], '");</script>
 				<table border="0" width="50%" align="center">
 					<tr>
 						<td width="200px"><strong>', $txt['package_name'], '</strong></td>
@@ -837,7 +719,7 @@ function show_mods()
 						<td width="150px"><strong>', $txt['package_version'], '</strong></td>
 					</tr>';
 
-	foreach(loadInstalledPackages() as $package)
+	foreach (loadInstalledPackages() as $package)
 	{
 		echo '
 					<tr>
@@ -859,8 +741,9 @@ function show_error_log()
 	get_error_log();
 
 	echo '
-			<div class="tab-page" id="error_log"><h2 class="tab">', $txt['error_log'], '</h2>
-				<script type="text/javascript">addSection("error_log", "', $txt['error_log'], '");</script>
+			<div class="tab-page" id="error_log">
+				<h2 class="tab">', $txt['error_log'], '</h2>
+				<script>addSection("error_log", "', $txt['error_log'], '");</script>
 				<table border="0" width="100%" cellpadding="2" cellspacing="2">
 					<tr>
 						<td width="25%"><strong>', $txt['error_log_count'], '</strong></td>
@@ -925,8 +808,9 @@ function show_status()
 		get_mysql_data();
 
 	echo '
-			<div class="tab-page" id="status"><h2 class="tab">', $txt['status'], '</h2>
-				<script type="text/javascript">addSection("status", "', $txt['status'], '");</script>';
+			<div class="tab-page" id="status">
+				<h2 class="tab">', $txt['status'], '</h2>
+				<script>addSection("status", "', $txt['status'], '");</script>';
 
 	if ($command_line)
 	{
@@ -978,7 +862,6 @@ function show_status()
 	echo '
 		<div class="panel">
 			<h2>Basic Information</h2>
-
 			<div style="text-align: right;">', $context['current_time'], '</div>
 			<table width="100%" cellpadding="2" cellspacing="0" border="0">';
 
@@ -1080,7 +963,8 @@ function show_status()
 				<tr>
 					<td>', $proc['state'], '</td>
 					<td style="text-align: center;">', $proc['time'], 's</td>
-					<td><div style="width: 100%; ', strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') !== false ? 'max-' : '', 'height: 7em; overflow: auto;"><pre style="margin: 0; border: 1px solid gray;">';
+					<td>
+						<div style="width: 100%; ', strpos($_SERVER['HTTP_USER_AGENT'], 'Gecko') !== false ? 'max-' : '', 'height: 7em; overflow: auto;"><pre style="margin: 0; border: 1px solid gray;">';
 
 				$temp = explode("\n", $proc['query']);
 				$min_indent = 0;
@@ -1133,7 +1017,9 @@ function show_status()
 
 				echo strtr(htmlspecialchars($clean), array("\n" => '<br />', "\r" => ''));
 
-				echo '</pre></div></td>
+				echo '</pre>
+					</div>
+				</td>
 				</tr>';
 			}
 
@@ -1199,7 +1085,6 @@ function show_status()
 
 			<br />
 			<h2>MySQL variables</h2>
-
 			<table width="100%" cellpadding="2" cellspacing="0" border="0">';
 
 		foreach ($context['mysql_variables'] as $var)
@@ -1225,23 +1110,20 @@ function show_footer()
 {
 	global $context, $boardurl, $forum_copyright, $forum_version;
 
-	$t = sprintf($forum_copyright, $forum_version);
 	echo '
 			</div>
 			<div style="clear: left">
-				', sprintf($forum_copyright, $forum_version),' | <a href="http://validator.w3.org/check?uri=referer">XHTML</a> | <a href="http://jigsaw.w3.org/css-validator/">CSS</a>
+				', sprintf($forum_copyright, $forum_version), '
 			</div>
 		</div>';
 
 	/* Below is the hefty javascript for this. Upon opening the page it checks the current file versions with ones
-	   held at simplemachines.org and works out if they are up to date.  If they aren't it colors that files number
-	   red.  It also contains the function, swapOption, that toggles showing the detailed information for each of the
-	   file catorgories. (sources, languages, and templates.) */
-
+	  held at simplemachines.org and works out if they are up to date.  If they aren't it colors that files number
+	  red.  It also contains the function, swapOption, that toggles showing the detailed information for each of the
+	  file catorgories. (sources, languages, and templates.) */
 	echo '
-		<script language="JavaScript" type="text/javascript" src="', $boardurl, '/Themes/default/', (strpos($context['forum_version'], '2.') !== false ? 'scripts/' : ''), 'script.js"></script>
-		<script language="JavaScript" type="text/javascript" src="http://www.simplemachines.org/smf/detailed-version.js?version=', $context['forum_version'], '"></script>
-		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
+		<script src="', $boardurl, '/themes/default/scripts/script.js"></script>
+		<script><!-- // --><![CDATA[
 			var swaps = {};
 
 			function swapOption(sendingElement, name)
@@ -1361,7 +1243,6 @@ function show_footer()
 
 			function smfHideDbColumns()
 			{
-
 				if (typeof(window.databaseTables) == "undefined")
 					window.databaseTables = {};
 
@@ -1376,12 +1257,10 @@ function show_footer()
 		// ]]></script>';
 
 	echo '
-		<script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
-
+		<script><!-- // --><![CDATA[
 			addLoadEvent(function() {
 				siteDetermineVersions();
 				smfHideDbColumns();
-
 			});
 		// ]]></script>';
 
@@ -1391,35 +1270,35 @@ function show_footer()
 ';
 }
 
+/**
+ * Generate the fetch passsword or accept one so support can see the info
+ */
 function initialize()
 {
-	global $txt, $context, $smfInfo, $sourcedir, $forum_version, $db_show_debug, $db_last_error, $modSettings;
-
-	// Set this to true so we get the correct forum value
-	$ssi_gzip = true;
+	global $context, $elkinfo, $forum_version, $modSettings;
 
 	$forum_version = get_file_versions(true);
 
-	$smfInfo = !empty($modSettings['smfInfo']) ? $modSettings['smfInfo'] : '';
+	$elkinfo = !empty($modSettings['elkinfo']) ? $modSettings['elkinfo'] : '';
 
-	if (empty($smfInfo) || (allowedTo('admin_forum') && isset($_GET['regenerate'])))
+	if (empty($elkinfo) || (allowedTo('admin_forum') && isset($_GET['regenerate'])))
 		generate_password();
 
 	// If the user isn't an admin or they don't have a password in the URL, or its incorrect, kick 'em out
-	if (!allowedTo('admin_forum') && (!isset($_POST['pass']) || strcmp($_POST['pass'], $smfInfo) != 0))
+	if (!allowedTo('admin_forum') && (!isset($_POST['pass']) || strcmp($_POST['pass'], $elkinfo) != 0))
 		show_password_form();
 
 	// Either their an admin or have the right password
-	require_once($sourcedir . '/Subs-Package.php');
+	require_once(SUBSDIR . '/Package.subs.php');
 
 	// Enable error reporting.
 	error_reporting(E_ALL);
 	@session_start();
 
+	// Try to remove the info file
 	if ($context['user']['is_admin'] && isset($_GET['delete']))
 	{
 		// This won't work on all servers...
-
 		@unlink(__FILE__);
 
 		// Now just redirect to the forum...
@@ -1427,9 +1306,17 @@ function initialize()
 	}
 }
 
+/**
+ * Determine a few things about the database
+ * - collation
+ * - name
+ * - version
+ */
 function get_database_version()
 {
-	global $db_type, $smcFunc, $context, $db_name, $txt, $db_prefix;
+	global $db_type, $context, $db_name, $txt, $db_prefix;
+
+	$db = database();
 
 	if (empty($db_type) || (!empty($db_type) && $db_type == 'mysql'))
 	{
@@ -1437,38 +1324,29 @@ function get_database_version()
 
 		// Get the collation of the 'body' field of the messages table
 		$query = ' SHOW FULL COLUMNS FROM ' . $temp_prefix . 'messages WHERE Field = \'body\'';
-		$request = mysql_query($query);
-		$row = @mysql_fetch_assoc($request);
+		$request = $db->query('', $query);
+		$row = $db->fetch_assoc($request);
 		if (!empty($row))
 			$collation = $row['Collation'];
 	}
-	if (!empty($collation))
-		$context['character_set'] = $collation;
 
-	else
-		$context['character_set'] = $txt['unknown_db_version'];
+	$context['character_set'] = !empty($collation) ?  $collation : $txt['unknown_db_version'];
 
-	if (empty($smcFunc))
-		$context['database_version'] = 'MySQL ' . mysql_get_server_info();
-
-	else
-	{
-		db_extend();
-		$context['database_version'] = $db->db_title . ' ' . $db->db_server_version();
-	}
+	db_extend();
+	$context['database_version'] = $db->db_title() . ' ' . $db->db_server_version();
 }
 
 function get_file_versions($core = false)
 {
-	global $sourcedir, $boarddir, $context, $txt, $scripturl, $boardurl, $settings;
+	global $context;
 
 	// Change index.php below to whatever you've changed yours to...
-	$fp = fopen($boarddir . '/index.php', 'rb');
+	$fp = fopen(BOARDDIR . '/index.php', 'rb');
 	$header = fread($fp, 3072);
 	fclose($fp);
 
 	// The version looks rougly like... that.
-	if (preg_match('~\$forum_version\s=\s\'SMF (.+)\'~i', $header, $match) == 1)
+	if (preg_match('~\$forum_version\s=\s\'ElkArte (.+)\'~i', $header, $match) == 1)
 		$context['forum_version'] = $match[1];
 
 	// Not found!  This is bad.
@@ -1478,145 +1356,22 @@ function get_file_versions($core = false)
 	if ($core)
 		return $context['forum_version'];
 
+	require_once(SUBSDIR . '/Admin.subs.php');
+
 	$versionOptions = array(
 		'include_ssi' => true,
 		'include_subscriptions' => true,
 		'sort_results' => true,
 	);
+	$version_info = getFileVersions($versionOptions);
 
-	// Default place to find the languages would be the default theme dir.
-	$lang_dir = $settings['default_theme_dir'] . '/languages';
-
-	$version_info = array(
-		'file_versions' => array(),
-		'default_template_versions' => array(),
-		'template_versions' => array(),
-		'default_language_versions' => array(),
-	);
-
-	// Find the version in SSI.php's file header.
-	if (!empty($versionOptions['include_ssi']) && file_exists($boarddir . '/SSI.php'))
-	{
-		$fp = fopen($boarddir . '/SSI.php', 'rb');
-		$header = fread($fp, 4096);
-		fclose($fp);
-
-		// The comment looks rougly like... that.
-		if (preg_match('~\*\s*Software\s+Version:\s+SMF\s+(.+?)[\s]{2}~i', $header, $match) == 1)
-			$version_info['file_versions']['SSI.php'] = $match[1];
-
-		// Not found!  This is bad.
-		else
-			$version_info['file_versions']['SSI.php'] = '??';
-	}
-
-	// Do the paid subscriptions handler?
-	if (!empty($versionOptions['include_subscriptions']) && file_exists($boarddir . '/subscriptions.php'))
-	{
-		$fp = fopen($boarddir . '/subscriptions.php', 'rb');
-		$header = fread($fp, 4096);
-		fclose($fp);
-
-		// Found it?
-		if (preg_match('~\*\s*Software\s+Version:\s+SMF\s+(.+?)[\s]{2}~i', $header, $match) == 1)
-			$version_info['file_versions']['subscriptions.php'] = $match[1];
-
-		// If we haven't how do we all get paid?
-		else
-			$version_info['file_versions']['subscriptions.php'] = '??';
-	}
-
-	// Load all the files in the Sources directory, except this file and the redirect.
-	$Sources_dir = dir($sourcedir);
-	while ($entry = $Sources_dir->read())
-	{
-		if (substr($entry, -4) === '.php' && !is_dir($sourcedir . '/' . $entry) && $entry !== 'index.php')
-		{
-			// Read the first 4k from the file.... enough for the header.
-			$fp = fopen($sourcedir . '/' . $entry, 'rb');
-			$header = fread($fp, 4096);
-			fclose($fp);
-
-			// Look for the version comment in the file header.
-			if (preg_match('~\*\s*Software\s+Version:\s+SMF\s+(.+?)[\s]{2}~i', $header, $match) == 1)
-				$version_info['file_versions'][$entry] = $match[1];
-
-			// It wasn't found, but the file was... show a '??'.
-			else
-				$version_info['file_versions'][$entry] = '??';
-		}
-	}
-	$Sources_dir->close();
-
-	// Load all the files in the default template directory - and the current theme if applicable.
-	$directories = array('default_template_versions' => $settings['default_theme_dir']);
-	if ($settings['theme_id'] != 1)
-		$directories += array('template_versions' => $settings['theme_dir']);
-
-	foreach ($directories as $type => $dirname)
-	{
-		$This_dir = dir($dirname);
-		while ($entry = $This_dir->read())
-		{
-			if (substr($entry, -12) == 'template.php' && !is_dir($dirname . '/' . $entry))
-			{
-				// Read the first 768 bytes from the file.... enough for the header.
-				$fp = fopen($dirname . '/' . $entry, 'rb');
-				$header = fread($fp, 768);
-				fclose($fp);
-
-				// Look for the version comment in the file header.
-				if (preg_match('~(?://|/\*)\s*Version:\s+(.+?);\s*' . preg_quote(basename($entry, '.template.php'), '~') . '(?:[\s]{2}|\*/)~i', $header, $match) == 1)
-					$version_info[$type][$entry] = $match[1];
-
-				// It wasn't found, but the file was... show a '??'.
-				else
-					$version_info[$type][$entry] = '??';
-			}
-		}
-		$This_dir->close();
-	}
-
-	// Load up all the files in the default language directory and sort by language.
-	$This_dir = dir($lang_dir);
-	while ($entry = $This_dir->read())
-	{
-		if (substr($entry, -4) == '.php' && $entry != 'index.php' && !is_dir($lang_dir . '/' . $entry))
-		{
-			// Read the first 768 bytes from the file.... enough for the header.
-			$fp = fopen($lang_dir . '/' . $entry, 'rb');
-			$header = fread($fp, 768);
-			fclose($fp);
-
-			// Split the file name off into useful bits.
-			list ($name, $language) = explode('.', $entry);
-
-			// Look for the version comment in the file header.
-			if (preg_match('~(?://|/\*)\s*Version:\s+(.+?);\s*' . preg_quote($name, '~') . '(?:[\s]{2}|\*/)~i', $header, $match) == 1)
-				$version_info['default_language_versions'][$language][$name] = $match[1];
-
-			// It wasn't found, but the file was... show a '??'.
-			else
-				$version_info['default_language_versions'][$language][$name] = '??';
-		}
-	}
-	$This_dir->close();
-
-	// Sort the file versions by filename.
-	if (!empty($versionOptions['sort_results']))
-	{
-		ksort($version_info['file_versions']);
-		ksort($version_info['default_template_versions']);
-		ksort($version_info['template_versions']);
-		ksort($version_info['default_language_versions']);
-
-		// For languages sort each language too.
-		foreach ($version_info['default_language_versions'] as $language => $dummy)
-			ksort($version_info['default_language_versions'][$language]);
-	}
-
+	// Add the new info to the template context.
 	$context += array(
 		'file_versions' => $version_info['file_versions'],
+		'file_versions_admin' => $version_info['file_versions_admin'],
+		'file_versions_controllers' => $version_info['file_versions_controllers'],
+		'file_versions_database' => $version_info['file_versions_database'],
+		'file_versions_subs' => $version_info['file_versions_subs'],
 		'default_template_versions' => $version_info['default_template_versions'],
 		'template_versions' => $version_info['template_versions'],
 		'default_language_versions' => $version_info['default_language_versions'],
@@ -1626,13 +1381,12 @@ function get_file_versions($core = false)
 
 function get_server_software()
 {
-	if (isset($_SERVER['SERVER_SOFTWARE'])) {
+	if (isset($_SERVER['SERVER_SOFTWARE']))
 		return $_SERVER['SERVER_SOFTWARE'];
-	} else if (($sf = getenv('SERVER_SOFTWARE'))) {
+	else if (($sf = getenv('SERVER_SOFTWARE')))
 		return $sf;
-	} else {
+	else
 		return 'n/a';
-	}
 }
 
 function get_php_setting($val, $rec = '')
@@ -1641,6 +1395,7 @@ function get_php_setting($val, $rec = '')
 	$r = (ini_get($val) == '1' ? 1 : 0) ? $txt['on'] : $txt['off'];
 	if (!empty($rec) && strcmp($r, $txt[$rec]) != 0)
 		$r .= '&nbsp;<strong>(' . $txt['recommended'] . ': ' . $txt[$rec] . ')</strong>';
+
 	return $r;
 }
 
@@ -1651,30 +1406,28 @@ function get_forum_setting($val, $rec = '')
 	$r = (!empty($GLOBALS[$val]) ? $txt['on'] : (!empty($modSettings[$val]) ? $txt['on'] : (!empty($settings[$val]) ? $txt['on'] : $txt['off'])));
 	if (!empty($rec) && strcmp($r, $txt[$rec]) != 0)
 		$r .= '&nbsp;<strong>(' . $txt['recommended'] . ': ' . $txt[$rec] . ')</strong>';
+
 	return $r;
 }
 
 function generate_password()
 {
-	global $sourcedir, $smfInfo, $forum_version, $boardurl;
+	global $elkinfo;
 
-	if (strpos($forum_version, '1.') === 0)
-		require_once($sourcedir . '/Admin.php');
-	else
-		require_once($sourcedir . '/Subs-Admin.php');
+	require_once(SUBSDIR . '/Admin.subs.php');
 
 	$password = '';
 	$possible = 'abcdfghjkmnpqrstvwxyz0123456789ABCDEFGHJKLMNOPQRSTUVXYZ';
 	$i = 0;
 	while ($i < 12)
 	{
-		$password .= substr($possible, mt_rand(0, strlen($possible)-1), 1);
+		$password .= substr($possible, mt_rand(0, strlen($possible) - 1), 1);
 		$i++;
 	}
 
-	updateSettings(array('smfInfo' => $password));
+	updateSettings(array('elkinfo' => $password));
 
-	$smfInfo = $password;
+	$elkinfo = $password;
 }
 
 function get_linux_data()
@@ -1740,7 +1493,6 @@ function get_linux_data()
 		else
 			return $str / 1024;
 	}
-
 	$meminfo = @get_file_data('/proc/meminfo');
 	if (!empty($meminfo))
 	{
@@ -1749,9 +1501,9 @@ function get_linux_data()
 			$context['memory_usage']['total'] = $matches[1] / 1024;
 			$context['memory_usage']['used'] = $matches[2] / 1024;
 			$context['memory_usage']['free'] = $matches[3] / 1024;
-			/*$context['memory_usage']['shared'] = $matches[4] / 1024;
-			$context['memory_usage']['buffers'] = $matches[5] / 1024;
-			$context['memory_usage']['cached'] = $matches[6] / 1024;*/
+			/* $context['memory_usage']['shared'] = $matches[4] / 1024;
+			  $context['memory_usage']['buffers'] = $matches[5] / 1024;
+			  $context['memory_usage']['cached'] = $matches[6] / 1024; */
 		}
 		else
 		{
@@ -1763,10 +1515,10 @@ function get_linux_data()
 			if (isset($context['memory_usage']['total'], $context['memory_usage']['free']))
 				$context['memory_usage']['used'] = $context['memory_usage']['total'] - $context['memory_usage']['free'];
 
-			/*if (preg_match('~buffers:\s*(\d+ [kmgb])~i', $mem, $match) != 0)
-				$context['memory_usage']['buffers'] = unix_memsize($match[1]);
-			if (preg_match('~cached:\s*(\d+ [kmgb])~i', $mem, $match) != 0)
-				$context['memory_usage']['cached'] = unix_memsize($match[1]);*/
+			/* if (preg_match('~buffers:\s*(\d+ [kmgb])~i', $mem, $match) != 0)
+			  $context['memory_usage']['buffers'] = unix_memsize($match[1]);
+			  if (preg_match('~cached:\s*(\d+ [kmgb])~i', $mem, $match) != 0)
+			  $context['memory_usage']['cached'] = unix_memsize($match[1]); */
 
 			if (preg_match('~swaptotal:\s*(\d+ [kmgb])~i', $mem, $match) != 0)
 				$context['memory_usage']['swap_total'] = unix_memsize($match[1]);
@@ -1774,7 +1526,6 @@ function get_linux_data()
 				$context['memory_usage']['swap_free'] = unix_memsize($match[1]);
 			if (isset($context['memory_usage']['swap_total'], $context['memory_usage']['swap_free']))
 				$context['memory_usage']['swap_used'] = $context['memory_usage']['swap_total'] - $context['memory_usage']['swap_free'];
-
 		}
 		if (preg_match('~:\s+(\d+)\s+(\d+)\s+(\d+)~', $meminfo[2], $matches) != 0)
 		{
@@ -1928,11 +1679,11 @@ function get_linux_data()
 			);
 
 			if (strpos($proc[3], 'Z') !== false)
-				$context['num_zombie_processes']++;
+				$context['num_zombie_processes'] ++;
 			elseif (strpos($proc[3], 'S') !== false)
-				$context['num_sleeping_processes']++;
+				$context['num_sleeping_processes'] ++;
 			else
-				$context['num_running_processes']++;
+				$context['num_running_processes'] ++;
 
 			if (!empty($additional))
 			{
@@ -1952,7 +1703,7 @@ function get_linux_data()
 			else
 			{
 				$context['top_memory_usage'][$id]['percent'] += $proc['mem'];
-				$context['top_memory_usage'][$id]['number']++;
+				$context['top_memory_usage'][$id]['number'] ++;
 			}
 
 			if (!isset($context['top_cpu_usage'][$id]))
@@ -1960,7 +1711,7 @@ function get_linux_data()
 			else
 			{
 				$context['top_cpu_usage'][$id]['percent'] += $proc['cpu'];
-				$context['top_cpu_usage'][$id]['number']++;
+				$context['top_cpu_usage'][$id]['number'] ++;
 			}
 		}
 
@@ -1972,7 +1723,7 @@ function get_linux_data()
 
 			unset($context['top_memory_usage'][$proc['name']]);
 			$context['top_memory_usage']['(other)']['percent'] += $proc['percent'];
-			$context['top_memory_usage']['(other)']['number']++;
+			$context['top_memory_usage']['(other)']['number'] ++;
 		}
 
 		foreach ($context['top_cpu_usage'] as $proc)
@@ -1982,7 +1733,7 @@ function get_linux_data()
 
 			unset($context['top_cpu_usage'][$proc['name']]);
 			$context['top_cpu_usage']['(other)']['percent'] += $proc['percent'];
-			$context['top_cpu_usage']['(other)']['number']++;
+			$context['top_cpu_usage']['(other)']['number'] ++;
 		}
 	}
 }
@@ -2008,7 +1759,6 @@ function get_windows_data()
 		else
 			trigger_error('Unknown memory format \'' . $str . '\'', E_USER_NOTICE);
 	}
-
 	$systeminfo = @`systeminfo /fo csv`;
 	if (!empty($systeminfo))
 	{
@@ -2085,9 +1835,9 @@ function get_windows_data()
 			);
 
 			if (strpos($proc[5], 'Not') !== false)
-				$context['num_zombie_processes']++;
+				$context['num_zombie_processes'] ++;
 			else
-				$context['num_running_processes']++;
+				$context['num_running_processes'] ++;
 
 			$total_mem += $proc[4];
 			$total_cpu += $proc[7];
@@ -2110,7 +1860,7 @@ function get_windows_data()
 			else
 			{
 				$context['top_memory_usage'][$id]['percent'] += $proc['mem'];
-				$context['top_memory_usage'][$id]['number']++;
+				$context['top_memory_usage'][$id]['number'] ++;
 			}
 
 			if (!isset($context['top_cpu_usage'][$id]))
@@ -2118,7 +1868,7 @@ function get_windows_data()
 			else
 			{
 				$context['top_cpu_usage'][$id]['percent'] += $proc['cpu'];
-				$context['top_cpu_usage'][$id]['number']++;
+				$context['top_cpu_usage'][$id]['number'] ++;
 			}
 		}
 
@@ -2130,7 +1880,7 @@ function get_windows_data()
 
 			unset($context['top_memory_usage'][$proc['name']]);
 			$context['top_memory_usage']['(other)']['percent'] += $proc['percent'];
-			$context['top_memory_usage']['(other)']['number']++;
+			$context['top_memory_usage']['(other)']['number'] ++;
 		}
 
 		foreach ($context['top_cpu_usage'] as $proc)
@@ -2140,7 +1890,7 @@ function get_windows_data()
 
 			unset($context['top_cpu_usage'][$proc['name']]);
 			$context['top_cpu_usage']['(other)']['percent'] += $proc['percent'];
-			$context['top_cpu_usage']['(other)']['number']++;
+			$context['top_cpu_usage']['(other)']['number'] ++;
 		}
 	}
 }
@@ -2187,14 +1937,14 @@ function get_mysql_data()
 	while ($row = @mysql_fetch_assoc($request))
 	{
 		if ($row['State'] == 'Locked' || $row['State'] == 'Waiting for tables')
-			$context['mysql_num_locked_processes']++;
+			$context['mysql_num_locked_processes'] ++;
 		elseif ($row['Command'] == 'Sleep')
-			$context['mysql_num_sleeping_processes']++;
+			$context['mysql_num_sleeping_processes'] ++;
 		elseif (trim($row['Info']) == 'SHOW FULL PROCESSLIST' && $row['Time'] == 0 || trim($row['Info']) == '')
-			$context['mysql_num_running_processes']++;
+			$context['mysql_num_running_processes'] ++;
 		else
 		{
-			$context['mysql_num_running_processes']++;
+			$context['mysql_num_running_processes'] ++;
 
 			$context['mysql_processes'][] = array(
 				'id' => $row['Id'],
@@ -2374,8 +2124,6 @@ function get_server_versions($checkFor)
 		$versions['mmcache'] = array('title' => 'Turck MMCache', 'version' => MMCACHE_VERSION);
 	if (in_array('eaccelerator', $checkFor) && defined('EACCELERATOR_VERSION'))
 		$versions['eaccelerator'] = array('title' => 'eAccelerator', 'version' => EACCELERATOR_VERSION);
-	if (in_array('phpa', $checkFor) && isset($_PHPA))
-		$versions['phpa'] = array('title' => 'ionCube PHP-Accelerator', 'version' => $_PHPA['VERSION']);
 	if (in_array('apc', $checkFor) && extension_loaded('apc'))
 		$versions['apc'] = array('title' => 'Alternative PHP Cache', 'version' => phpversion('apc'));
 	if (in_array('memcache', $checkFor) && function_exists('memcache_set'))
@@ -2389,16 +2137,15 @@ function get_database_info()
 	// This is sloooowwwwwwwww
 	global $context, $db_name, $db_prefix;
 
+	$db = database();
 	$match = array();
 	$temp_prefix = preg_match('~(?:.*\.)?([^.]*)~', $db_prefix, $match) === 1 ? $match[1] : $db_prefix;
 
-
-
-	$result = mysql_query('SHOW TABLE STATUS FROM `' . $db_name . '` LIKE \'' . $temp_prefix . '%\'');
+	$result = $db->query('', 'SHOW TABLE STATUS FROM `' . $db_name . '` LIKE \'' . $temp_prefix . '%\'');
 
 	$context['database_tables'] = array();
 	$context['database_size'] = 0;
-	while ($row = mysql_fetch_assoc($result))
+	while ($row = $db->fetch_assoc($result))
 	{
 		$context['database_tables'][$row['Name']] = array(
 			'name' => str_replace($db_prefix, '', '`' . $db_name . '`.' . $row['Name']),
@@ -2413,16 +2160,16 @@ function get_database_info()
 		);
 		$context['database_size'] += $row['Data_length'];
 	}
-	@mysql_free_result($result);
+	$db->free_result($result);
 
 	$context['database_size'] = convert_memory($context['database_size']);
 
-	foreach($context['database_tables'] as $table => $info)
+	foreach ($context['database_tables'] as $table => $info)
 	{
 		// Get the columns of the table, and thier stuff...
-		$result = mysql_query('SHOW FULL COLUMNS FROM ' . $table . ' FROM `' . $db_name . '`');
+		$result = $db->query('', 'SHOW FULL COLUMNS FROM ' . $table . ' FROM `' . $db_name . '`');
 		echo mysql_error();
-		while ($column = mysql_fetch_assoc($result))
+		while ($column = $db->fetch_assoc($result))
 			$context['database_tables'][$table]['columns'][$column['Field']] = array(
 				'name' => $column['Field'],
 				'type' => $column['Type'],
@@ -2431,7 +2178,7 @@ function get_database_info()
 				'default' => $column['Default'],
 				'extra' => $column['Extra'],
 			);
-		@mysql_free_result($result);
+		$db->free_result($result);
 	}
 }
 
@@ -2439,47 +2186,55 @@ function get_error_log()
 {
 	global $context, $db_prefix, $smcFunc, $scripturl, $txt;
 
+	$db = database();
 	$context['errors'] = array();
 
 	// 1.0 queries first... (regular ol' mysql calls)
-	if(empty($smcFunc))
+	if (empty($smcFunc))
 	{
 		// Just how many errors are there?
-		$result = mysql_query("
-			SELECT COUNT(*)
-			FROM {$db_prefix}log_errors");
-		list ($context['num_errors']) = mysql_fetch_row($result);
-		mysql_free_result($result);
+		$result = $db->query('', "
+			SELECT
+				COUNT(*)
+			FROM {$db_prefix}log_errors",
+			array()
+		);
+		list ($context['num_errors']) = $db->fetch_row($result);
+		$db->free_result($result);
 
 		if ($context['num_errors'] == 0)
 			return;
 
 		// Find and sort out the errors.
-		$request = mysql_query("
-			SELECT ID_ERROR, ID_MEMBER, url, logTime, message
+		$request = $db->query('', "
+			SELECT
+				id_error, id_member, url, log_time, message
 			FROM {$db_prefix}log_errors
-			ORDER BY ID_ERROR DESC
-			LIMIT 100");
+			ORDER BY id_error DESC
+			LIMIT 100",
+			array()
+		);
 
-		while ($row = mysql_fetch_assoc($request))
+		while ($row = $db->fetch_assoc($request))
 		{
 			$show_message = strtr(strtr(preg_replace('~&lt;span class=&quot;remove&quot;&gt;(.+?)&lt;/span&gt;~', '$1', $row['message']), array("\r" => '', '<br />' => "\n", '<' => '&lt;', '>' => '&gt;', '"' => '&quot;')), array("\n" => '<br />'));
 
 			$context['errors'][] = array(
-				'error_id' => $row['ID_ERROR'],
-				'member_id' => $row['ID_MEMBER'],
-				'time' => timeformat($row['logTime']),
+				'error_id' => $row['id_error'],
+				'member_id' => $row['id_member'],
+				'time' => standardTime($row['log_time']),
 				'url_html' => htmlspecialchars($scripturl . $row['url']),
 				'message_html' => $show_message,
 			);
 		}
-		mysql_free_result($request);
+		$db->free_result($request);
 	}
 	else
 	{
 		// Just how many errors are there?
 		$result = $db->query('', '
-			SELECT COUNT(*)
+			SELECT
+				COUNT(*)
 			FROM {db_prefix}log_errors',
 			array()
 		);
@@ -2491,7 +2246,8 @@ function get_error_log()
 
 		// Find and sort out the errors.
 		$request = $db->query('', '
-			SELECT id_error, id_member, url, log_time, message, error_type, file, line
+			SELECT
+				id_error, id_member, url, log_time, message, error_type, file, line
 			FROM {db_prefix}log_errors
 			ORDER BY id_error DESC
 			LIMIT 100',
@@ -2519,7 +2275,7 @@ function get_error_log()
 	}
 }
 
-function convert_memory($number, $bytes=true)
+function convert_memory($number, $bytes = true)
 {
 	$bitsOrBytes = ($bytes) ? 'B' : 'b';
 
@@ -2534,5 +2290,133 @@ function convert_memory($number, $bytes=true)
 	for ($i = 0; $number > 1024 && $i < count($thousandArray); $i++)
 		$number /= 1024;
 
-	return number_format($number,2) . ' ' . $thousandArray[$i] . $bitsOrBytes;
+	return number_format($number, 2) . ' ' . $thousandArray[$i] . $bitsOrBytes;
+}
+
+/**
+ * Text strings for use and traslation
+ */
+function load_txt_strings()
+{
+	global $txt, $boardurl;
+
+	// Tabs
+	$txt['title'] = 'ElkArte Info Support Tool';
+	$txt['maininfo'] = 'System Info';
+	$txt['phpinfo'] = 'PHP Info';
+	$txt['detailedinfo'] = 'Detailed File Check';
+	$txt['detailedinfo_db'] = 'Detailed DB Check';
+	$txt['mods_installed'] = 'Addons Installed';
+	$txt['error_log'] = 'Error Log';
+	$txt['status'] = 'System Status';
+
+	// Password form
+	$txt['password_title'] = 'Password Entry';
+	$txt['password'] = 'Password:';
+	$txt['submit'] = 'Submit';
+
+	// Main info
+	$txt['elkinfo_pass'] = 'Below is the password to access this file.  Please share it wisely as this page contains a lot of information about your forum and host.<br /><br />Password: %s <a href="' . $boardurl . '/elkinfo.php?regenerate">(Regenerate)</a><br /><br /><a href="' . $boardurl . '/elkinfo.php?delete">Delete File</a> (This attempts to remove this file from your server)';
+	$txt['elk_version'] = 'Elkarte Version';
+	$txt['php_version'] = 'PHP Version';
+	$txt['database_version'] = 'Database Version';
+	$txt['webserver_version'] = 'Web Server';
+	$txt['php_api'] = 'PHP/Server Interface';
+	$txt['lang_char_set'] = 'Language Character Set';
+	$txt['db_char_set'] = 'Database Character Set';
+	$txt['db_table_info'] = 'Detailed Table Information';
+
+	// Elkarte Specific Info
+	$txt['site_relevant'] = 'Relevant Forum Settings';
+	$txt['sef_urls'] = 'SEF URLs';
+	$txt['time_load'] = 'Display Load Times';
+	$txt['hostname_lookup'] = 'Disable Hostname Lookups';
+	$txt['log_pruning'] = 'Auto Log Pruning';
+	$txt['db_persist'] = 'Persistent DB Connection';
+	$txt['maintenance_mode'] = 'Maintenance Mode';
+	$txt['cookie_name'] = 'Cookie Name';
+	$txt['local_cookies'] = 'Local Cookie Storage';
+	$txt['global_cookies'] = 'Subdomain Ind. Cookies';
+	$txt['compressed_output'] = 'Compressed Output';
+	$txt['database_sessions'] = 'Database Driven Sessions';
+	$txt['database_loose'] = 'Return to cached pages';
+	$txt['session_timeout'] = 'Session Timeout Delay';
+	$txt['db_last_error'] = 'Last Database Error';
+	$txt['db_debug'] = 'Debugging';
+	$txt['enable_error'] = 'Enable Error Logging';
+	$txt['auto_fix_db'] = 'Auto Fix Database';
+	$txt['cache'] = 'Caching';
+	$txt['memcached_settings'] = 'Memcached Settings';
+	$txt['cache_level'] = 'Level';
+	$txt['unknown_db_version'] = 'Database Character Set Unknown';
+	$txt['support_versions_current'] = 'Current ElkArte Info version';
+	$txt['support_versions_forum'] = 'Your ElkArte Info version';
+	$txt['previousCharacterSet'] = 'Previous character set';
+
+	// PHP Specific Info
+	$txt['relevant_info'] = 'Relevant PHP Settings';
+	$txt['safe_mode'] = 'Safe Mode';
+	$txt['open_base'] = 'Open basedir';
+	$txt['display_errors'] = 'Display Errors';
+	$txt['file_uploads'] = 'File Uploads';
+	$txt['magic_quotes'] = 'Magic Quotes';
+	$txt['register_globals'] = 'Register Globals';
+	$txt['output_buffering'] = 'Output Buffering';
+	$txt['session_save'] = 'Session Save Path';
+	$txt['session_auto'] = 'Session Auto Start';
+	$txt['xml_enabled'] = 'XML Enabled';
+	$txt['zlib_enabled'] = 'Zlib Enabled';
+	$txt['disabled_func'] = 'Disabled Functions';
+
+	// File check
+	$txt['sources_version'] = 'Sources';
+	$txt['template_version'] = 'Default Templates';
+	$txt['language_version'] = 'Language Files';
+	$txt['custom_template_version'] = 'Custom Templates';
+	$txt['file_version'] = 'ElkArte File';
+	$txt['your_version'] = 'Your Version';
+	$txt['current_version'] = 'Current Version';
+
+	// Database check
+	$txt['no_detailed_db'] = 'Detailed database information is only available on MySQL databases';
+	$txt['db_size'] = 'Database Size';
+	$txt['db_table_name'] = 'Name';
+	$txt['db_table_engine'] = 'Engine';
+	$txt['db_table_rows'] = 'Rows';
+	$txt['db_table_size'] = 'Size';
+	$txt['db_table_max_size'] = 'Max Size';
+	$txt['db_table_overhead'] = 'Overhead';
+	$txt['db_table_auto'] = 'Next Auto';
+	$txt['db_table_collation'] = 'Collation';
+	$txt['db_column_name'] = 'Field Name';
+	$txt['db_column_type'] = 'Type';
+	$txt['db_column_null'] = 'Null';
+	$txt['db_column_default'] = 'Default Value';
+	$txt['db_column_extra'] = 'Extra Info';
+
+	// Addons installed
+	$txt['package_name'] = 'Package Name';
+	$txt['package_id'] = 'Package Id';
+	$txt['package_version'] = 'Package Version';
+
+	// Error log
+	$txt['error_log_count'] = 'Number of Errors';
+	$txt['show_all_errors'] = 'Showing all errors';
+	$txt['show_num_errors'] = 'Showing 100 of %d errors';
+	$txt['error_time'] = 'Time of Error';
+	$txt['error_member'] = 'Member ID that caused error';
+	$txt['error_url'] = 'URL that caused error';
+	$txt['error_message'] = 'Error Message';
+	$txt['error_type'] = 'Error Type';
+	$txt['error_file'] = 'File';
+	$txt['error_line'] = 'Line';
+
+	// Simple Text strings
+	$txt['none'] = 'NONE';
+	$txt['on'] = 'ON';
+	$txt['off'] = 'OFF';
+	$txt['empty'] = 'EMPTY';
+	$txt['seconds'] = 'seconds';
+	$txt['na'] = 'n/a';
+	$txt['recommended'] = 'Recommended Value';
 }
