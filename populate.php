@@ -1,5 +1,6 @@
 <?php
-/* ***** BEGIN LICENSE BLOCK *****
+
+/** **** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -38,11 +39,10 @@ class Populate
 	private $blockSize = 150;
 	private $refreshRate = 0;
 	private $loremIpsum = null;
-	private $ounters = array();
-
+	private $counters = array();
 	private $timeStart = 0;
 
-	public function __construct ($options = array())
+	public function __construct($options = array())
 	{
 		$this->counters['categories']['max'] = 6;
 		$this->counters['categories']['current'] = 0;
@@ -57,6 +57,7 @@ class Populate
 		$this->timeStart = microtime(TRUE);
 
 		$db = database();
+
 		// Override defaults
 		foreach ($options as $_key => $_value)
 			$this->$_key = $_value;
@@ -69,22 +70,24 @@ class Populate
 			$request = $db->query('', 'SELECT COUNT(*) FROM {db_prefix}' . $key);
 			list($this->counters[$key]['current']) = $db->fetch_row($request);
 			$db->free_result($request);
+
 			if ($key != 'topics' && $this->counters[$key]['current'] < $this->counters[$key]['max'])
 			{
-				$func = 'make'.ucfirst($key);
+				$func = '_make' . ucfirst($key);
 				$end = false;
 				break;
 			}
 			else
 				$end = true;
 		}
+
 		if (!empty($func))
 			$this->$func();
 
-		$this->complete($end);
+		$this->_complete($end);
 	}
 
-	private function makeCategories()
+	private function _makeCategories()
 	{
 		require_once(SUBSDIR . '/Categories.subs.php');
 
@@ -98,10 +101,10 @@ class Populate
 			createCategory($catOptions);
 		}
 
-		$this->pause();
+		$this->_pause();
 	}
 
-	private function makeBoards()
+	private function _makeBoards()
 	{
 		require_once(SUBSDIR . '/Boards.subs.php');
 
@@ -114,10 +117,11 @@ class Populate
 				'move_to' => 'top',
 				'id_profile' => 1,
 			);
+
 			if (mt_rand() < (mt_getrandmax() / 2))
 			{
 				$boardOptions = array_merge($boardOptions, array(
-					'target_board' => mt_rand(1, $this->counters['boards']['current']-1),
+					'target_board' => mt_rand(1, $this->counters['boards']['current'] - 1),
 					'move_to' => 'child',
 				));
 			}
@@ -125,10 +129,10 @@ class Populate
 			createBoard($boardOptions);
 		}
 
-		$this->pause();
+		$this->_pause();
 	}
 
-	private function makeMembers()
+	private function _makeMembers()
 	{
 		require_once(SUBSDIR . '/Members.subs.php');
 
@@ -145,23 +149,23 @@ class Populate
 			registerMember($regOptions);
 		}
 
-		$this->pause();
+		$this->_pause();
 	}
 
-	private function makeMessages()
+	private function _makeMessages()
 	{
 		require_once(SUBSDIR . '/Post.subs.php');
 
 		while ($this->counters['messages']['current'] < $this->counters['messages']['max'] && $this->blockSize--)
 		{
 			$msgOptions = array(
-				'subject' => trim($this->loremIpsum->getContent(mt_rand(1,6), 'txt')),
+				'subject' => trim($this->loremIpsum->getContent(mt_rand(1, 6), 'txt')),
 				'body' => trim($this->loremIpsum->getContent(mt_rand(5, 60), 'txt')),
 				'approved' => TRUE
 			);
 
 			$topicOptions = array(
-				'id' => $this->counters['topics']['current'] < $this->counters['topics']['max'] && mt_rand() < (int)(mt_getrandmax() * ($this->counters['topics']['max'] / $this->counters['messages']['max'])) ? 0 : ($this->counters['topics']['current'] < $this->counters['topics']['max'] ? mt_rand(1, ++$this->counters['topics']['current']) : mt_rand(1, $this->counters['topics']['current'])),
+				'id' => $this->counters['topics']['current'] < $this->counters['topics']['max'] && mt_rand() < (int) (mt_getrandmax() * ($this->counters['topics']['max'] / $this->counters['messages']['max'])) ? 0 : ($this->counters['topics']['current'] < $this->counters['topics']['max'] ? mt_rand(1, ++$this->counters['topics']['current']) : mt_rand(1, $this->counters['topics']['current'])),
 				'board' => mt_rand(1, $this->counters['boards']['max']),
 				'mark_as_read' => TRUE,
 			);
@@ -176,14 +180,16 @@ class Populate
 
 			createPost($msgOptions, $topicOptions, $posterOptions);
 		}
-		$this->pause();
+
+		$this->_pause();
 	}
 
-	private function pause($end = false)
+	private function _pause($end = false)
 	{
 		if (!$end)
 		{
 			header('Refresh: ' . $this->refreshRate . '; URL=' . $_SERVER['PHP_SELF']);
+
 			// Pausing while we start again (server timeouts = bad)
 			echo 'Please wait while we refresh the page... <br /><br />';
 		}
@@ -194,7 +200,7 @@ class Populate
 		else
 			echo '
 			Final stats:<br />';
-			
+
 		foreach ($this->counters as $key => $val)
 			echo '
 			' . $val['current'] . ' of ' . $val['max'] . ' ' . $key . ' created<br />';
@@ -206,24 +212,23 @@ class Populate
 			<b>Completed</b>';
 	}
 
-	private function fixupTopicsBoards()
+	private function _fixupTopicsBoards()
 	{
-		global $smcFunc;
+		$db = database();
 
 		$db->query('', '
 			UPDATE {db_prefix}messages as mes, {db_prefix}topics as top
 			SET mes.id_board = top.id_board
-			WHERE mes.id_topic = top.id_topic',
-			array()
+			WHERE mes.id_topic = top.id_topic', array()
 		);
 	}
 
-	private function complete($end)
+	private function _complete($end)
 	{
 		if ($end)
 		{
-			$this->fixupTopicsBoards();
-			$this->pause($end);
+			$this->_fixupTopicsBoards();
+			$this->_pause($end);
 		}
 	}
 }
@@ -447,10 +452,10 @@ class LoremIpsumGenerator {
 	{
 		$format = strtolower($format);
 
-		if ($count <= 0)
+		if($count <= 0)
 			return '';
 
-		switch ($format)
+		switch($format)
 		{
 			case 'txt':
 				return $this->getText($count, $loremipsum);
@@ -464,20 +469,20 @@ class LoremIpsumGenerator {
 	private function getWords(&$arr, $count, $loremipsum)
 	{
 		$i = 0;
-		if ($loremipsum)
+		if($loremipsum)
 		{
 			$i = 2;
 			$arr[0] = 'lorem';
 			$arr[1] = 'ipsum';
 		}
 
-		for ($i; $i < $count; $i++)
+		for($i; $i < $count; $i++)
 		{
 			$index = array_rand($this->words);
 			$word = $this->words[$index];
 			//echo $index . '=>' . $word . '<br />';
 
-			if ($i > 0 && $arr[$i - 1] == $word)
+			if($i > 0 && $arr[$i - 1] == $word)
 				$i--;
 			else
 				$arr[$i] = $word;
@@ -493,17 +498,17 @@ class LoremIpsumGenerator {
 		$delta = $count;
 		$curr = 0;
 		$sentences = array();
-		while ($delta > 0)
+		while($delta > 0)
 		{
 			$senSize = $this->gaussianSentence();
 			//echo $curr . '<br />';
-			if (($delta - $senSize) < 4)
+			if(($delta - $senSize) < 4)
 				$senSize = $delta;
 
 			$delta -= $senSize;
 
 			$sentence = array();
-			for ($i = $curr; $i < ($curr + $senSize); $i++)
+			for($i = $curr; $i < ($curr + $senSize); $i++)
 				$sentence[] = $words[$i];
 
 			$this->punctuate($sentence);
@@ -511,11 +516,11 @@ class LoremIpsumGenerator {
 			$sentences[] = $sentence;
 		}
 
-		if ($returnStr)
+		if($returnStr)
 		{
 			$output = '';
-			foreach ($sentences as $s)
-				foreach ($s as $w)
+			foreach($sentences as $s)
+				foreach($s as $w)
 					$output .= $w . ' ';
 
 			return $output;
@@ -530,7 +535,7 @@ class LoremIpsumGenerator {
 		$paragraphs = $this->getParagraphArr($sentences);
 
 		$paragraphStr = array();
-		foreach ($paragraphs as $p)
+		foreach($paragraphs as $p)
 		{
 			$paragraphStr[] = $this->paragraphToString($p);
 		}
@@ -550,12 +555,12 @@ class LoremIpsumGenerator {
 		$currCount = 0;
 		$curr = array();
 
-		for ($i = 0; $i < $total; $i++)
+		for($i = 0; $i < $total; $i++)
 		{
 			$s = $sentences[$i];
 			$currCount += count($s);
 			$curr[] = $s;
-			if ($currCount >= ($wordsPer - round($sentenceAvg / 2.00)) || $i == $total - 1)
+			if($currCount >= ($wordsPer - round($sentenceAvg / 2.00)) || $i == $total - 1)
 			{
 				$currCount = 0;
 				$paragraphs[] = $curr;
@@ -575,7 +580,7 @@ class LoremIpsumGenerator {
 		//print_r($paragraphs);
 
 		$paragraphStr = array();
-		foreach ($paragraphs as $p)
+		foreach($paragraphs as $p)
 		{
 			$paragraphStr[] = "<p>\n" . $this->paragraphToString($p, true) . '</p>';
 		}
@@ -587,12 +592,12 @@ class LoremIpsumGenerator {
 	private function paragraphToString($paragraph, $htmlCleanCode = false)
 	{
 		$paragraphStr = '';
-		foreach ($paragraph as $sentence)
+		foreach($paragraph as $sentence)
 		{
-			foreach ($sentence as $word)
+			foreach($sentence as $word)
 				$paragraphStr .= $word . ' ';
 
-			if ($htmlCleanCode)
+			if($htmlCleanCode)
 				$paragraphStr .= "\n";
 		}
 		return $paragraphStr;
@@ -607,16 +612,16 @@ class LoremIpsumGenerator {
 		$count = count($sentence);
 		$sentence[$count - 1] = $sentence[$count - 1] . '.';
 
-		if ($count < 4)
+		if($count < 4)
 			return $sentence;
 
 		$commas = $this->numberOfCommas($count);
 
-		for ($i = 1; $i <= $commas; $i++)
+		for($i = 1; $i <= $commas; $i++)
 		{
 			$index = (int) round($i * $count / ($commas + 1));
 
-			if ($index < ($count - 1) && $index > 0)
+			if($index < ($count - 1) && $index > 0)
 			{
 				$sentence[$index] = $sentence[$index] . ',';
 			}
@@ -686,4 +691,5 @@ class LoremIpsumGenerator {
 	{
 		return (float)rand()/(float)getrandmax();
 	}
+
 }
