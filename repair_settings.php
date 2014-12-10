@@ -24,15 +24,16 @@ initialize_inputs();
 load_language_data();
 
 // Any actions we need to take care of this pass?
+$result = false;
 if (isset($_POST['submit']))
-	action_set_settings();
+	$result = action_set_settings();
 if (isset($_POST['remove_hooks']))
-	action_remove_hooks();
+	$result = action_remove_hooks();
 if (isset($_GET['delete']))
-	action_deleteScript();
+	$result = action_deleteScript();
 
 // Off to the template
-template_initialize();
+template_initialize($result);
 action_show_settings();
 template_show_footer();
 
@@ -40,7 +41,7 @@ template_show_footer();
  * Start things up
  *
  * - It sets up variables for other steps
- * - It makes the intial connection to the db
+ * - It makes the initial connection to the db
  */
 function initialize_inputs()
 {
@@ -56,6 +57,7 @@ function initialize_inputs()
 
 	if (ini_get('session.save_handler') == 'user')
 		@ini_set('session.save_handler', 'files');
+
 	if (function_exists('session_start'))
 		@session_start();
 
@@ -220,10 +222,11 @@ function action_show_settings()
 			'maintenance' => array('flat', 'int', 2),
 			'language' => array('flat', 'string', 'english'),
 			'cookiename' => array('flat', 'string', 'ELKCookie' . (!empty($db_name) ? abs(crc32($db_name . preg_replace('~[^A-Za-z0-9_$]~', '', $db_prefix)) % 1000) : '20')),
-			'queryless_urls' => array('db', 'int', 1),
-			'enableCompressedOutput' => array('db', 'int', 1),
-			'databaseSession_enable' => array('db', 'int', 1),
+			'queryless_urls' => array('db', 'check', 1),
+			'enableCompressedOutput' => array('db', 'check', 1),
+			'databaseSession_enable' => array('db', 'check', 1),
 			'theme_default' => array('db', 'int', 1),
+			'minify_css_js' => array('db', 'check', 1),
 		),
 		'database_settings' => array(
 			'db_server' => array('flat', 'string', 'localhost'),
@@ -334,6 +337,7 @@ function action_show_settings()
 				'db_error_skip' => true,
 			)
 		);
+
 		if ($request == true)
 		{
 			if ($db->num_rows($request) == 1)
@@ -344,7 +348,7 @@ function action_show_settings()
 	elseif (empty($show_db_settings))
 	{
 		echo '
-			<div class="error_message" style="margin-bottom: 2ex;">
+			<div class="errorbox">
 				', $txt['database_settings_hidden'], '
 			</div>';
 	}
@@ -391,7 +395,7 @@ function action_show_settings()
 			echo '
 							<td width="20%" valign="top" class="textbox" style="padding-bottom: 1ex;">
 								<label', $info[1] != 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
-			( isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
+			(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
 								</label>', !isset($settings[$setting]) && $info[1] != 'check' ? '<br />
 								' . $txt['no_value'] : '', '
 							</td>
@@ -399,11 +403,17 @@ function action_show_settings()
 
 			if ($info[1] == 'int' || $info[1] == 'check')
 			{
+				// Default checkmarks to off if they are not set
+				if ($info[1] == 'check' && !isset($settings[$setting]))
+					$settings[$setting] = 0;
 				for ($i = 0; $i <= $info[2]; $i++)
+				{
 					echo '
 								<label for="', $setting, $i, '">
 									<input type="radio" name="', $info[0], 'settings[', $setting, ']" id="', $setting, $i, '" value="', $i, '"', isset($settings[$setting]) && $settings[$setting] == $i ? ' checked="checked"' : '', ' class="input_radio" /> ', $txt[$setting . $i], '
-								</label><br />';
+								</label>
+								<br />';
+				}
 			}
 			elseif ($info[1] == 'string')
 			{
@@ -472,7 +482,7 @@ function action_show_settings()
 	$failure = false;
 	if (strpos(__FILE__, ':\\') !== 1)
 	{
-		// On linux, it's easy - just use is_writable!
+		// On Linux, it's easy - just use is_writable!
 		$failure |=!is_writable('Settings.php') && !chmod('Settings.php', 0777);
 	}
 	// Windows is trickier.  Let's try opening for r+...
@@ -521,9 +531,10 @@ function guess_attachments_directories($id, $array_setting)
 		$usedDirs = array();
 		$request = $db->query(true, '
 			SELECT {raw:select_tables}, file_hash
-			FROM {db_prefix}attachments', array(
-			'select_tables' => 'DISTINCT(id_folder), id_attach',
-				)
+			FROM {db_prefix}attachments',
+			array(
+				'select_tables' => 'DISTINCT(id_folder), id_attach',
+			)
 		);
 
 		if ($db->num_rows($request) > 0)
@@ -538,8 +549,10 @@ function guess_attachments_directories($id, $array_setting)
 	{
 		$availableDirs = array();
 		while (false !== ($file = readdir($basedir)))
+		{
 			if ($file != '.' && $file != '..' && is_dir($file) && $file != 'sources' && $file != 'packages' && $file != 'themes' && $file != 'cache' && $file != 'avatars' && $file != 'smileys')
 				$availableDirs[] = $file;
+		}
 	}
 
 	// 1st guess: let's see if we can find a file...if there is at least one.
@@ -561,15 +574,16 @@ function guess_attachments_directories($id, $array_setting)
 	{
 		$guesses = array();
 
-		// attachments is the first guess
+		// Attachments is the first guess
 		foreach ($availableDirs as $dir)
 			if ($dir == 'attachments')
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
 
-		// all the others
+		// All the others
 		foreach ($availableDirs as $dir)
 			if ($dir != 'attachments')
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
+
 		return $guesses;
 	}
 }
@@ -714,6 +728,8 @@ function action_set_settings()
 			array('id_theme' => 'int', 'id_member' => 'int', 'variable' => 'string', 'value' => 'string-65534'),
 			$setString, array('id_theme', 'id_member', 'variable')
 		);
+
+	return 'settings_saved_success';
 }
 
 /**
@@ -735,7 +751,10 @@ function action_remove_hooks()
 		);
 
 	// Now fixing the cache...
+	require_once(SUBSDIR . '/Cache.subs.php');
 	cache_put_data('modsettings', null, 0);
+
+	return 'hook_removal_success';
 }
 
 /**
@@ -746,7 +765,8 @@ function action_deleteScript()
 	@unlink(__FILE__);
 
 	// Now just redirect to a blank.gif...
-	header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/themes/default/images/blank.gif');
+	header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/themes/default/images/blank.png');
+
 	exit;
 }
 
@@ -770,7 +790,7 @@ function load_language_data()
 	$txt['database_settings_hidden'] = 'Some settings are not being shown because the database connection information is incorrect.';
 
 	$txt['critical_settings'] = 'Critical Settings';
-	$txt['critical_settings_info'] = 'These are the settings most likely to cause problems with your board, but try the things below (especially the path and URL ones) if these don\'t help.  You can click on the recommended value to use it.';
+	$txt['critical_settings_info'] = 'These are the settings most likely to cause problems with your board.  You can also try the items below this area (especially the path and URL ones) if these don\'t help.  Click on the recommended values to use them.';
 	$txt['maintenance'] = 'Maintenance Mode';
 	$txt['maintenance0'] = 'Off (recommended)';
 	$txt['maintenance1'] = 'Enabled';
@@ -780,8 +800,11 @@ function load_language_data()
 	$txt['queryless_urls'] = 'Queryless URLs';
 	$txt['queryless_urls0'] = 'Off (recommended)';
 	$txt['queryless_urls1'] = 'On';
+	$txt['minify_css_js'] = 'Minify Javascript and CSS files';
+	$txt['minify_css_js0'] = 'Off ((recommended only if you have problems))';
+	$txt['minify_css_js1'] = 'On ';
 	$txt['enableCompressedOutput'] = 'Output Compression';
-	$txt['enableCompressedOutput0'] = 'Off (recommended if you have problems)';
+	$txt['enableCompressedOutput0'] = 'Off (recommended only if you have problems)';
 	$txt['enableCompressedOutput1'] = 'On (saves a lot of bandwidth)';
 	$txt['databaseSession_enable'] = 'Database driven sessions';
 	$txt['databaseSession_enable0'] = 'Off (not recommended)';
@@ -827,22 +850,22 @@ function load_language_data()
 
 	$txt['theme_path_url_settings'] = 'Paths &amp; URLs For Themes';
 	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.';
+
+	$txt['hook_removal_success'] = 'All active hooks in the system were successfully removed';
+	$txt['settings_saved_success'] = 'Your settings were successfully saved.';
 }
 
 /**
  * Show the main template with the current and suggested values
  */
-function template_initialize()
+function template_initialize($results = false)
 {
 	global $txt, $db_type;
 
-	// try to find the logo: could be a .gif or a .png
-	$logo = "themes/default/images/logo_elk.png";
-	if (!file_exists(dirname(__FILE__) . "/" . $logo))
-		$logo = "Themes/default/images/logo.png";
+	$logo = "themes/default/images/logo.png";
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
-		echo '<!DOCTYPE html>
+	echo '<!DOCTYPE html>
 	<html>
 	<head>
 		<meta name="robots" content="noindex" />
@@ -878,17 +901,30 @@ function template_initialize()
 				height: 40px;
 			}
 			#header img {
-			    float: right;
+					float: right;
 				margin-top: -15px;
 			}
 			#content {
 				padding: 20px 30px;
 			}
-			.error_message {
-				border: 2px dashed red;
-				background-color: #e1e1e1;
-				margin: 1ex 4ex;
-				padding: 1.5ex;
+			.warningbox, .successbox, .infobox, .errorbox {
+				padding: 10px;
+				padding-left: 35px;
+			}
+			.successbox {
+				border-top: 1px solid green;
+				border-bottom: 1px solid green;
+				background: #efe url(themes/default/images/icons/field_valid.png) 10px 50% no-repeat;
+			}
+			.infobox {
+				border-top: 1px solid #3a87ad;
+				border-bottom: 1px solid #3a87ad;
+				background: #d9edf7 url(themes/default/images/icons/quick_sticky.png) 10px 50% no-repeat;
+			}
+			.errorbox {
+				border-top: 2px solid #c34;
+				border-bottom: 2px solid #c34;
+				background: #fee url(themes/default/images/profile/warning_mute.png) 10px 50% no-repeat;
 			}
 			.panel {
 				border: 1px solid #ccc;
@@ -962,8 +998,7 @@ function template_initialize()
 			.linkbutton:link, .linkbutton:visited {
 				display: inline-block;
 				float: right;
-				font-size: 0.857em;
-				line-height: 1.929em;
+				line-height: 1.643em;
 				margin-left: 6px;
 				padding: 1px 6px;
 			}
@@ -982,6 +1017,10 @@ function template_initialize()
 			</div>
 		</div>
 		<div id="content">';
+
+	if ($results)
+		echo '
+		<div class="successbox">', $txt[$results], '</div>';
 
 	// Fix Database title to use $db_type if available
 	if (!empty($db_type) && isset($txt['db_' . $db_type]))
