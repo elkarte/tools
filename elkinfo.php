@@ -28,8 +28,7 @@ initialize();
 load_txt_strings();
 
 // Setup the information
-// The keys on these entries need to match
-// what is in the $txt keys/brackets above
+// The keys on these entries need to match what is in the $txt keys/brackets
 // Makes for easy adding of extra info, or deleting
 $context['elkinfo'] = array(
 	'db_last_error' => !empty($db_last_error) ? date(DATE_RFC822, $db_last_error) : $txt['none'],
@@ -48,6 +47,7 @@ $context['elkinfo'] = array(
 	'cookie_name' => !empty($cookiename) ? $cookiename : '<em>' . $txt['empty'] . '</em>&nbsp;<strong>(' . $txt['recommended'] . ': ELKCookie' . rand(100, 999) . ')</strong>',
 	'local_cookies' => get_forum_setting('localCookies', 'off'),
 	'global_cookies' => get_forum_setting('globalCookies'),
+	'minify_css_js' => get_forum_setting('minify_css_js'),
 	'log_pruning' => get_forum_setting('pruningOptions', 'on'),
 	'sef_urls' => get_forum_setting('queryless_urls'),
 	'compressed_output' => get_forum_setting('enableCompressedOutput'),
@@ -88,12 +88,12 @@ show_footer();
 
 function show_header()
 {
-	global $txt, $elkinfo, $elkinfo_version;
+	global $txt, $elkinfo, $elkinfo_version, $boardurl, $modSettings, $context;
 
 	echo '<!DOCTYPE html>
 <html>
 	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf8" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>', $txt['title'], '</title>
 		<style>
 			body {
@@ -228,6 +228,20 @@ function show_header()
 				background-color: #fff;
 				font-size: .9em;
 			}
+			table.detailfile {
+				width: 80%;
+				padding: 2px;
+				border-spacing: 0;
+				border-collapse: collapse;
+				margin-left: auto;
+				margin-right: auto;
+			}
+			table.generic {
+				border-collapse: collapse;
+				width: 100%;
+				padding: 2px;
+				border-spacing: 2px;
+			}
 		</style>
 		<script><!-- // --><![CDATA[
 			var sections = [],
@@ -293,12 +307,16 @@ function show_header()
 	</head>
 	<body>
 		<div id="header">
-			<a href="http://www.elkarte.net" target="_blank"><img src="./themes/default/images/logo.png" style="float: right;" alt="ElkArte" border="0" /></a>
+			<a href="http://www.elkarte.net" target="_blank">
+				<img src="./themes/default/images/logo.png" style="float: right; border:none" alt="ElkArte" />
+			</a>
 			<div>', $txt['title'], '</div>
 		</div>
 		<div id="content">';
 
+	// Only the admin can regenerate a support access password
 	if (allowedTo('admin_forum'))
+	{
 		echo '
 		<div class="windowbg" style="margin: 1ex; padding: 1ex 2ex; border: 1px dashed green; color: green;">
 			', sprintf($txt['elkinfo_pass'], $elkinfo), '<br />
@@ -306,33 +324,9 @@ function show_header()
 			<em id="yourVersion" style="white-space: nowrap;">', $elkinfo_version, '</em><br />
 			', $txt['support_versions_current'], ':
 			<em id="elkinfoVersion" style="white-space: nowrap;">??</em>
-		<script src="http://www.simplemachines.org/smf/current-elkinfo.js"></script>
-		<script><!-- // --><![CDATA[
-			function elkinfoCurrentVersion()
-			{
-				var smfVer, yourVer;
-				if (typeof(window.elkinfoVersion) != "string")
-					return;
-				smfVer = document.getElementById("elkinfoVersion");
-				yourVer = document.getElementById("yourVersion");
-				setInnerHTML(smfVer, window.elkinfoVersion);
-				var currentVersion = getInnerHTML(yourVer);
-				if (currentVersion != window.elkinfoVersion)
-					setInnerHTML(yourVer, "<span style=\"color: red;\">" + currentVersion + "</span>");
-			}
-			var oldonload;
-			if (typeof(window.onload) != "undefined")
-				oldonload = window.onload;
-			window.onload = function ()
-			{
-				elkinfoCurrentVersion();';
-
-	echo '
-				if (oldonload)
-					oldonload();
-			}
-		// ]]></script>
 		</div>';
+	}
+
 	echo '
 		<select id="menuDropdown" onchange="swapSection(this[this.selectedIndex].value); return true;">
 			<option value="0">-- Menu --</option>
@@ -348,19 +342,21 @@ function show_password_form()
 	show_header();
 
 	echo '
-			<div class="tab-page" id="main">
-				<h2 class="tab">', $txt['password_title'], '</h2>
-				<script>addSection("main", "', $txt['password_title'], '");</script>
-				<form action="', $boardurl, '/elkinfo.php" method="post"
-				<table border="0" width="50%" cellpadding="2" cellspacing="2">
-					<tr>
-						<td>', $txt['password'], '</td>
-						<td><emnput type="text" size="20" name="pass" /></td>
-						<td><emnput type="submit" value="', $txt['submit'], '" /></td>
-					</tr>
-				</table>
-				</form>
-			</div>
+				<div class="tab-page" id="main">
+					<h2 class="tab">', $txt['password_title'], '</h2>
+					<script>addSection("main", "', $txt['password_title'], '");</script>
+					<form action="', $boardurl, '/elkinfo.php" method="post">
+						<table style="width:40%; padding: 2px;	border-collapse: collapse; border-spacing: 2px;">
+							<tr>
+								<td>', $txt['password'], '</td>
+								<td>
+									<input type="text" name="pass" />
+									<input type="submit" value="', $txt['submit'], '" />
+								</td>
+							</tr>
+						</table>
+					</form>
+				</div>
 			</div>
 		</div>
 	</body>
@@ -379,28 +375,28 @@ function show_system_info()
 			<div class="tab-page" id="main">
 				<h2 class="tab">', $txt['maininfo'], '</h2>
 				<script>addSection("main", "', $txt['maininfo'], '" );</script>
-				<table border="0" width="100%" cellpadding="2" cellspacing="2">
+				<table class="generic">
 					<tr>
-						<td width="25%"><strong>', $txt['elk_version'], '</strong></td>
+						<td style="width:30%"><strong>', $txt['elk_version'], '</strong></td>
 						<td>', $forum_version, '</td>
 					</tr>
 					<tr>
-						<td width="25%"><strong>', $txt['lang_char_set'], '</strong></td>
+						<td style="width:30%"><strong>', $txt['lang_char_set'], '</strong></td>
 						<td>', $txt['lang_character_set'], '</td>
 					</tr>
 					<tr>
-						<td width="25%"><strong>', $txt['db_char_set'], '</strong></td>
+						<td style="width:30%"><strong>', $txt['db_char_set'], '</strong></td>
 						<td>', $context['character_set'], '</td>
 					</tr>
 					<tr>
 						<td valign="top"><strong>', $txt['site_relevant'], '</strong></td>
 						<td>
-							<table width="100%" cellpadding="2" cellspacing="2">';
+							<table class="generic">';
 
 	foreach ($context['elkinfo'] as $item => $value)
 		echo '
 								<tr>
-									<td width="25%">', $txt[$item], ':</td>
+									<td style="width:30%">', $txt[$item], ':</td>
 									<td>', $value, '</td>
 								</tr>';
 
@@ -427,12 +423,12 @@ function show_system_info()
 					<tr>
 						<td valign="top"><strong>', $txt['relevant_info'], '</strong></td>
 						<td>
-							<table width="100%" cellpadding="2" cellspacing="2">';
+							<table class="generic">';
 
 	foreach ($context['phpinfo'] as $item => $value)
 		echo '
 								<tr>
-									<td width="25%">', $txt[$item], ':</td>
+									<td style="width:30%">', $txt[$item], ':</td>
 									<td>', $value, '</td>
 								</tr>';
 
@@ -483,7 +479,7 @@ function show_php_info()
 
 function show_detailed_file()
 {
-	global $context, $txt;
+	global $context, $txt, $modSettings, $boardurl;
 
 	echo '
 			<div class="tab-page" id="detailedinfo">
@@ -494,65 +490,157 @@ function show_detailed_file()
 
 	// The current version of the core package.
 	echo '
-					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
+					<table class="detailfile">
 						<tr>
-							<td width="50%"><b>', $txt['file_version'], '</b></td><td width="25%"><b>', $txt['your_version'], '</b></td><td width="25%"><b>', $txt['current_version'], '</b></td>
+							<td style="width:40%"><b>', $txt['file_version'], '</b></td>
+							<td style="width:30%"><b>', $txt['your_version'], '</b></td>
+							<td style="width:30%"><b>', $txt['current_version'], '</b></td>
 						</tr>
 						<tr>
 							<td>', $txt['elk_version'], '</td>
-							<td><em id="yourSMF">ELK ', $context['forum_version'], '</em></td>
-							<td><em id="currentSMF">??</em></td>
+							<td><em id="yourVersion">ElkArte ', $context['forum_version'], '</em></td>
+							<td><em id="ourVersion">??</em></td>
 						</tr>';
 
 	// Now list all the source file versions, starting with the overall version (if all match!).
 	echo '
 						<tr>
-							<td><a href="javascript:void(0);" onclick="return swapOption(this, \'sources\');">', $txt['sources_version'], '</a></td><td><em id="yourSources">??</em></td><td><em id="currentSources">??</em></td>
+							<td><a href="javascript:void(0);" onclick="return swapOption(this, \'sources\');">', $txt['sources_version'], '</a></td>
+							<td><em id="yoursources">??</em></td>
+							<td><em id="oursources">??</em></td>
 						</tr>
 					</table>
-					<table id="Sources" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
+					<table id="sources" class="detailfile">';
 
 	// Loop through every source file displaying its version - using javascript.
 	foreach ($context['file_versions'] as $filename => $version)
 		echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td>
-							<td width="25%"><em id="yourSources', $filename, '">', $version, '</em></td>
-							<td width="25%"><em id="currentSources', $filename, '">??</em></td>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yoursources', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="oursources', $filename, '">??</em></td>
+						</tr>';
+
+	// Admin files.
+	echo '
+					</table>
+					<table class="detailfile">
+						<tr>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'admin\');">', $txt['admin_version'], '</a></td>
+							<td style="width:30%"><em id="youradmin">??</em></td>
+							<td style="width:30%"><em id="ouradmin">??</em></td>
+						</tr>
+					</table>
+					<table id="admin" class="detailfile">';
+
+	foreach ($context['file_versions_admin'] as $filename => $version)
+		echo '
+						<tr>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="youradmin', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="ouradmin', $filename, '">??</em></td>
+						</tr>';
+
+	// Controller files.
+	echo '
+					</table>
+					<table class="detailfile">
+						<tr>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'controllers\');">', $txt['controllers_version'], '</a></td>
+							<td style="width:30%"><em id="yourcontrollers">??</em></td>
+							<td style="width:30%"><em id="ourcontrollers">??</em></td>
+						</tr>
+					</table>
+					<table id="controllers" class="detailfile">';
+
+	foreach ($context['file_versions_controllers'] as $filename => $version)
+		echo '
+						<tr>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yourcontrollers', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="ourcontrollers', $filename, '">??</em></td>
+						</tr>';
+
+	// Database files.
+	echo '
+					</table>
+					<table class="detailfile">
+						<tr>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'database\');">', $txt['database_version'], '</a></td>
+							<td style="width:30%"><em id="yourdatabase">??</em></td>
+							<td style="width:30%"><em id="ourdatabase">??</em></td>
+						</tr>
+					</table>
+					<table id="database" class="detailfile">';
+
+	foreach ($context['file_versions_database'] as $filename => $version)
+		echo '
+						<tr>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yourdatabase', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="ourdatabase', $filename, '">??</em></td>
+						</tr>';
+
+	// Subs files.
+	echo '
+					</table>
+					<table class="detailfile">
+						<tr>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'subs\');">', $txt['subs_version'], '</a></td>
+							<td style="width:30%"><em id="yoursubs">??</em></td>
+							<td style="width:30%"><em id="oursubs">??</em></td>
+						</tr>
+					</table>
+					<table id="subs" class="detailfile">';
+
+	foreach ($context['file_versions_subs'] as $filename => $version)
+		echo '
+						<tr>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yoursubs', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="oursubs', $filename, '">??</em></td>
 						</tr>';
 
 	// Default template files.
 	echo '
 					</table>
-					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
+					<table class="detailfile">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Default\');">', $txt['template_version'], '</a></td><td width="25%"><em id="yourDefault">??</em></td><td width="25%"><em id="currentDefault">??</em></td>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Default\');">', $txt['template_version'], '</a></td>
+							<td style="width:30%"><em id="yourdefault">??</em></td>
+							<td style="width:30%"><em id="ourdefault">??</em></td>
 						</tr>
 					</table>
-					<table id="Default" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
+					<table id="default" class="detailfile">';
 
 	foreach ($context['default_template_versions'] as $filename => $version)
 		echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><em id="yourDefault', $filename, '">', $version, '</em></td><td width="25%"><em id="currentDefault', $filename, '">??</em></td>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yourdefault', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="ourdefault', $filename, '">??</em></td>
 						</tr>';
 
 	// Now the language files...
 	echo '
 					</table>
-					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
+					<table class="detailfile">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Languages\');">', $txt['language_version'], '</a></td><td width="25%"><em id="yourLanguages">??</em></td><td width="25%"><em id="currentLanguages">??</em></td>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Languages\');">', $txt['language_version'], '</a></td>
+							<td style="width:30%"><em id="yourLanguages">??</em></td>
+							<td style="width:30%"><em id="ourLanguages">??</em></td>
 						</tr>
 					</table>
-					<table id="Languages" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
+					<table id="Languages" class="detailfile">';
 
 	foreach ($context['default_language_versions'] as $language => $files)
 	{
 		foreach ($files as $filename => $version)
 			echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '.<em>', $language, '</em>.php</td><td width="25%"><em id="your', $filename, '.', $language, '">', $version, '</em></td><td width="25%"><em id="current', $filename, '.', $language, '">??</em></td>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '.<em>', $language, '</em>.php</td>
+							<td style="width:30%"><em id="your', $filename, '.', $language, '">', $version, '</em></td>
+							<td style="width:30%"><em id="our', $filename, '.', $language, '">??</em></td>
 						</tr>';
 	}
 
@@ -563,25 +651,62 @@ function show_detailed_file()
 	if (!empty($context['template_versions']))
 	{
 		echo '
-					<table width="60%" cellpadding="2" cellspacing="0" border="0" align="center">
+					<table class="detailfile">
 						<tr>
-							<td width="50%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Templates\');">', $txt['custom_template_version'], '</a></td><td width="25%"><em id="yourTemplates">??</em></td><td width="25%"><em id="currentTemplates">??</em></td>
+							<td style="width:40%"><a href="javascript:void(0);" onclick="return swapOption(this, \'Templates\');">', $txt['custom_template_version'], '</a></td>
+							<td style="width:30%"><em id="yourTemplates">??</em></td>
+							<td style="width:30%"><em id="ourTemplates">??</em></td>
 						</tr>
 					</table>
-					<table id="Templates" width="60%" cellpadding="2" cellspacing="0" border="0" align="center">';
+					<table id="Templates" class="detailfile">';
 
 		foreach ($context['template_versions'] as $filename => $version)
 			echo '
 						<tr>
-							<td width="50%" style="padding-left: 3ex;">', $filename, '</td><td width="25%"><em id="yourTemplates', $filename, '">', $version, '</em></td><td width="25%"><em id="currentTemplates', $filename, '">??</em></td>
+							<td style="width:40%; padding-left: 3ex;">', $filename, '</td>
+							<td style="width:30%"><em id="yourTemplates', $filename, '">', $version, '</em></td>
+							<td style="width:30%"><em id="ourTemplates', $filename, '">??</em></td>
 						</tr>';
 
 		echo '
 					</table>';
 	}
 
+	$detailed_version_url = !empty($modSettings['detailed-version.js']) ? $modSettings['detailed-version.js'] : 'https://elkarte.github.io/Elkarte/site/detailed-version.js';
+	$jquery_version = (!empty($modSettings['jquery_default']) && !empty($modSettings['jquery_version'])) ? $modSettings['jquery_version'] : '1.11.1';
+
 	echo '
-			</div>';
+			</div>
+			<script src="https://ajax.googleapis.com/ajax/libs/jquery/', $jquery_version, '/jquery.min.js" id="jquery"></script>
+			<script src="', $detailed_version_url, '"></script>
+			<script src="', $boardurl, '/themes/default/scripts/admin.js"></script>
+			<script><!-- // --><![CDATA[
+				var oViewVersions = new elk_ViewVersions({
+					aKnownLanguages: [
+						\'.', implode('\',
+						\'.', $context['default_known_languages']), '\'
+					],
+					oSectionContainerIds: {
+						sources: \'sources\',
+						admin: \'admin\',
+						controllers: \'controllers\',
+						database: \'database\',
+						subs: \'subs\',
+						Default: \'Default\',
+						Languages: \'Languages\',
+						Templates: \'Templates\'
+					}
+				});
+
+				var oAdminCenter = new elk_AdminIndex({
+					bLoadVersions: true,
+					slatestVersionContainerId: \'ourVersion\',
+					sinstalledVersionContainerId: \'yourVersion\',
+					sVersionOutdatedTemplate: ', JavaScriptEscape('
+						<span class="alert">%currentVersion%</span>
+					'), '
+				});
+			// ]]></script>';
 }
 
 function show_detailed_db()
@@ -597,9 +722,9 @@ function show_detailed_db()
 				<script>addSection("detailedinfo_db", "', $txt['detailedinfo_db'], '");</script>';
 
 	echo '
-				<table border="0" width="100%" cellpadding="2" cellspacing="2">
+				<table class="generic">
 					<tr>
-						<td width="25%"><strong>', $txt['database_version'], '</strong></td>
+						<td style="width:30%"><strong>', $txt['database_version'], '</strong></td>
 						<td>', $context['database_version'], '</td>
 					</tr>
 					<tr>
@@ -619,7 +744,7 @@ function show_detailed_db()
 					<tr>
 						<td valign="top"><strong>', $txt['db_table_info'], '</strong></td>
 						<td>
-							<table width="100%" cellpadding="2" cellspacing="2">
+							<table class="generic">
 								<tr>
 									<td><strong>', $txt['db_table_name'], '</strong></td>
 									<td><strong>', $txt['db_table_engine'], '</strong></td>
@@ -648,7 +773,7 @@ function show_detailed_db()
 				echo '
 								<tr id="', $table['name'], '">
 									<td colspan="7">
-										<table width="100%" cellpadding="2" cellspacing="2" style="padding-left: 10px;">
+										<table class="generic" style="padding-left: 10px;">
 											<tr>
 												<td><strong>', $txt['db_column_name'], '</strong></td>
 												<td><strong>', $txt['db_column_type'], '</strong></td>
@@ -712,7 +837,7 @@ function show_mods()
 			<div class="tab-page" id="mods_installed">
 				<h2 class="tab">', $txt['mods_installed'], '</h2>
 				<script>addSection("mods_installed", "', $txt['mods_installed'], '");</script>
-				<table border="0" width="50%" align="center">
+				<table border="0" style="width:40%" align="center">
 					<tr>
 						<td width="200px"><strong>', $txt['package_name'], '</strong></td>
 						<td><strong>', $txt['package_id'], '</strong></td>
@@ -744,9 +869,9 @@ function show_error_log()
 			<div class="tab-page" id="error_log">
 				<h2 class="tab">', $txt['error_log'], '</h2>
 				<script>addSection("error_log", "', $txt['error_log'], '");</script>
-				<table border="0" width="100%" cellpadding="2" cellspacing="2">
+				<table class="generic">
 					<tr>
-						<td width="25%"><strong>', $txt['error_log_count'], '</strong></td>
+						<td style="width:30%"><strong>', $txt['error_log_count'], '</strong></td>
 						<td>', $context['num_errors'], '</td>
 					</tr>
 					<tr>
@@ -760,26 +885,26 @@ function show_error_log()
 		echo '
 							<table width="100%" cellspacing="2" cellpadding="2" style="padding-left: 20px;">
 								<tr>
-									<td width="25%"><strong>&raquo; ', $txt['error_time'], '</strong></td>
+									<td style="width:30%"><strong>&raquo; ', $txt['error_time'], '</strong></td>
 									<td>', $error['time'], '</td>
 								</tr>
 								<tr>
-									<td width="25%"><strong>&raquo; ', $txt['error_member'], '</strong></td>
+									<td style="width:30%"><strong>&raquo; ', $txt['error_member'], '</strong></td>
 									<td>', $error['member_id'], '</td>
 								</tr>
 								<tr>
-									<td width="25%" valign="top"><strong>&raquo; ', $txt['error_url'], '</strong></td>
+									<td style="width:30%" valign="top"><strong>&raquo; ', $txt['error_url'], '</strong></td>
 									<td><a href="', $error['url_html'], '">', $error['url_html'], '</a></td>
 								</tr>
 								<tr>
-									<td width="25%" valign="top"><strong>&raquo; ', $txt['error_message'], '</strong></td>
+									<td style="width:30%" valign="top"><strong>&raquo; ', $txt['error_message'], '</strong></td>
 									<td>', $error['message_html'], '</td>
 								</tr>';
 
 		if (isset($error['type']))
 			echo '
 								<tr>
-									<td width="25%"><strong>&raquo; ', $txt['error_type'], '</strong></td>
+									<td style="width:30%"><strong>&raquo; ', $txt['error_type'], '</strong></td>
 									<td>', $error['type'], '</td>
 								</tr>';
 
@@ -1108,12 +1233,12 @@ function show_status()
 
 function show_footer()
 {
-	global $context, $boardurl, $forum_copyright, $forum_version;
+	global $boardurl, $forum_copyright, $forum_version;
 
 	echo '
 			</div>
 			<div style="clear: left">
-				', sprintf($forum_copyright, $forum_version), '
+				', replaceBasicActionUrl(sprintf($forum_copyright, 'ElkArte' . $forum_version)), '
 			</div>
 		</div>';
 
@@ -1139,106 +1264,15 @@ function show_footer()
 
 			function siteDetermineVersions()
 			{
-				var highYour = {"Sources": "??", "Default" : "??", "Languages": "??", "Templates": "??"};
-				var highCurrent = {"Sources": "??", "Default" : "??", "Languages": "??", "Templates": "??"};
-				var lowVersion = {"Sources": false, "Default": false, "Languages" : false, "Templates": false};
-				var knownLanguages = [".', implode('", ".', $context['default_known_languages']), '"];
-
-				document.getElementById("Sources").style.display = "none";
+				document.getElementById("sources").style.display = "none";
+				document.getElementById("admin").style.display = "none";
+				document.getElementById("subs").style.display = "none";
+				document.getElementById("controllers").style.display = "none";
+				document.getElementById("database").style.display = "none";
 				document.getElementById("Languages").style.display = "none";
-				document.getElementById("Default").style.display = "none";
+				document.getElementById("default").style.display = "none";
 				if (document.getElementById("Templates"))
 					document.getElementById("Templates").style.display = "none";
-
-				if (typeof(window.smfVersions) == "undefined")
-					window.smfVersions = {};
-
-				for (var filename in window.smfVersions)
-				{
-					if (!document.getElementById("current" + filename))
-						continue;
-
-					var yourVersion = getInnerHTML(document.getElementById("your" + filename));
-
-					var versionType;
-					for (var verType in lowVersion)
-						if (filename.substr(0, verType.length) == verType)
-						{
-							versionType = verType;
-							break;
-						}
-
-					if (typeof(versionType) != "undefined")
-					{
-						if ((highYour[versionType] < yourVersion || highYour[versionType] == "??") && !lowVersion[versionType])
-							highYour[versionType] = yourVersion;
-						if (highCurrent[versionType] < smfVersions[filename] || highCurrent[versionType] == "??")
-							highCurrent[versionType] = smfVersions[filename];
-
-						if (yourVersion < smfVersions[filename])
-						{
-							lowVersion[versionType] = yourVersion;
-							document.getElementById("your" + filename).style.color = "red";
-						}
-					}
-					else if (yourVersion < smfVersions[filename])
-						lowVersion[versionType] = yourVersion;
-
-					setInnerHTML(document.getElementById("current" + filename), smfVersions[filename]);
-					setInnerHTML(document.getElementById("your" + filename), yourVersion);
-				}
-
-				if (typeof(window.smfLanguageVersions) == "undefined")
-					window.smfLanguageVersions = {};
-
-				for (filename in window.smfLanguageVersions)
-				{
-					for (var i = 0; i < knownLanguages.length; i++)
-					{
-						if (!document.getElementById("current" + filename + knownLanguages[i]))
-							continue;
-
-						setInnerHTML(document.getElementById("current" + filename + knownLanguages[i]), smfLanguageVersions[filename]);
-
-						yourVersion = getInnerHTML(document.getElementById("your" + filename + knownLanguages[i]));
-						setInnerHTML(document.getElementById("your" + filename + knownLanguages[i]), yourVersion);
-
-						if ((highYour["Languages"] < yourVersion || highYour["Languages"] == "??") && !lowVersion["Languages"])
-							highYour["Languages"] = yourVersion;
-						if (highCurrent["Languages"] < smfLanguageVersions[filename] || highCurrent["Languages"] == "??")
-							highCurrent["Languages"] = smfLanguageVersions[filename];
-
-						if (yourVersion < smfLanguageVersions[filename])
-						{
-							lowVersion["Languages"] = yourVersion;
-							document.getElementById("your" + filename + knownLanguages[i]).style.color = "red";
-						}
-					}
-				}
-
-				setInnerHTML(document.getElementById("yourSources"), lowVersion["Sources"] ? lowVersion["Sources"] : highYour["Sources"]);
-				setInnerHTML(document.getElementById("currentSources"), highCurrent["Sources"]);
-				if (lowVersion["Sources"])
-					document.getElementById("yourSources").style.color = "red";
-
-				setInnerHTML(document.getElementById("yourDefault"), lowVersion["Default"] ? lowVersion["Default"] : highYour["Default"]);
-				setInnerHTML(document.getElementById("currentDefault"), highCurrent["Default"]);
-				if (lowVersion["Default"])
-					document.getElementById("yourDefault").style.color = "red";
-
-				if (document.getElementById("Templates"))
-				{
-					setInnerHTML(document.getElementById("yourTemplates"), lowVersion["Templates"] ? lowVersion["Templates"] : highYour["Templates"]);
-					setInnerHTML(document.getElementById("currentTemplates"), highCurrent["Templates"]);
-
-					if (lowVersion["Templates"])
-						document.getElementById("yourTemplates").style.color = "red";
-				}
-
-				setInnerHTML(document.getElementById("yourLanguages"), lowVersion["Languages"] ? lowVersion["Languages"] : highYour["Languages"]);
-				setInnerHTML(document.getElementById("currentLanguages"), highCurrent["Languages"]);
-				if (lowVersion["Languages"])
-					document.getElementById("yourLanguages").style.color = "red";
 			}
 
 			function smfHideDbColumns()
@@ -2337,6 +2371,7 @@ function load_txt_strings()
 	$txt['cookie_name'] = 'Cookie Name';
 	$txt['local_cookies'] = 'Local Cookie Storage';
 	$txt['global_cookies'] = 'Subdomain Ind. Cookies';
+	$txt['minify_css_js'] = 'Minify JS and CSS files';
 	$txt['compressed_output'] = 'Compressed Output';
 	$txt['database_sessions'] = 'Database Driven Sessions';
 	$txt['database_loose'] = 'Return to cached pages';
@@ -2372,6 +2407,10 @@ function load_txt_strings()
 	$txt['sources_version'] = 'Sources';
 	$txt['template_version'] = 'Default Templates';
 	$txt['language_version'] = 'Language Files';
+	$txt['controllers_version'] = 'Controller Files';
+	$txt['admin_version'] = 'Admin Files';
+	$txt['subs_version'] = 'Subs Files';
+	$txt['database_version'] = 'Database Files';
 	$txt['custom_template_version'] = 'Custom Templates';
 	$txt['file_version'] = 'ElkArte File';
 	$txt['your_version'] = 'Your Version';
