@@ -48,7 +48,7 @@ function initialize_inputs()
 		dirname(dirname(__FILE__)) . '/community',
 	);
 
-	// Try to find ourslelfs
+	// Try to find ourself
 	foreach ($possible as $dir)
 	{
 		if (@file_exists($dir . '/SSI.php'))
@@ -105,12 +105,8 @@ function get_linux_data()
 
 	$context['current_time'] = strftime('%B %d, %Y, %I:%M:%S %p');
 
-	$context['load_averages'] = @implode('', @get_file_data('/proc/loadavg'));
-	if (!empty($context['load_averages']) && preg_match('~^([^ ]+?) ([^ ]+?) ([^ ]+)~', $context['load_averages'], $matches) != 0)
-		$context['load_averages'] = array($matches[1], $matches[2], $matches[3]);
-	elseif (($context['load_averages'] = @`uptime 2>/dev/null`) != null && preg_match('~load average[s]?: (\d+\.\d+),? (\d+\.\d+),? (\d+\.\d+)~i', $context['load_averages'], $matches) != 0)
-		$context['load_averages'] = array($matches[1], $matches[2], $matches[3]);
-	else
+	$context['load_averages'] = detectServerLoad();
+	if (empty($context['load_averages']))
 		unset($context['load_averages']);
 
 	// How about the cpu and speed ?
@@ -449,6 +445,53 @@ function get_linux_data()
 }
 
 /**
+ * Returns the current server load for nix systems
+ */
+function detectServerLoad()
+{
+	if (stristr(PHP_OS, 'win'))
+		return false;
+
+	$cores = detectServerCores();
+
+	// The internal function should always be available
+	if (function_exists('sys_getloadavg'))
+	{
+		$sys_load = sys_getloadavg();
+		return array($sys_load[1] / $cores, $sys_load[2] / $cores, $sys_load[3] / $cores);
+	}
+	// Maybe someone has a custom compile
+	else
+	{
+		$load_average = @file_get_contents('/proc/loadavg');
+
+		if (!empty($load_average) && preg_match('~^([^ ]+?) ([^ ]+?) ([^ ]+)~', $load_average, $matches) != 0)
+			return array($matches[1] / $cores, $matches[2] / $cores, $matches[3] / $cores);
+		elseif (($load_average = @`uptime`) != null && preg_match('~load average[s]?: (\d+\.\d+), (\d+\.\d+), (\d+\.\d+)~i', $load_average, $matches) != 0)
+			return array($matches[1] / $cores, $matches[2] / $cores, $matches[3] / $cores);
+
+		return false;
+	}
+}
+
+/**
+ * Determines the number of cpu cores available
+ */
+function detectServerCores()
+{
+	$cores = @file_get_contents('/proc/cpuinfo');
+
+	if (!empty($cores))
+	{
+		$cores = preg_match_all('~^physical id~m', $cores, $matches);
+		if (!empty($cores))
+			return (int) $cores;
+	}
+
+	return 1;
+}
+
+/**
  * Windows is a bit special
  *
  * @global type $context
@@ -691,6 +734,12 @@ function get_mysql_data()
 
 	$context['mysql_statistics'] = array();
 
+	// Version
+	$context['mysql_statistics'][] = array(
+		'description' => 'MySQL Version',
+		'value' => $context['mysql_version'],
+	);
+
 	// Connections per second
 	if (isset($context['mysql_status']['Connections'], $context['mysql_status']['Uptime']))
 		$context['mysql_statistics'][] = array(
@@ -698,115 +747,187 @@ function get_mysql_data()
 			'value' => $context['mysql_status']['Connections']['value'] / max(1, $context['mysql_status']['Uptime']['value']),
 		);
 
-	// Kilobytes received per second
+	// Data received per second
 	if (isset($context['mysql_status']['Bytes_received'], $context['mysql_status']['Uptime']))
-		$context['mysql_statistics'][] = array(
-			'description' => 'Kilobytes received per second',
-			'value' => ($context['mysql_status']['Bytes_received']['value'] / max(1, $context['mysql_status']['Uptime']['value'])) / 1024,
-		);
+	{
+		$value = $context['mysql_status']['Bytes_received']['value'] / max(1, $context['mysql_status']['Uptime']['value']);
 
-	// Kilobytes sent per second
-	if (isset($context['mysql_status']['Bytes_sent'], $context['mysql_status']['Uptime']))
 		$context['mysql_statistics'][] = array(
-			'description' => 'Kilobytes sent per second',
-			'value' => ($context['mysql_status']['Bytes_sent']['value'] / max(1, $context['mysql_status']['Uptime']['value'])) / 1024,
+			'description' => 'Data received per second',
+			'value' => $value,
+			'format' => formatBytes($value),
 		);
+	}
+
+	// Data sent per second
+	if (isset($context['mysql_status']['Bytes_sent'], $context['mysql_status']['Uptime']))
+	{
+		$value = $context['mysql_status']['Bytes_sent']['value'] / max(1, $context['mysql_status']['Uptime']['value']);
+
+		$context['mysql_statistics'][] = array(
+			'description' => 'Data sent per second',
+			'value' => $value,
+			'format' => formatBytes($value),
+		);
+	}
 
 	// Queries per second
 	if (isset($context['mysql_status']['Questions'], $context['mysql_status']['Uptime']))
+	{
+		$value = $context['mysql_status']['Questions']['value'] / max(1, $context['mysql_status']['Uptime']['value']);
+
 		$context['mysql_statistics'][] = array(
-			'description' => 'Queries per second',
-			'value' => $context['mysql_status']['Questions']['value'] / max(1, $context['mysql_status']['Uptime']['value']),
+			'description' => 'Average Queries per second',
+			'value' => $value,
+			'format' => number_format($value),
+		);
+	}
+
+	// Queries Total
+	if (isset($context['mysql_status']['Questions']))
+		$context['mysql_statistics'][] = array(
+			'description' => 'Total Queries',
+			'value' => $context['mysql_status']['Questions']['value'],
+			'format' => number_format($context['mysql_status']['Questions']['value']),
+		);
+
+	// Threads connected
+	if (isset($context['mysql_status']['Threads_connected']))
+		$context['mysql_statistics'][] = array(
+			'description' => 'Threads_connected',
+			'value' => $context['mysql_status']['Threads_connected']['value'],
+			'format' => number_format($context['mysql_status']['Threads_connected']['value']),
 		);
 
 	// Percentage of slow queries
 	if (isset($context['mysql_status']['Slow_queries'], $context['mysql_status']['Questions']))
+	{
+		$value = $context['mysql_status']['Slow_queries']['value'] / max(1, $context['mysql_status']['Questions']['value']);
+
 		$context['mysql_statistics'][] = array(
 			'description' => 'Percentage of slow queries',
-			'value' => $context['mysql_status']['Slow_queries']['value'] / max(1, $context['mysql_status']['Questions']['value']),
-		);
-
-	// Opened_tables vs Open_tables ratio
-	if (isset($context['mysql_status']['Opened_tables']) && !empty($context['mysql_status']['Open_tables']['value']))
-	{
-		$value = $context['mysql_status']['Opened_tables']['value'] / max(1, $context['mysql_status']['Open_tables']['value']);
-		if ($value > 1000)
-		{
-			$health = 2;
-			$note = "Try increasing your table cache to " . formatBytes($context['mysql_status']['Open_tables']['value'] * 1.5) . ".";
-		}
-		elseif ($value > 100)
-		{
-			$health = 1;
-			$note = "Try increasing your table cache to " . formatBytes($context['mysql_status']['Open_tables']['value'] * 1.5) . ".";
-		}
-		else
-		{
-			$health = 0;
-			$note = '';
-		}
-
-		$context['mysql_statistics'][] = array(
-			'description' => 'Opened vs. Open tables',
 			'value' => $value,
-			'setting' => 'table_cache',
-			'health' => $health,
-			'note' => $note,
-			'explain' => "MySQL uses the table cache to keep tables open when database connections aren't using them. This makes future accesses to those tables faster."
+			'format' => sprintf("%.2f%%", $value * 100),
+			'note' => ' You had ' . number_format($context['mysql_status']['Slow_queries']['value']) . ' out of ' . number_format($context['mysql_status']['Questions']['value']) . ' that took longer than ' . number_format($context['mysql_variables']['long_query_time']['value']) . ' seconds to complete.',
 		);
 	}
 
-	if (isset($context['mysql_status']['Opened_tables'], $context['mysql_variables']['table_cache']['value']))
+	// Percentage of used connections
+	if (isset($context['mysql_variables']['max_connections'], $context['mysql_status']['Max_used_connections']))
 	{
-		$value = $context['mysql_status']['Open_tables']['value'] / max(1, $context['mysql_variables']['table_cache']['value']);
-		if ($value > 0.95)
+		$value = $context['mysql_status']['Max_used_connections']['value'] / max(1, $context['mysql_variables']['max_connections']['value']);
+
+		if ($value > .85)
 		{
 			$health = 2;
-			$note = "Your table cache is full. Try increasing your table cache to " . formatBytes($context['mysql_variables']['table_cache']['value'] * 1.5) . ".";
+			$note = 'You should raise the max_connections value, try increasing it to ' . number_format(min(400, $context['mysql_status']['Max_used_connections']['value'] / .75));
 		}
-		elseif ($value > 0.85)
+		elseif ($value < .10 && $context['mysql_variables']['max_connections']['value'] > 400)
 		{
 			$health = 1;
-			$note = "Your table cache is nearly full. Consider increasing your table cache to " . formatBytes($context['mysql_variables']['table_cache']['value'] * 1.25) . ".";
-		}
-		elseif ($value < 0.5 && $context['mysql_variables']['table_cache']['value'] > 200)
-		{
-			$health = 1;
-			$note = "Your table cache is more than half empty. Having a table cache bigger than needed uses memory that is likely better used elsewhere. Make sure MySQL has been running for some days before adjusting this downwards.";
+			$note = 'You are using less than 10% of your configured max_connections, lowering max_connections could help to avoid an over-allocation of memory';
 		}
 		else
 		{
 			$health = 0;
-			$note = '';
+			$note = 'Your max_connections variable appears to be fine';
 		}
+
 		$context['mysql_statistics'][] = array(
-			'description' => 'Table cache usage',
+			'description' => 'Percentage of used Connections',
 			'value' => $value,
-			'setting' => 'table_cache',
+			'format' => sprintf("%.1f%%", $value * 100),
+			'setting' => 'max_connections',
+			'note' => $note,
 			'health' => $health,
-			'note' => $note
+		);
+	}
+
+	// Table Cache
+	if (isset($context['mysql_status']['Opened_tables'], $context['mysql_variables']['table_open_cache']) && !empty($context['mysql_status']['Open_tables']['value'])) 
+	{
+		$value = $context['mysql_status']['Opened_tables']['value'] / max(1, $context['mysql_status']['Open_tables']['value']);
+
+		$hitrate =  $context['mysql_status']['Open_tables']['value'] * 100 / max(1, $context['mysql_status']['Opened_tables']['value']);
+
+		$fillrate = $context['mysql_status']['Open_tables']['value'] * 100 / $context['mysql_variables']['table_open_cache']['value'];
+
+		$request = mysql_query("
+			SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'");
+		list ($table_count) = mysql_fetch_row($request);
+		mysql_free_result($request);
+
+		$note = '(Hit % / Fill %) ';
+
+		// Plenty of room in table_open_cache, not much else to check
+		if ($fillrate < 95)
+		{
+			$health = 0;
+			$note .= 'You have ' . $context['mysql_status']['Open_tables']['value'] . ' open tables. Your table_cache value appears to be fine.';
+		}
+		// Cache is full, while hit rate is a bit off, may need more room
+		elseif ($hitrate < 80 || $fillrate >= 90)
+		{
+			$health = 1;
+			$note .= 'You have ' . $context['mysql_status']['Open_tables']['value'] . 'open tables. The Current table_cache hit rate is ' . sprintf('%0.1f%%', $hitrate) . ', while ' . sprintf("%.1f%%", $fillrate) . ' of your table cache is in use.  You should probably increase your table_cache.';
+		}
+		// Full cache but full hit rate as well, nerdvana
+		else
+		{
+			$health = 0;
+			$note .= 'Current table_cache hit rate is ' . sprintf("%.1f%%", $hitrate) . ', while ' . sprintf("%.1f%%", $fillrate) . ' of your table cache is in use.  The table cache value seems to be fine.';
+		}
+
+		if (isset($context['mysql_variable']['table_definition_cache']) && $context['mysql_variable']['table_definition_cache']['value'] <= $table_count && ($table_count <= 100))
+			$note .= ' You should probably increase your table_definition_cache value.';
+
+		$context['mysql_statistics'][] = array(
+			'description' => 'Opened vs. Open tables',
+			'value' => $hitrate,
+			'format' => sprintf("%.1f%%", $hitrate) . ' / ' . sprintf("%.1f%%", $fillrate),
+			'setting' => 'table_open_cache',
+			'health' => $health,
+			'note' => $note,
+			'explain' => " MySQL uses the table cache to keep tables open when database connections aren't using them. This makes future accesses to those tables faster."
 		);
 	}
 
 	// Key Buffer ratios
+/*
+
+KEY BUFFER
+Current MyISAM index space = 100 M
+Current key_buffer_size = 32 M
+Key cache miss rate is 1 : 507
+Key buffer free ratio = 37 %
+Your key_buffer_size seems to be too high.
+Perhaps you can use these resources elsewhere
+
+*/
 	$kb_size = $context['mysql_variables']['key_buffer_size']['value'];
 	$kb_size_min = 8192 * $context['mysql_variables']['key_cache_block_size']['value'];
 	$mem_minus_overhead = $context['memory_usage']['total'] * 1024 * 0.8;
 	$kb_size_mixed_with_innodb = floor($mem_minus_overhead * 0.1);
 	$kb_size_mixed = floor($mem_minus_overhead * 0.2);
 	$kb_size_max = floor($mem_minus_overhead * 0.4);
+
 	if (isset($context['mysql_status']['Key_reads'], $context['mysql_status']['Key_read_requests']))
 	{
+		// key cache miss rate
 		$value = max(1, $context['mysql_status']['Key_read_requests']['value']) / max(1, $context['mysql_status']['Key_reads']['value']);
-		$filled = $context['mysql_status']['Key_blocks_unused']['value'] * $context['mysql_variables']['key_cache_block_size']['value'] < 0.1 * $context['mysql_variables']['key_buffer_size']['value'];
-		if ($value < 20 && !$filled)
+
+		// key buffer free
+		$free = round($context['mysql_status']['Key_blocks_unused']['value'] * $context['mysql_variables']['key_cache_block_size']['value'] / $context['mysql_variables']['key_buffer_size']['value'] * 100, 0);
+
+		// Missing 1 in 20 and the key buffer is full
+		if ($value < 20 && $free < 20)
 		{
 			$health = 2;
-			$note = "Your key buffer is too small. <b>This will cause performance issues. Fix this first.</b> ";
+			$note = 'Your key buffer is too small. <b>This will cause performance issues. Fix this first.</b>';
 
 			// Give up... tell 'em to upgrade.
 			if ($kb_size > $kb_size_max)
-				$note .= "You should seriously consider increasing your system memory.";
+				$note .= "You should seriously consider increasing your total system memory.";
 			// Things are pretty serious... double it or go to max, whichever is lower
 			elseif ($kb_size > $kb_size_mixed)
 				$note .= "Try setting your key_buffer_size to " . formatBytes(min($kb_size_max + 1, $kb_size * 2)) . " if this is a database only machine, or consider increasing your system memory.";
@@ -817,7 +938,8 @@ function get_mysql_data()
 			else
 				$note .= "Try increasing your key_buffer_size to " . formatBytes(min($kb_size_mixed_with_innodb + 1, max($kb_size_min, $kb_size * 2))) . ".";
 		}
-		elseif ($value < 100 && !$filled)
+		// Missing 1 in 100 and the buffer is full
+		elseif ($value < 100 && $free < 20)
 		{
 			$health = 1;
 			$note = "Your key buffer would benefit from an increase. If MySQL hasn't been running long, wait a day before adjusting this value. ";
@@ -833,35 +955,35 @@ function get_mysql_data()
 				$note .= "If you are not using InnoDB, try increasing your key_buffer_size to " . formatBytes(min($kb_size_mixed + 1, $kb_size * 2)) . ". Think about increasing your system memory.";
 			// Probably never tuned...
 			else
-				$note .= "Try increasing your key_buffer_size to " .formatBytes(min($kb_size_mixed_with_innodb + 1, max($kb_size_min, $kb_size * 2))) . ".";
+				$note .= "Try increasing your key_buffer_size to " . formatBytes(min($kb_size_mixed_with_innodb + 1, max($kb_size_min, $kb_size * 2))) . ".";
 		}
+		// Simply to much allocated
+		elseif ($value > 10000 || $free < 50)
+		{
+			$health = 0;
+			$note = '<i class="fa fa-info-circle pass"></i>Your key_buffer_size value seems to be set high, consider lowering this value so you can use these resources elsewhere. Try decreasing it to ' . formatBytes(max($context['mysql_status']['Key_blocks_used']['value'] * $context['mysql_variables']['key_cache_block_size']['value'] * 2, $kb_size_min), 0) . '.';
+		}
+		// Missing less than 1 in 100
 		else
 		{
 			$health = 0;
 			$note = '';
+
+			// Check if its properly allocated
 			if ($kb_size > $kb_size_min && $context['mysql_status']['Key_blocks_unused']['value'] > 2 * $context['mysql_status']['Key_blocks_used']['value'])
-				$note = "Your key buffer is mostly empty. Try decreasing it to " . formatBytes(max($context['mysql_status']['Key_blocks_used']['value'] * $context['mysql_variables']['key_cache_block_size']['value'] * 2, $kb_size_min)) . ".";
+				$note = '<i class="fa fa-info-circle pass"></i>Your key buffer is mostly empty. Try decreasing it to ' . formatBytes(max($context['mysql_status']['Key_blocks_used']['value'] * $context['mysql_variables']['key_cache_block_size']['value'] * 2, $kb_size_min), 0) . '.';
 		}
 
 		$context['mysql_statistics'][] = array(
 			'description' => 'MyISAM key buffer read hit rate',
 			'value' => $value,
+			'format' => '1 in ' . number_format($value),
 			'setting' => 'key_buffer_size',
 			'health' => $health,
-			'note' => $note,
-			'explain' => "The MyISAM key buffer holds the indexes for MyISAM tables. The indexes help MySQL find the actual data in the table quickly. If the indexes aren't in memory, MySQL must load them from disk first, causing severe performance degredation."
+			'note' => 'Key cache miss rate. ' . $note,
+			'explain' => "The MyISAM key buffer holds the indexes for MyISAM tables. The indexes help MySQL find the actual data in the table quickly. If the indexes aren't in memory, MySQL must load them from disk first, causing severe performance degradation."
 		);
 	}
-
-	// This is useless for tunning, nice to report
-	if (isset($context['mysql_status']['Key_writes'], $context['mysql_status']['Key_write_requests']))
-		$context['mysql_statistics'][] = array(
-			'description' => 'Key buffer write hit rate',
-			'value' => $context['mysql_status']['Key_writes']['value'] / max(1, $context['mysql_status']['Key_write_requests']['value']),
-			'setting' => 'key_buffer_size',
-			'health' => 0,
-			'note' => '',
-		);
 
 	// InnoDB buffer memory settings...
 	$bs_size = $context['mysql_variables']['innodb_buffer_pool_size']['value'];
@@ -869,9 +991,15 @@ function get_mysql_data()
 	$bs_size_mixed_with_myisam = floor($mem_minus_overhead * 0.25);
 	$bs_size_mixed = floor($mem_minus_overhead * 0.45);
 	$bs_size_max = floor($mem_minus_overhead * 0.9);
+
 	if (isset($context['mysql_status']['Innodb_buffer_pool_reads'], $context['mysql_status']['Innodb_buffer_pool_read_requests']))
 	{
+		// Innodb_buffer_pool_read_requests - The number of logical read requests
+		// Innodb_buffer_pool_reads - The number of logical reads that InnoDB could not satisfy from the
+		// buffer pool, and had to read directly from the disk
 		$value = $context['mysql_status']['Innodb_buffer_pool_read_requests']['value'] / max(1, $context['mysql_status']['Innodb_buffer_pool_reads']['value']);
+
+		// 1 in 50 from disk
 		if ($value < 50)
 		{
 			$health = 2;
@@ -885,11 +1013,12 @@ function get_mysql_data()
 				$note .= "Try setting your innodb_buffer_pool_size to " . formatBytes(min($bs_size_max + 1, $bs_size * 2)) . " if this is a database only machine, or seriously consider increasing your system memory.";
 			// Things are bad...
 			elseif ($bs_size > $bs_size_mixed_with_myisam)
-				$note .= "If you are not using MyISAM, try increasing your innodb_buffer_pool_size to " . formatBytes(min($bs_size_mixed + 1, $bs_size * 2)) . ". Think about increasing your system memory.";
+				$note .= "If you are not using MyISAM, consider increasing your innodb_buffer_pool_size to " . formatBytes(min($bs_size_mixed + 1, $bs_size * 2)) . ". Think about increasing your system memory.";
 			// Probably never tuned...
 			else
 				$note .= "Try increasing your innodb_buffer_pool_size to " . formatBytes(min($bs_size_mixed_with_myisam + 1, max($bs_size_min, $bs_size * 2))) . ".";
 		}
+		// 1 in 500 from disk
 		elseif ($value < 500)
 		{
 			$health = 1;
@@ -900,14 +1029,15 @@ function get_mysql_data()
 				$note .= "You should consider increasing your system memory.";
 			// Things could be better... double it or go to max, whichever is lower
 			elseif ($bs_size > $bs_size_mixed_with_myisam)
-				$note .= "Try setting your innodb_buffer_pool_size to " . formatBytes(min($bs_size_max + 1, $bs_size * 2)) . " if this is a database only machine, or consider increasing your system memory to increase performance.";
+				$note .= "Try setting your innodb_buffer_pool_size to " . formatBytes(min($bs_size_max + 1, $bs_size * 2), 0) . " if this is a database only machine, or consider increasing your system memory to increase performance.";
 			// Things aren't too shabby, but there's still room
 			elseif ($bs_size > $bs_size_mixed_with_myisam)
-				$note .= "If you are not using MyISAM, try increasing your innodb_buffer_pool_size to " . formatBytes(min($bs_size_mixed + 1, $bs_size * 2)) . ". Think about increasing your system memory.";
+				$note .= "If you are not using MyISAM, try increasing your innodb_buffer_pool_size to " . formatBytes(min($bs_size_mixed + 1, $bs_size * 2), 0) . ". Think about increasing your system memory.";
 			// Probably never tuned...
 			else
-				$note .= "Try increasing your innodb_buffer_pool_size to " . formatBytes(max($bs_size_mixed_with_myisam + 1, max($bs_size_min, $bs_size * 2))) . ".";
+				$note .= "Try increasing your innodb_buffer_pool_size to " . formatBytes(max($bs_size_mixed_with_myisam + 1, max($bs_size_min, $bs_size * 2)), 0) . ".";
 		}
+		// < 1 in 500 from disk
 		else
 		{
 			$health = 0;
@@ -917,19 +1047,58 @@ function get_mysql_data()
 		$context['mysql_statistics'][] = array(
 			'description' => 'InnoDB buffer pool read hit rate',
 			'value' => $value,
+			'format' => '1 in ' . number_format($value),
+			'setting' => 'innodb_buffer_pool_size',
+			'health' => $health,
+			'note' => 'Buffer pool miss rate. ' . $note,
+			'explain' => 'The InnoDB buffer pool holds both indexes <em>and</em> data for InnoDB tables. To ensure good performance, the buffer pool must be large enough to hold the both indexes and data of the key tables to prevent reading from disk.',
+		);
+	}
+
+	// InnoDB buffer pool size, used to inform of sizes, use with read hit rate above
+	if (isset($context['mysql_status']['Innodb_buffer_pool_pages_free'], $context['mysql_status']['Innodb_buffer_pool_pages_total'], $context['mysql_variables']['innodb_buffer_pool_size']))
+	{	
+		$bs_size = $context['mysql_variables']['innodb_buffer_pool_size']['value'];
+
+		// Innodb Data and index size
+		$request = mysql_query("
+			SELECT IFNULL(SUM(INDEX_LENGTH), 0) from information_schema.TABLES where ENGINE='InnoDB'");
+		list ($innodb_index) = mysql_fetch_row($request);
+		$request = mysql_query("
+			SELECT IFNULL(SUM(DATA_LENGTH), 0) from information_schema.TABLES where ENGINE='InnoDB'");
+		list ($innodb_data) = mysql_fetch_row($request);
+		mysql_free_result($request);
+
+		// index + data vs pool size's
+		$health = 0;
+		$value = $context['mysql_status']['Innodb_buffer_pool_pages_free']['value'] / $context['mysql_status']['Innodb_buffer_pool_pages_total']['value'];
+
+		$free = $context['mysql_status']['Innodb_buffer_pool_pages_free']['value'] * $context['mysql_status']['Innodb_page_size']['value'];
+
+		$note = 'free buffer space remaining.';
+		$explain = 'Total InnoDB index space: ' . formatBytes($innodb_index, 0) . '. Total InnoDB data space: ' . formatBytes($innodb_data, 0) . '. Current InnoDB buffer pool free: ' . sprintf("%.2f%%", $value * 100) . ' Current buffer pool size: ' . formatBytes($bs_size);
+
+		$context['mysql_statistics'][] = array(
+			'description' => 'InnoDB buffer pool size',
+			'value' => $value,
+			'format' => formatBytes($free),
 			'setting' => 'innodb_buffer_pool_size',
 			'health' => $health,
 			'note' => $note,
-			'explain' => "The InnoDB buffer pool holds both indexes <em>and</em> data for InnoDB tables. To ensure good performance, the buffer pool must be large enough to hold the hot areas in both indexes and data."
+			'explain' => $explain,
 		);
 	}
 
 	// Threads
+	// Connections: The number of connection attempts (successful or not) to the MySQL server. 
+	// Threads_created: The number of threads created to handle connections
+	// thread_cache_size: How many threads the server should cache for reuse.
 	if (isset($context['mysql_status']['Threads_created'], $context['mysql_status']['Connections']))
 	{
 		$value = $context['mysql_status']['Connections']['value'] / $context['mysql_status']['Threads_created']['value'];
 		$running_long_enough = $context['mysql_status']['Threads_created']['value'] > 3 * $context['mysql_variables']['thread_cache_size']['value'];
 		$thread_cache_suggest = max($context['mysql_variables']['max_connections']['value'], $context['mysql_variables']['thread_cache_size']['value'] * 2);
+
 		if ($value < 5 && $running_long_enough)
 		{
 			$health = 2;
@@ -938,7 +1107,7 @@ function get_mysql_data()
 		elseif ($value < 30 && $running_long_enough)
 		{
 			$health = 1;
-			$note = "MySQL is spending a lot of time creating threads. Try setting your thread_cache_size to $thread_cache_suggest.";
+			$note = "MySQL is spending time creating threads. Try setting your thread_cache_size to $thread_cache_suggest.";
 		}
 		else
 		{
@@ -951,34 +1120,47 @@ function get_mysql_data()
 		$context['mysql_statistics'][] = array(
 			'description' => 'Thread cache hit rate',
 			'value' => $value,
+			'format' => number_format($value),
 			'setting' => 'thread_cache_size',
 			'health' => $health,
-			'note' => $note,
+			'note' => 'Connections handled per thread. ' . $note,
 			'explain' => "Each connection to MySQL requires a thread. Threads can be re-used between connections if there is room in the cache to store the thread when not in use."
 		);
 	}
 
+	// Worker Threads
+	// Threads_created: The number of threads created to handle connections
+	// thread_cache_size: How many threads the server should cache for reuse.
 	if (isset($context['mysql_status']['Threads_created'], $context['mysql_variables']['thread_cache_size']))
 	{
 		$value = $context['mysql_status']['Threads_cached']['value'] / max(1, $context['mysql_variables']['thread_cache_size']['value']);
+		$tps = $context['mysql_status']['Threads_created']['value'] / $context['mysql_status']['Uptime']['value'];
+
 		if ($context['mysql_variables']['thread_cache_size']['value'] > $context['mysql_variables']['max_connections']['value'] && $running_long_enough)
 		{
 			$health = 2;
-			$note = "Your thread cache is higher than the maximum number of connections and should be reduced to save memory. Reduce it to at most " . formatBytes($context['mysql_variables']['max_connections']['value']);
+			$note = "Your thread cache is higher than the maximum number of connections and should be reduced to save memory. Reduce it to at most " . number_format($context['mysql_variables']['max_connections']['value']);
+		}
+		elseif ($tps > 2 && $context['mysql_status']['Threads_cached']['value'] < 1)
+		{
+			$health = 2;
+			$note = "Threads created per/sec are overrunning threads cached, You should raise thread_cache_size.";
 		}
 		elseif ($value < 0.5 && $running_long_enough && $value !== 0)
 		{
 			$health = 1;
-			$note = "Your thread cache is more than half empty. If you don't experience bursts of traffic, consider lowering your thread cache to " . (formatBytes($context['mysql_status']['Threads_cached']['value'] * 2)) . ".";
+			$note = "Your thread cache is more than half empty. If you don't experience bursts of traffic, consider lowering your thread cache to " . (number_format($context['mysql_status']['Threads_cached']['value'] * 2)) . ".";
 		}
 		else
 		{
 			$health = 0;
-			$note = '';
+			$note = 'The number of threads the server should cache for reuse appears fine';
 		}
+
 		$context['mysql_statistics'][] = array(
 			'description' => 'Thread cache usage',
 			'value' => $value,
+			'format' => sprintf("%.1f%%", $value * 100),
 			'setting' => 'thread_cache_size',
 			'health' => $health,
 			'note' => $note
@@ -988,85 +1170,143 @@ function get_mysql_data()
 	// Temporary Tables
 	if (isset($context['mysql_status']['Created_tmp_tables'], $context['mysql_status']['Created_tmp_disk_tables']))
 	{
-		$value = $context['mysql_status']['Created_tmp_disk_tables']['value'] / max(1, $context['mysql_status']['Created_tmp_tables']['value']);
+		$value = $context['mysql_status']['Created_tmp_disk_tables']['value'] / max(1, $context['mysql_status']['Created_tmp_tables']['value'] + $context['mysql_status']['Created_tmp_disk_tables']['value']);
+		$note = 'of your temporary tables were created on disk.';
+
 		if ($value > 0.8)
-		{
 			$health = 2;
-			$note = '';
-		}
-		elseif ($value > 0.4)
-		{
+		elseif ($value > 0.25)
 			$health = 1;
-			$note = '';
-		}
 		else
-		{
 			$health = 0;
-			$note = '';
-		}
 
 		if ($health)
 		{
 			// Don't let a temporary table eat all the RAM...
 			$max_tmp_table_size = min(floor($context['memory_usage']['total'] * 1024 / 8), max($context['mysql_variables']['max_heap_table_size']['value'] * 2, 33554432));
+
 			if ($context['mysql_variables']['max_heap_table_size']['value'] < $max_tmp_table_size)
 			{
 				// Controls explicitly created temporary tables
-				$note .= ' Try increasing your max_heap_table_size to ' . formatBytes($max_tmp_table_size);
+				$note .= ' Try increasing your max_heap_table_size to ' . formatBytes($max_tmp_table_size) . '.';
 			}
 
 			if ($context['mysql_variables']['tmp_table_size']['value'] < $max_tmp_table_size)
 			{
 				// Controls internally created temporary tables
-				$note .= ' Try increasing your tmp_table_size to ' . formatBytes($max_tmp_table_size);
+				$note .= ' Try increasing your tmp_table_size to ' . formatBytes($max_tmp_table_size) . '.';
 			}
 		}
 
 		$context['mysql_statistics'][] = array(
 			'description' => 'Temporary table disk usage',
 			'value' => $value,
+			'format' => sprintf("%.1f%%", $value * 100),
 			'setting' => 'tmp_table_size, max_heap_table_size',
 			'health' => $health,
 			'note' => $note,
-			'explain' => 'If a temporary table in memory exceeds the specified limits, it is pushed to disk. This can slow complex queries down.'
+			'explain' => ' If a temporary table in memory exceeds the specified limits, it is pushed to disk. This can slow complex queries down.'
 		);
 	}
 
+	// Sorts
 	// Don't suggest changing this. The default is fine. In fact, increasing it can make sorts SLOWER.
 	// See http://www.mysqlperformanceblog.com/2007/08/18/how-fast-can-you-sort-data-with-mysql/
 	if (isset($context['mysql_status']['Sort_merge_passes'], $context['mysql_status']['Sort_rows']))
+	{
+		$total_sorts = 0;
+		$passes_per_sort = 0;
+		$note = 'Your sort buffer appears to be fine';
+
+		if (isset($context['mysql_status']['Sort_scan'], $context['mysql_status']['Sort_range']))
+			$total_sorts = $context['mysql_status']['Sort_scan']['value'] + $context['mysql_status']['Sort_range']['value'];
+	
+		if ($total_sorts = 0)
+			$note = 'No sort operations have been performed';
+		elseif ($context['mysql_status']['Sort_merge_passes']['value'] != 0)
+		{
+			$passes_per_sort = $context['mysql_status']['Sort_merge_passes']['value'] / $total_sorts;
+			if ($passes_per_sort > 1)
+				$note = 'On average ' . $passes_per_sort . ' sort merge passes are made per sort operation';
+		}
+
 		$context['mysql_statistics'][] = array(
 			'description' => 'Sort merge pass rate',
 			'value' => $context['mysql_status']['Sort_merge_passes']['value'] / max(1, $context['mysql_status']['Sort_rows']['value']),
-			'setting' => 'sort_buffer',
+			'setting' => 'sort_buffer, read_rnd_buffer_size',
 			'max' => 0.001,
 			'health' => 0,
-			'note' => '',
-	  );
+			'note' => $note,
+		);
+	}
+
+	// Joins
+	if (isset($context['mysql_status']['Select_full_join'], $context['mysql_status']['Select_range_check']))
+	{
+		$value = $context['mysql_status']['Select_full_join']['value'];
+		$range = $context['mysql_status']['Select_range_check']['value'];
+		$size = isset($context['mysql_variables']['join_buffer_size']) ? formatBytes($context['mysql_variables']['join_buffer_size']['value']) : 0;
+
+		if ($range == 0 && $value == 0)
+		{
+			$health = 0;
+			$note = 'Your joins seem to be using indexes properly.';
+		}
+		elseif ($value > 0)
+		{
+			$health = 1;
+			$note = 'You have had ' . number_format($value) . ' queries where a join could not properly use an index.';
+		}
+		elseif ($range > 0)
+		{
+			$health = 1;
+			$note = 'You have had' .  number_format($range) . ' joins without keys that check for key usage after each row.';
+		}
+
+		$context['mysql_statistics'][] = array(
+			'description' => 'Join Buffer',
+			'value' => $value,
+			'format' => $size,
+			'setting' => 'join_buffer_size',
+			'health' => $health,
+			'note' => $note,
+			'explain' => ' If you are unable to optimize your queries, only then may want to increase your join_buffer_size to accommodate larger joins in one pass. Memory allocation time can cause substantial performance drops if the size is larger than needed by most queries that use it.',
+		);
+	}
 
 	// Query cache
-	$value = !empty($context['mysql_variables']['query_cache_type']['value']) ? (int) ($context['mysql_variables']['query_cache_type']['value'] == 'ON') : 0;
-	if ($value != 1)
+	// More people should disable Query Cache than to enable it. It can cause contention problems as well // as stalls and due to coarse invalidation it is not efficient.
+	// http://www.percona.com/blog/2007/03/23/beware-large-query_cache-sizes/
+	$value = !empty($context['mysql_variables']['query_cache_type']['value']) ? $context['mysql_variables']['query_cache_type']['value'] : 0;
+	if ($value == 'ON')
+		$value = 1;
+	elseif ($value == "DEMAND")
+		$value = 2;
+	$qq_enable = $value > 0;
+
+	if ($value == 0)
 	{
-		$health = 1;
-		$note = "ElkArte benefits from having the query cache enabled. Unless you have a good reason to disable it, set it to ON.";
+		$health = 0;
+		$note = "ElkArte may benefit from having the query cache enabled if you are not using InnoDB tables or if you have a mixture of InnoDB and MyISAM. Its use and performance gain (or loss) should be closely monitored as it can cause contention problems.";
 	}
 	else
 	{
 		$health = 0;
-		$note = '';
+		$note = 'The query cache is ' . ($value == 2 ? 'in on demand mode' : 'on');
 	}
+
 	$context['mysql_statistics'][] = array(
-		'description' => 'Query cache enabled',
+		'description' => 'Query cache ' . ($value == 0 ? 'Not ' : '') . 'enabled',
 		'value' => $value,
 		'setting' => 'query_cache_type',
 		'health' => $health,
 		'note' => $note,
-		'explain' => "The query cache is used avoid executing the same query again. If the tables the query accesses haven't changed, MySQL can return the cached results for the query."
+		'explain' => "The query cache is used avoid executing the same query again. IF the tables the query accesses haven't changed, MySQL can return the cached results for the query."
 	);
 
-	if (isset($context['mysql_status']['Qcache_not_cached'], $context['mysql_status']['Com_select']))
+	if ($qq_enable && isset($context['mysql_status']['Qcache_not_cached'], $context['mysql_status']['Com_select']))
 	{
+		// Qcache_hits / (Com_select+Qcache_hits)
 		$value = 1 - $context['mysql_status']['Qcache_hits']['value'] / max(1, $context['mysql_status']['Com_select']['value'] + $context['mysql_status']['Qcache_hits']['value']);
 		if ($value == 1)
 		{
@@ -1088,19 +1328,25 @@ function get_mysql_data()
 			$health = 0;
 			$note = '';
 		}
+
 		$context['mysql_statistics'][] = array(
 			'description' => 'Query cache miss rate',
 			'value' => $value,
+			'format' => sprintf("%.1f%%", $value * 100),
 			'setting' => 'query_cache_size, query_cache_limit',
 			'health' => $health,
-			'note' => $note,
+			'note' => 'cache misses. ' . $note,
 			'explain' => "This value will report higher if caching is enable in ElkArte than if caching is not enabled. That's okay; ElkArte is simply caching some of the cacheable queries itself."
 		);
 	}
 
-	if (isset($context['mysql_status']['Qcache_lowmem_prunes'], $context['mysql_status']['Com_select']))
+	// Qcache_lowmem_prunes: The number of queries that were deleted from the query cache because of low memory. 
+	// If a query result is returned from query cache, the server increments the Qcache_hits status variable, not Com_select.
+	if ($qq_enable && isset($context['mysql_status']['Qcache_lowmem_prunes'], $context['mysql_status']['Com_select']))
 	{
+		// Qcache_lowmem_prunes / Com_select
 		$value = $context['mysql_status']['Qcache_lowmem_prunes']['value'] / max(1, $context['mysql_status']['Com_select']['value']);
+
 		if ($value > 0.1)
 		{
 			$health = 2;
@@ -1116,9 +1362,11 @@ function get_mysql_data()
 			$health = 0;
 			$note = '';
 		}
+
 		$context['mysql_statistics'][] = array(
 			'description' => 'Query cache prune rate',
 			'value' => $value,
+			'format' => sprintf("%.1f%%", $value * 100),
 			'setting' => 'query_cache_size',
 			'health' => $health,
 			'note' => $note
@@ -1258,7 +1506,7 @@ function generate_status()
 				<tr>
 					<th style="text-align: left;">Memory usage:</th>
 					<td>
-						', round(($context['memory_usage']['used'] * 100) / $context['memory_usage']['total'], 3), '% (', formatBytes($context['memory_usage']['used']), ' / ', formatBytes($context['memory_usage']['total']), ')';
+						Main: ', round(($context['memory_usage']['used'] * 100) / $context['memory_usage']['total'], 3), '% (', formatBytes($context['memory_usage']['used']), ' / ', formatBytes($context['memory_usage']['total']), ')';
 		if (isset($context['memory_usage']['swap_used']))
 			echo '<br />
 						Swap: ', round(($context['memory_usage']['swap_used'] * 100) / max(1, $context['memory_usage']['swap_total']), 3), '% (', formatBytes($context['memory_usage']['swap_used']), ' / ', formatBytes($context['memory_usage']['swap_total']), ')';
@@ -1373,17 +1621,28 @@ function generate_status()
 		echo '
 		<div class="panel">
 			<h2>MySQL Statistics</h2>
-
-			<div class="righttext">MySQL ', $context['mysql_version'], '</div>
 			<div class="roundframe">It is extremely important you fully understand each change you make to a MySQL database server. If you don\'t understand the output, or if you don\'t understand the recommendations, you should consult a knowledgeable DBA or system administrator that you trust. Always test your changes on staging environments, and always keep in mind that improvements in one area can negatively affect MySQL in other areas.</div>
 			<table class="status_table">';
 
-		// Has this server been running less than 1 day?
-		if (!empty($context['mysql_status']['Uptime']['value']) && $context['mysql_status']['Uptime']['value'] < 86400)
+		// Has this server been running less than 2 days?
+		if (!empty($context['mysql_status']['Uptime']['value']) && $context['mysql_status']['Uptime']['value'] < 86400 * 2)
+		{
 			echo '
 				<tr>
-					<th  colspan="2" style="color:red;">We have detected MySQL was restarted less than 24 Hours ago. These recommendations may not be accurate.</th>
+					<th  colspan="2" style="color:red;">We have detected MySQL was restarted less than 48 Hours ago. These recommendations may not be accurate.</th>
 				</tr>';
+		}
+		elseif (!empty($context['mysql_status']['Uptime']['value']))
+		{
+			$days = floor($context['mysql_status']['Uptime']['value'] / 86400);
+			$hours = floor(($context['mysql_status']['Uptime']['value'] - $days * 86400) / (60 * 60));
+			$min = floor(($context['mysql_status']['Uptime']['value'] - ($days * 86400 + $hours * 3600)) / 60);
+			echo '
+				<tr>
+					<th style="text-align: left;">MySQL Uptime:</th>
+					<td>', $days, ' Day(s), ', $hours, ':', $min, ' Hour(s)</td>
+				</tr>';
+		}
 
 		foreach ($context['mysql_statistics'] as $stat)
 		{
@@ -1394,27 +1653,32 @@ function generate_status()
 			// Good, Bad or Ugly
 			if (isset($stat['health']))
 			{
-			  if ($stat['health'] == 0)
-				echo '<i class="fa fa-check good"></i>';
-			  elseif ($stat['health'] == 1)
-				echo '<i class="fa fa-exclamation-triangle pass"></i>';
-			  else
-				echo '<i class="fa fa-times bad"></i>';
+				if ($stat['health'] == 0)
+					echo '<i class="fa fa-check good"></i>';
+				elseif ($stat['health'] == 1)
+					echo '<i class="fa fa-exclamation-triangle pass"></i>';
+				else
+					echo '<i class="fa fa-times bad"></i>';
 			}
 
+			// Show the cnf setting that this refers to
 			echo $stat['description'], ':', isset($stat['setting']) ? '<br />
 						<em style="font-size: smaller;">(' . $stat['setting'] . ')</em>' : '', '
 					</th>
-					<td>
-						';
+					<td>';
 
-			echo round($stat['value'], 4);
+			// Show the value
+			if (isset($stat['format']))
+				echo '[ <em>' . $stat['format'] . '</em> ] ';
+			else
+				echo '[ <em>' . round($stat['value'], 3) . '</em> ] ';
 
-			if (isset($stat['note']) && strlen($stat['note']) > 0)
-			  echo ' ' . $stat['note'];
+			// Let them know what it all means
+			if (!empty($stat['note']))
+				echo $stat['note'];
 
-			if (isset($stat['explain']))
-			  echo ' ' . $stat['explain'];
+			if (!empty($stat['explain']))
+				echo '<br /><i class="fa fa-info-circle info"></i>' . $stat['explain'];
 
 			echo '
 					</td>
@@ -1429,19 +1693,18 @@ function generate_status()
 			echo '
 			<br />
 			<h2>MySQL status</h2>
-
 			<table width="100%" cellpadding="2" cellspacing="0" border="0">';
 
-		foreach ($context['mysql_status'] as $var)
-		{
-			echo '
+			foreach ($context['mysql_status'] as $var)
+			{
+				echo '
 				<tr>
 					<th style="text-align: left;">', $var['name'], ':</th>
 					<td>', $var['value'], '</td>
 				</tr>';
-		}
+			}
 
-		echo '
+			echo '
 			</table>
 
 			<br />
@@ -1449,16 +1712,16 @@ function generate_status()
 
 			<table class="status_table>';
 
-		foreach ($context['mysql_variables'] as $var)
-		{
-			echo '
+			foreach ($context['mysql_variables'] as $var)
+			{
+				echo '
 				<tr>
 					<th style="text-align: left;">', $var['name'], ':</th>
 					<td>', $var['value'], '</td>
 				</tr>';
-		}
+			}
 
-		echo '
+			echo '
 			</table>';
 		}
 		else
@@ -1488,7 +1751,7 @@ function show_header()
 	<head>
 		<meta name="robots" content="noindex" />
 		<title>Server Status</title>
-		<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+		<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 		<style type="text/css" rel="stylesheet">
 			body {
 				background: #555;
@@ -1604,7 +1867,7 @@ function show_header()
 				margin-right: auto;
 				text-align: left;
 			}
-			.good, .bad, .pass {
+			.good, .bad, .pass, .info {
 				padding: 0 5px 0 0;
 			}
 			.good {
@@ -1615,6 +1878,10 @@ function show_header()
 			}
 			.bad {
 				color: red;
+			}
+			.info {
+				color: #4B95B5;
+				padding-left: 5px;
 			}
 		</style>
 	</head>
@@ -1679,15 +1946,15 @@ function get_file_data($filename)
  */
 function formatBytes($bytes, $precision = 2)
 {
-    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+	$units = array('B', 'KB', 'MB', 'GB', 'TB');
 
-    $bytes = max($bytes, 0);
-    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-    $pow = min($pow, count($units) - 1);
+	$bytes = max($bytes, 0);
+	$pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+	$pow = min($pow, count($units) - 1);
 
-    $bytes /= pow(1024, $pow);
+	$bytes /= pow(1024, $pow);
 
-    return round($bytes, $precision) . ' ' . $units[$pow];
+	return round($bytes, $precision) . ' ' . $units[$pow];
 }
 
 /**
