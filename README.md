@@ -1,6 +1,6 @@
-#### Elkarte scripts
+#### ElkArte Utility Scripts
 
-This repository contains a few useful scripts for Elkarte, such as install/upgrade or repair scripts, database cleaning up, etc.
+This repository contains a several useful scripts for ElkArte, such as install/upgrade, repair scripts, database cleaning, etc.
 
 All scripts in this repository are under BSD 3-clause license, unless specified otherwise.
 
@@ -22,11 +22,11 @@ Most of the scripts are developed or maintained by [emanuele45](https://github.c
 Feel free to fork this repository and make your desired changes.
 
 Please see the [Developer's Certificate of Origin](https://github.com/elkarte/tools/blob/master/DCO.txt) in the repository, by this 
-you acknowledge that you can and do license your code under the license of the parent software.
+you acknowledge that you can and do license your code under the license of the project.
 
 ###### How to contribute:
-* fork the repository. If you are not used to Github, please check out [fork a repository](http://help.github.com/fork-a-repo).
-* branch your repository, to commit the desired changes.
- * an easy way to do so, is to define an alias for the git commit command, which includes -s switch (reference: [How to create Git aliases](http://githacks.com/post/1168909216/how-to-create-git-aliases))
-* send us a pull request.
- * This means you acknowledges your submission under the license of the project.
+* Fork the repository. If you are not used to Github, please check out [fork a repository](http://help.github.com/fork-a-repo).
+* Branch your repository, to commit the desired changes.
+ * An easy way to do so, is to define an alias for the git commit command, which includes -s switch (reference: [How to create Git aliases](http://githacks.com/post/1168909216/how-to-create-git-aliases))
+* Send us a pull request.
+ * This implies that your submission is done under the license of the project.
