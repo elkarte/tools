@@ -6,37 +6,27 @@ All scripts in this repository are under BSD 3-clause license, unless specified 
 
 Most of the scripts are developed or maintained by [emanuele45](https://github.com/emanuele45).
 
-Other small useful scripts, work in progress:
-
-https://github.com/mikemill/Webinstaller.git
-
-https://github.com/eurich/php-tools.git
-
 #### Description
 
-* **databasecleanup**
-* **install_script**: a template that can be used to create manual installation scripts for mods. At the moment the hook part is fully working, the database part is still WIP.
-* **ban_script.php**: a script that allows perform multiple user banning at once. You can provide a list of usernames that you want to ban or you can ask the script to scan a board you have collected all the users you want to ban in (the name must be the subject of the topic).
-* **fix_packages.php**: after a large upgrade (to cleanup forum) the mods are still marked as installed, with this script you can invert that state.
-* **populate.php**: a script that can be used to populate a forum with dummy users (usually useful for testing), originaly written by SlammedDime http://code.mattzuba.com/populator
-* **repair_settings.php**: updated version of repair_settings.php it supports multiple attachments directory, fix several other problems.
-* **smfinfo.php**
-* **status.php**
-* **webinstall.php**
+* **databasecleanup**: Analyses a database and compares it to a fresh install.  Displays added settings and columns with options to remove.
+* **install_script**: A template that can be used to create manual installation scripts for mods. At the moment the hook part is fully working, the database part is still WIP.
+* **ban_script.php**: A script that allows perform multiple user banning at once. You can provide a list of usernames that you want to ban or you can ask the script to scan a board you have collected all the users you want to ban in (the name must be the subject of the topic).
+* **fix_packages.php**: After a large upgrade (to cleanup forum) the mods are still marked as installed, with this script you can invert that state.
+* **populate.php**: A script that can be used to populate a forum with dummy users / topics / posts (useful for testing), originally written by SlammedDime http://code.mattzuba.com/populator
+* **repair_settings.php**: A script that can detect the correct value for a number of fields and settings on your forum.  Useful to fix broken installs.
+* **elkinfo.php**: A script that will provide detailed information to help with support issues. Output includes details of the system, PHP, file versions, database, error log, addons installed.  Can provide password access to output for trusted users.
+* **status.php**: A script that can be used to analyse mySQL database performance and provide suggestions on how to improve settings (experimental)
 
-#### Download
-
-######Apart from cloning the repo, you can find the files more useful to end-users on the [download page](https://github.com/emanuele45/tools/downloads)
+###### Repo
 
 Feel free to fork this repository and make your desired changes.
 
-Please see the [Developer's Certificate of Origin](https://github.com/elkarte/tools/blob/master/DCO.txt) in the repository:
-by signing off your contributions, you acknowledge that you can and do license your code under the license of the software.
+Please see the [Developer's Certificate of Origin](https://github.com/elkarte/tools/blob/master/DCO.txt) in the repository, by this 
+you acknowledge that you can and do license your code under the license of the parent software.
 
-######How to contribute:
+###### How to contribute:
 * fork the repository. If you are not used to Github, please check out [fork a repository](http://help.github.com/fork-a-repo).
 * branch your repository, to commit the desired changes.
-* sign-off your commits, to acknowledge your submission under the license of the project.
  * an easy way to do so, is to define an alias for the git commit command, which includes -s switch (reference: [How to create Git aliases](http://githacks.com/post/1168909216/how-to-create-git-aliases))
 * send us a pull request.
-
+ * This means you acknowledges your submission under the license of the project.
