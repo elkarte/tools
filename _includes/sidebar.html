@@ -4,8 +4,7 @@
 	</big>
 	{{ site.description }}
 </div>
-
-<div class="sidebar alert alert-info">
+<div class="sidebar alert bg-info">
     <h3>Recent Updates</h3>
     <ul>
 		{% assign posts = site.posts | sort: 'date' %}
@@ -17,7 +16,6 @@
         {% endfor %}
     </ul>
 </div>
-
-<div class="sidebar well well-sm">
+<div class="sidebar bg-info alert">
 	{% include links-list.html %}
 </div>
