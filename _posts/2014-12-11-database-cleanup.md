@@ -11,8 +11,8 @@ thumbnail: /assets/images/dbclean/thumbnail.jpg
 download: https://github.com/elkarte/tools/tree/master/databasecleanup
 images:
   - Extra columns example: /assets/images/dbclean/extra_columns.jpg
-  - extra settings example: /assets/images/dbclean/extra_settings.jpg
-  - extra tables example: /assets/images/dbclean/extra_tables.jpg
+  - Extra settings example: /assets/images/dbclean/extra_settings.jpg
+  - Extra tables example: /assets/images/dbclean/extra_tables.jpg
 ---
 
 This utility can restore your database to an initial install state.

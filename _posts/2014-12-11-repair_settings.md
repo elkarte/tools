@@ -7,8 +7,14 @@ short: "Restore a database to its initial state"
 license: BSD
 version: 1.0
 author: "ElkArte Contributors"
-image: https://raw.githubusercontent.com/elkarte/Elkarte/development/themes/default/images/thumbnail.png
+thumbnail: /assets/images/repair/thumbnail.jpg
 download: https://github.com/elkarte/tools/tree/master/repair_settings
+images:
+  - Critical Settings: /assets/images/repair/critical.jpg
+  - Database Settings: /assets/images/repair/database.jpg
+  - Paths: /assets/images/repair/paths.jpg
+  - Overall: /assets/images/repair/repair_settings.jpg
+  - Theme Settings: /assets/images/repair/themes.jpg
 ---
 
 ##Installation

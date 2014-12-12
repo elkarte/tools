@@ -7,8 +7,14 @@ short: "Allows read-only reference to relevant settings within an ElkArte instal
 license: BSD
 version: 1.0
 author: "ElkArte Contributors"
-image: https://raw.githubusercontent.com/elkarte/Elkarte/development/themes/default/images/thumbnail.png
+thumbnail: /assets/images/info/thumbnail.jpg
 download: https://github.com/elkarte/tools/tree/master/repair_settings
+images:
+  - System Info: /assets/images/info/sysinfo.jpg
+  - Filecheck Version: /assets/images/info/filecheck.jpg
+  - Errorlog Output: /assets/images/info/errorlog.jpg
+  - Database Check: /assets/images/info/dbcheck.jpg
+  - Installed Addons: /assets/images/info/addons.jpg
 ---
 
 ##Installation
