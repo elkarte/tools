@@ -25,7 +25,7 @@ layout: default
 						<dt>Author</dt>
 						<dd>{{ post.author }}</dd>
 						<dt>License</dt>
-						<dd>{{ post.author }}</dd>
+						<dd>{{ post.license }}</dd>
 						<dt>Version</dt>
 						<dd>{{ post.version }}</dd>
 						{% if post.link %}
@@ -35,12 +35,12 @@ layout: default
 					</dl>
 				</div>
 			</div>
-			<div class="col-md-3">
+			<div class="col-md-3 hidden-xs">
 				{% if post.image %}
 				<div class="media">
-					<h1><a class="media-right" href="#">
-							<img src="{{ post.image }}" alt="thumbnail">
-						</a></h1>
+					<h1>
+						<a class="media-right" href="#"><img src="{{ post.image }}" alt="thumbnail"></a>
+					</h1>
 				</div>
 				{% endif %}
 			</div>
