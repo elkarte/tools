@@ -22,6 +22,28 @@
 					<div class="page-content">
 						{{ content }}
 					</div>
+
+					{% if page.images %}
+					<div class="container-fluid">
+						<div class="row">
+						{% for image_hash in page.images %}
+							{% capture modulo %}{{ forloop.index | modulo:3 }}{% endcapture %}
+							{% for image in image_hash %}
+							<div class="col-xs-4">
+								<a href="{{ site.baseurl }}{{ image[1] }}" class="thumbnail">
+									<img src="{{ site.baseurl }}{{ image[1] }}" alt="{{ image[0] }}">
+								</a>
+							</div>
+								{% if modulo == '0' %}
+							</div>
+						<div class="row">
+								{% endif %}
+							{% endfor %}
+						{% endfor %}
+						</div>
+					</div>
+					{% endif %}
+
 					<div class="text-center">
 						<a href="{{ page.download }}" class="btn btn-primary btn-lg"><i class="glyphicon glyphicon-save"></i> Download</a>
 					</div>
