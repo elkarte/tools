@@ -1,0 +1,23 @@
+<div class="sidebar alert bg-info">
+	<big>
+		<i class="glyphicon glyphicon-info-sign" aria-hidden="true"></i>
+	</big>
+	{{ site.description }}
+</div>
+
+<div class="sidebar alert alert-info">
+    <h3>Recent Updates</h3>
+    <ul>
+		{% assign posts = site.posts | sort: 'date' %}
+        {% for post in posts reversed limit:5 %}
+		<li>
+			<span>{{ post.date | date_to_string }}</span><br>&raquo;
+			<a href="{{ site.baseurl}}{{ post.url }}">{{ post.title }}</a>
+		</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="sidebar well well-sm">
+	{% include links-list.html %}
+</div>
