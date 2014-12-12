@@ -37,10 +37,8 @@ layout: default
 			</div>
 			<div class="col-md-3 hidden-xs">
 				{% if post.thumbnail %}
-				<div class="media">
-					<h1>
-						<a class="media-right" href="#"><img src="{{ site.baseurl }}{{ post.thumbnail }}" alt="thumbnail"></a>
-					</h1>
+				<div class="media media-right">
+					<img src="{{ site.baseurl }}{{ post.thumbnail }}" alt="thumbnail">
 				</div>
 				{% endif %}
 			</div>
