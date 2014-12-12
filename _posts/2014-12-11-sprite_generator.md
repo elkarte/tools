@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Sprite Generator"
-date: 2014-08-22 16:25:06 -0700
+date: 2014-08-05 00:00:00
 comments: false
 short: "Creates the default theme sprites with your choice of icons"
 license: BSD

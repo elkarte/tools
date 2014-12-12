@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Database Cleanup"
-date: 2014-08-22 16:25:06 -0700
+date: 2014-06-28 00:00:00
 comments: false
 short: "Restore a database to its initial state"
 license: BSD
