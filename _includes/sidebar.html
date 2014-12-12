@@ -1,4 +1,4 @@
-<div class="sidebar alert bg-info">
+<div class="sidebar alert bg-info ">
 	<big>
 		<i class="glyphicon glyphicon-info-sign" aria-hidden="true"></i>
 	</big>
@@ -10,8 +10,8 @@
 		{% assign posts = site.posts | sort: 'date' %}
         {% for post in posts reversed limit:5 %}
 		<li>
-			<span>{{ post.date | date_to_string }}</span><br>&raquo;
 			<a href="{{ site.baseurl}}{{ post.url }}">{{ post.title }}</a>
+			<br><i class="glyphicon glyphicon-hand-right" aria-hidden="true"></i><span> {{ post.date | date_to_string }}</span><br>
 		</li>
         {% endfor %}
     </ul>
