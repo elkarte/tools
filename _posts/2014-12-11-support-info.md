@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Support Info"
-date: 2014-12-10 00:00:00
+date: 2014-12-10
 comments: false
 short: "Allows read-only reference to relevant settings within an ElkArte installation"
 license: BSD
