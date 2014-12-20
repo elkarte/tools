@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Sprite Generator"
-date: 2014-08-05 00:00:00
+date: 2014-08-05
 comments: false
 short: "Creates the default theme sprites with your choice of icons"
 license: BSD
@@ -32,7 +32,7 @@ update the default sprite images with new ones that match the default CSS rules.
 *  You unzip to your root directory (where SSI.php is located)
 *  You don't like the board icons, so navigate to /board_icons
 *  Overwrite the icons in that folder (on.png, on2,png, redirect.png, etc etc) to the images you want (maintain the same names !)
-*  In your browser go to www.myforum.com/sprite_gen.php
+*  In your browser go to ```www.myforum.com/sprite_gen.php```
 *  Select "board icon sprites" in the drop down and press create
 *  You should see and image of the new sprite AND board_icons.php will have been updated in /board_icons (the directory in step 1)
 *  Copy that file to the correct directory in you theme and enjoy the new icons
