@@ -59,10 +59,14 @@
 			<nav>
 				<ul class="pager">
 					{% if page.previous %}
-					<li class="previous"><a href="{{ site.baseurl}}{{ page.previous.url }}"><span aria-hidden="true"><i class="glyphicon glyphicon-arrow-left"></i></span> Previous</a></li>
+					<li class="previous">
+						<a href="{{ site.baseurl }}{{ page.previous.url }}"><span aria-hidden="true"><i class="glyphicon glyphicon-arrow-left"></i></span> Previous</a>
+					</li>
 					{% endif %}
 					{% if page.next %}
-					<li class="next"><a href="{{ site.baseurl}}{{ page.next.url }}">Next <span aria-hidden="true"><i class="glyphicon glyphicon-arrow-right"></i></span></a></li>
+					<li class="next">
+						<a href="{{ site.baseurl }}{{ page.next.url }}">Next <span aria-hidden="true"><i class="glyphicon glyphicon-arrow-right"></i></span></a>
+					</li>
 					{% endif %}
 				</ul>
 			</nav>

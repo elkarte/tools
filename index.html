@@ -21,11 +21,16 @@ layout: default
 						<dt>Title</dt>
 						<dd>{{ post.title }}</dd>
 						<dt>Summary</dt>
-						<dd>{{ post.short }}</dd>
+						<dd>{{ post.short }}<sup><a href="{{ site.baseurl}}{{ post.url }}"><i class="glyphicon glyphicon-plus-sign text-info"></i></a></sup></dd>
 						<dt>Author</dt>
 						<dd>{{ post.author }}</dd>
 						<dt>License</dt>
-						<dd>{{ post.license }}</dd>
+						<dd>{{ post.license }} 
+						{% capture osi %}{{ post.license | upcase | truncate: 3, '' }}{% endcapture %}
+						{% if osi == 'BSD' or osi == 'MPL' or osi == 'GNU' or osi == 'MIT' or osi == 'APA' or osi == 'WTF' %}
+						<img class="img-circle" style="padding-bottom: 1px;" src="{{ site.baseurl }}/assets/images/osi-icon.png" title="Open Source License" alt="OSI">
+						{% endif %}
+						</dd>
 						<dt>Version</dt>
 						<dd>{{ post.version }}</dd>
 						{% if post.link %}
@@ -37,8 +42,14 @@ layout: default
 			</div>
 			<div class="col-md-3 hidden-xs">
 				{% if post.thumbnail %}
-				<div class="media media-right">
-					<img class="img-rounded" src="{{ site.baseurl }}{{ post.thumbnail }}" alt="thumbnail">
+				<div class="thumbnail">
+					<a href="{{ site.baseurl}}{{ post.url }}">
+					{% if post.thumbnail contains 'http://' or post.thumbnail contains 'https://' %}
+					<img class="img-rounded" src="{{ post.thumbnail }}" alt="details">
+					{% else %}
+					<img class="img-rounded" src="{{ site.baseurl }}{{ post.thumbnail }}" alt="details">
+					{% endif %}
+					</a>
 				</div>
 				{% endif %}
 			</div>
@@ -47,18 +58,46 @@ layout: default
 </div>
 {% endfor %}
 
-<div class="pagination">
-	{% if paginator.previous_page %}
-	{% if paginator.previous_page == 1 %}
-	<a class="btn btn-default" href="{{ site.baseurl}}/index.html" class="previous">Previous</a>
-	{% else %}
-	<a class="btn btn-default" href="{{ site.baseurl}}/page{{ paginator.previous_page }}" class="previous">Previous</a>
-	{% endif %}
-	{% endif %}
+<div class="text-center">
+	<ul class="pagination">
+		{% if paginator.previous_page %}
+		<li>
+			{% if paginator.previous_page == 1 %}
+			<a href="{{ site.baseurl}}/index.html" class="previous"><span aria-hidden="true"><i class="glyphicon glyphicon-arrow-left"></i></span> Previous</a>
+			{% else %}
+			<a href="{{ site.baseurl}}/page{{ paginator.previous_page }}"><span aria-hidden="true"><i class="glyphicon glyphicon-arrow-left"></i></span> Previous</a>
+			{% endif %}
+		</li>
+		{% endif %}
 
-	<span class="page_number ">Page: {{ paginator.page }} of {{ paginator.total_pages }}</span>
+		{% capture end %}{{ paginator.total_pages | minus: 3 }}{% endcapture %}
+		{% capture start %}{{ paginator.page }}{% endcapture %}
 
-	{% if paginator.next_page %}
-    <a class="btn btn-default" href="{{ site.baseurl}}/page{{ paginator.next_page }}" class="next">Next</a>
-	{% endif %}
+		{% if start > '1' %}
+			{% capture start %}{{ paginator.page | minus: 1 }}{% endcapture %}
+		{% endif %}
+
+		{% if start > end and end > '0' %}
+			{% capture start %}{{ end }}{% endcapture %}
+		{% endif %}
+
+		{% for count in (start..paginator.total_pages) %}
+			{% if count == paginator.page %}
+		<li class="active"><a href=''><em>{{ count }}</em></a></li>
+			{% elsif count == 1 %}
+		<li><a href="{{ site.baseurl}}/index.html">{{count}}</a></li>
+			{% else %}
+		<li><a href="{{ site.baseurl}}/page{{count}}">{{count}}</a></li>
+			{% endif %}
+			{% if forloop.index == 4 %}
+				{% break %}
+			{% endif %}
+		{% endfor %}
+
+		{% if paginator.next_page %}
+		<li>
+			<a href="{{ site.baseurl}}/page{{ paginator.next_page }}">Next <span aria-hidden="true"><i class="glyphicon glyphicon-arrow-right"></i></span></a>
+		</li>
+		{% endif %}
+	</ul>
 </div>

@@ -1,6 +1,6 @@
 # Jekyll configuration
 
-# Name of your blog (this will show up at the top of your page and in the RSS feed)
+# Name of your site (this will show up at the top of your page and in the RSS feed)
 name: ElkArte Tools & Utilities
 
 # Short description (goes below the title; it will also be used in the RSS feed)
@@ -8,10 +8,11 @@ description: Tools to help with ElkArte Forum maintance.
 
 # baseurl will often be '', but for a project page on gh-pages, it needs to
 # be the project name.
-baseurl: 'http://spuds.github.io/tools/'
+baseurl: 'http://tools.elkarte.net'
+#baseurl: ''
 
 # This can be '' to hide the Github nav button
-github: 'elkarte/Tools'
+github: 'elkarte/tools'
 
 # Set this to your UA-# value, or '' to disable the block completely
 gaaccount: ''
@@ -30,5 +31,5 @@ markdown: redcarpet
 redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables"]
 
-#kramdown:
-#  input: GFM
+kramdown:
+  input: GFM
