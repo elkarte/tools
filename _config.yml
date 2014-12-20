@@ -1,7 +1,7 @@
 # Jekyll configuration
 
 # Name of your site (this will show up at the top of your page and in the RSS feed)
-name: ElkArte Tools & Utilities
+name: ElkArte Tools &amp; Utilities
 
 # Short description (goes below the title; it will also be used in the RSS feed)
 description: Tools to help with ElkArte Forum maintance.
