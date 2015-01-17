@@ -458,7 +458,7 @@ function detectServerLoad()
 	if (function_exists('sys_getloadavg'))
 	{
 		$sys_load = sys_getloadavg();
-		return array($sys_load[1] / $cores, $sys_load[2] / $cores, $sys_load[3] / $cores);
+		return array($sys_load[0] / $cores, $sys_load[1] / $cores, $sys_load[2] / $cores);
 	}
 	// Maybe someone has a custom compile
 	else
