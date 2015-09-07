@@ -8,7 +8,7 @@ license: BSD
 version: 1.0
 author: "ElkArte Contributors"
 thumbnail: /assets/images/info/thumbnail.jpg
-download: https://github.com/elkarte/tools/tree/master/repair_settings
+download: https://github.com/elkarte/tools/tree/master/support_info
 images:
   - System Info: /assets/images/info/sysinfo.jpg
   - Filecheck Version: /assets/images/info/filecheck.jpg
@@ -20,7 +20,7 @@ images:
 ##Installation
 Download the files using the below link.  Then add them to the root directory of your forum (where Settings.php and SSI.php can be found). 
 Navigate with your browser to your usual forum URL, but instead of yoursitename/index.php, direct your browser to 
-yoursitename/status.php
+yoursitename/elkinfo.php
 
 ###Why should I use elkinfo.php?
 It is designed to allow an admin, or an authorized user, to view key settings, server information, and statistics in a 
