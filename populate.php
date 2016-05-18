@@ -142,7 +142,8 @@ class Populate
 				'interface' => 'admin',
 				'username' => 'Member ' . ++$this->counters['members']['current'],
 				'email' => 'member_' . $this->counters['members']['current'] . '@' . $_SERVER['SERVER_NAME'] . (strpos($_SERVER['SERVER_NAME'], '.') === FALSE ? '.com' : ''),
-				'password' => '',
+				'password' => 'Member ' . $this->counters['members']['current'],
+				'password_check' => 'Member ' . $this->counters['members']['current'],
 				'require' => 'nothing'
 			);
 
