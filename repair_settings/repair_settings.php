@@ -29,7 +29,7 @@ if (isset($_POST['submit']))
 	$result = action_set_settings();
 if (isset($_POST['remove_hooks']))
 	$result = action_remove_hooks();
-if (isset($_GET['delete']))
+if (isset($_POST['delete']))
 	$result = action_deleteScript();
 
 // Off to the template
@@ -80,7 +80,7 @@ function initialize_inputs()
 
 	// PHP 5 might complain if we don't do this now.
 	$server_offset = @mktime(0, 0, 0, 1, 1, 1970);
-	date_default_timezone_set('Etc/GMT' . ($server_offset > 0 ? '+' : '') . ($server_offset / 3600));
+	date_default_timezone_set(date_default_timezone_get());
 
 	$db_connection = false;
 
@@ -96,16 +96,17 @@ function initialize_inputs()
 		DEFINE('SOURCEDIR', $sourcedir);
 		DEFINE('ADMINDIR', $sourcedir . '/admin');
 		DEFINE('CONTROLLERDIR', $sourcedir . '/controllers');
+		DEFINE('DATABASEDIR', $sourcedir . '/database');
 		DEFINE('SUBSDIR', $sourcedir . '/subs');
 		unset($boarddir, $cachedir, $sourcedir, $languagedir, $extdir);
 
 		// Default the database type to MySQL if its not set in settings
-		if (empty($db_type) || !file_exists(SOURCEDIR . '/database/Db-' . $db_type . '.subs.php'))
+		if (empty($db_type) || !file_exists(DATABASEDIR . '/Db-' . $db_type . '.class.php'))
 			$db_type = 'mysql';
 
 		// Lets make a connection to the db
 		require_once(SOURCEDIR . '/Load.php');
-		require_once(SOURCEDIR . '/database/Database.subs.php');
+		require_once(DATABASEDIR . '/Database.subs.php');
 		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
 	}
 }
@@ -764,8 +765,8 @@ function action_deleteScript()
 {
 	@unlink(__FILE__);
 
-	// Now just redirect to a blank.gif...
-	header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/themes/default/images/blank.png');
+	// Now just redirect to forum home /index.php
+	header('Location: http://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/index.php');
 
 	exit;
 }
@@ -784,6 +785,7 @@ function load_language_data()
 	$txt['no_default_value'] = 'No recommended value';
 	$txt['save_settings'] = 'Save Settings';
 	$txt['remove_hooks'] = 'Remove all hooks';
+	$txt['remove_script'] = 'Remove this script';
 	$txt['restore_all_settings'] = 'Restore all settings';
 	$txt['not_writable'] = 'Settings.php cannot be written to by your webserver.  Please modify the permissions on this file to allow write access.';
 	$txt['recommend_blank'] = '<em>(blank)</em>';
