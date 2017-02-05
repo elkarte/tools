@@ -508,7 +508,8 @@ function action_show_settings()
 		echo '
 						<a class="linkbutton" href="javascript:restoreAll();">', $txt['restore_all_settings'], '</a>
 						<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />
-						<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />';
+						<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />
+						<input type="submit" name="delete" value="' . $txt['remove_script'] . '" class="button_submit" />';
 
 	echo '
 					</div>
