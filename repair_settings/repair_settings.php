@@ -119,7 +119,7 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $db_connection, $db_name, $db_prefix;
+	global $txt, $db_connection, $db_type, $db_name, $db_prefix;
 
 	$db = database();
 
@@ -184,7 +184,7 @@ function action_show_settings()
 	}
 
 	// If we were able to make a db connection, load in more settings
-	if (!empty($db_connection))
+	if (!empty($db))
 	{
 		// Load all settings
 		$request = $db->query('', '
@@ -219,6 +219,7 @@ function action_show_settings()
 	else
 		$show_db_settings = false;
 
+	// Know settings that are in Settings.php
 	$known_settings = array(
 		'critical_settings' => array(
 			'maintenance' => array('flat', 'int', 2),
@@ -350,7 +351,7 @@ function action_show_settings()
 	}
 
 	echo '
-			<script><!-- // --><![CDATA[
+			<script>
 				var resetSettings = [],
 					settingsCounter = 0;
 
@@ -366,7 +367,7 @@ function action_show_settings()
 							elem.parentNode.parentNode.className += " changed";
 					}
 				}
-			// ]]></script>
+			</script>
 
 			<form action="', $_SERVER['PHP_SELF'], '" method="post">
 				<div class="panel">';
@@ -377,7 +378,7 @@ function action_show_settings()
 					<h2>', $txt[$settings_section], '</h2>
 					<h3>', $txt[$settings_section . '_info'], '</h3>
 
-					<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 3ex;">
+					<table class="table_settings">
 						<tr>';
 
 		foreach ($section as $setting => $info)
@@ -389,13 +390,13 @@ function action_show_settings()
 				continue;
 
 			echo '
-							<td width="20%" valign="top" class="textbox" style="padding-bottom: 1ex;">
+							<td class="textbox">
 								<label', $info[1] != 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
-			(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
+				(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
 								</label>', !isset($settings[$setting]) && $info[1] != 'check' ? '<br />
 								' . $txt['no_value'] : '', '
 							</td>
-							<td style="padding-bottom: 1ex;">';
+							<td>';
 
 			if ($info[1] == 'int' || $info[1] == 'check')
 			{
@@ -418,10 +419,10 @@ function action_show_settings()
 
 				if (isset($info[2]))
 					echo '
-								<div style="font-size: smaller;">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
+								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
 					$info[2] == '' ? '' : ($setting != 'language' && $setting != 'cookiename' ? '
-								<script><!-- // --><![CDATA[
-									resetSettings[settingsCounter++] = "' . $setting . '"; // ]]></script>' : '');
+								<script>
+									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
 			}
 			elseif ($info[1] == 'array_string')
 			{
@@ -443,18 +444,18 @@ function action_show_settings()
 					if (!empty($suggested))
 					{
 						echo '
-								<div style="font-size: smaller;">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[0] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[0], '</a></strong>&quot;.</div>',
+								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[0] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[0], '</a></strong>&quot;.</div>',
 						$suggested[0] == '' ? '' : '
-								<script><!-- // --><![CDATA[
-									resetSettings[settingsCounter++] = "' . $setting . $item . '"; // ]]></script>';
+								<script>
+									resetSettings[settingsCounter++] = "' . $setting . $item . '"; </script>';
 
 						for ($i = 1; $i < count($suggested); $i++)
 							echo '
-								<div style="font-size: smaller;">', $txt['other_possible_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[$i] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[$i], '</a></strong>&quot;.</div>';
+								<div class="smalltext">', $txt['other_possible_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[$i] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[$i], '</a></strong>&quot;.</div>';
 					}
 					else
 						echo '
-								<div style="font-size: smaller;">', $txt['no_default_value'], '</div>';
+								<div class="smalltext">', $txt['no_default_value'], '</div>';
 
 					$item++;
 				}
@@ -473,7 +474,7 @@ function action_show_settings()
 
 	echo '
 
-					<div class="righttext" style="margin: 1ex;">';
+					<div class="submitbutton">';
 
 	$failure = false;
 	if (strpos(__FILE__, ':\\') !== 1)
@@ -876,13 +877,14 @@ function template_initialize($results = false)
 				background-image: linear-gradient(to right, #333 0%, #888 50%, #333 100%);
 				margin: 0;
 				padding: 0;
-				font: 87.5%/150% "Segoe UI", "Helvetica Neue", "Liberation Sans", "Nimbus Sans L", "Trebuchet MS", Arial, sans-serif;
-				color: #666;
+				font: 87.5%/150% "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Droid Sans", "Helvetica Neue", "Trebuchet MS", Arial, sans-serif;
+				color: #555;
 			}
 			td, th {
-				font: 87.5%/150% "Segoe UI", "Helvetica Neue", "Liberation Sans", "Nimbus Sans L", "Trebuchet MS", Arial, sans-serif;
-				color: #666;
+				font: 87.5%/150% "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Droid Sans", "Helvetica Neue", "Trebuchet MS", Arial, sans-serif;
+				color: #555;
 				font-size: 1em;
+				padding-bottom: 1em;
 			}
 			#top_section {
 				margin: 0;
@@ -894,8 +896,8 @@ function template_initialize($results = false)
 				border-bottom: 4px solid #3d6e32;
 			}
 			#header {
-				padding: 22px 4% 12px 4%;
-				color: 49643d;
+				padding: 2em 4% 1em 4%;
+				color: #49643d;
 				font-size: 2em;
 				height: 40px;
 			}
@@ -907,8 +909,7 @@ function template_initialize($results = false)
 				padding: 20px 30px;
 			}
 			.warningbox, .successbox, .infobox, .errorbox {
-				padding: 10px;
-				padding-left: 35px;
+				padding: 10px 10px 10px 35px;
 			}
 			.successbox {
 				border-top: 1px solid green;
@@ -929,12 +930,11 @@ function template_initialize($results = false)
 				border: 1px solid #ccc;
 				border-radius: 5px;
 				background-color: #eee;
-				margin: 1ex 0;
-				padding: 1.2ex;
+				margin: 1em 0;
+				padding: 1.2em;
 			}
 			.panel h2 {
-				margin: 0;
-				margin-bottom: 0.5ex;
+				margin: 0 0 0.5em;
 				padding-bottom: 3px;
 				border-bottom: 1px dashed #aaa;
 				font-size: 14pt;
@@ -942,8 +942,7 @@ function template_initialize($results = false)
 				color: #555;
 			}
 			.panel h3 {
-				margin: 0;
-				margin-bottom: 2ex;
+				margin: 0 0 2em;
 				font-size: 10pt;
 				font-weight: normal;
 			}
@@ -953,10 +952,13 @@ function template_initialize($results = false)
 			td.textbox {
 				padding-top: 2px;
 				white-space: nowrap;
-				padding-', empty($txt['lang_rtl']) ? 'right' : 'left', ': 2ex;
+				padding-' . (empty($txt['lang_rtl']) ? 'right' : 'left') . ': 2em;
+				width: 20%;
+				vertical-align: top;
+				padding-bottom: .1em;
 			}
 			.smalltext {
-				font-size: 0.8em;
+				font-size: 0.85em;
 				font-weight: normal;
 			}
 			.centertext {
@@ -1003,6 +1005,23 @@ function template_initialize($results = false)
 			}
 			.button_submit:hover, .linkbutton:hover {
 				cursor: pointer;
+				border-left: 1px solid #ccc;
+				border-right: 1px solid #afafaf;
+				box-shadow: -2px 1px 1px rgba(0,0,0,0.07) inset;
+				background-image: linear-gradient(to bottom, #e4e4e4, #fff);
+			}
+			.table_settings {
+				width: 100%;
+				border-spacing: 0;
+    			border-collapse: collaspe;
+    			padding: 0;
+				margin-bottom: .1em;
+			}
+			.submitbutton {
+				overflow: auto;
+				padding: 6px 0;
+				text-align: right;
+				clear: both;
 			}
 		</style>
 	</head>
