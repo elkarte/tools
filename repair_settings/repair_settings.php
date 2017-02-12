@@ -46,7 +46,7 @@ template_show_footer();
 function initialize_inputs()
 {
 	global $db_connection, $sourcedir, $boarddir, $languagedir, $extdir, $cachedir;
-	global $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type;
+	global $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $db_show_debug;
 
 	// Turn off magic quotes runtime and enable error reporting.
 	if (function_exists('set_magic_quotes_runtime'))
@@ -83,6 +83,7 @@ function initialize_inputs()
 	date_default_timezone_set(date_default_timezone_get());
 
 	$db_connection = false;
+	$db_show_debug = false;
 
 	if (isset($sourcedir) && file_exists($sourcedir))
 	{
