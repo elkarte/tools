@@ -46,7 +46,7 @@ template_show_footer();
 function initialize_inputs()
 {
 	global $db_connection, $sourcedir, $boarddir, $languagedir, $extdir, $cachedir;
-	global $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $db_show_debug;
+	global $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $db_port, $db_show_debug;
 
 	// Turn off magic quotes runtime and enable error reporting.
 	if (function_exists('set_magic_quotes_runtime'))
@@ -108,7 +108,7 @@ function initialize_inputs()
 		// Lets make a connection to the db
 		require_once(SOURCEDIR . '/Load.php');
 		require_once(DATABASEDIR . '/Database.subs.php');
-		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('non_fatal' => true));
+		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('persist' => false, 'dont_select_db' => false, 'port' => $db_port), $db_type);
 	}
 }
 
@@ -119,7 +119,7 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $db_connection, $db_type, $db_name, $db_prefix;
+	global $txt, $db_connection, $db_name, $db_prefix;
 
 	$db = database();
 
@@ -184,22 +184,22 @@ function action_show_settings()
 	}
 
 	// If we were able to make a db connection, load in more settings
-	if ($db_connection == true)
+	if (!empty($db_connection))
 	{
 		// Load all settings
-		$request = $db->query(true, '
+		$request = $db->query('', '
 			SELECT DISTINCT variable, value
 			FROM {db_prefix}settings',
 			array(
 				'db_error_skip' => true
-			), $db_connection
+			)
 		);
 		while ($row = $db->fetch_assoc($request))
 			$settings[$row['variable']] = $row['value'];
 		$db->free_result($request);
 
 		// Load all the themes.
-		$request = $db->query(true, '
+		$request = $db->query('', '
 			SELECT variable, value, id_theme
 			FROM {db_prefix}themes
 			WHERE id_member = 0
@@ -233,10 +233,10 @@ function action_show_settings()
 		'database_settings' => array(
 			'db_server' => array('flat', 'string', 'localhost'),
 			'db_name' => array('flat', 'string'),
-			'db_user' => array($db_type == 'sqlite' ? 'hidden' : 'flat', 'string'),
-			'db_passwd' => array($db_type == 'sqlite' ? 'hidden' : 'flat', 'string'),
-			'ssi_db_user' => array($db_type == 'sqlite' ? 'hidden' : 'flat', 'string'),
-			'ssi_db_passwd' => array($db_type == 'sqlite' ? 'hidden' : 'flat', 'string'),
+			'db_user' => array('flat', 'string'),
+			'db_passwd' => array('flat', 'string'),
+			'ssi_db_user' => array('flat', 'string'),
+			'ssi_db_passwd' => array('flat', 'string'),
 			'db_prefix' => array('flat', 'string'),
 			'db_persist' => array('flat', 'int', 1),
 		),
@@ -332,20 +332,13 @@ function action_show_settings()
 		}
 	}
 
-	if ($db_connection == true)
+	if (!empty($db))
 	{
-		$request = $db->db_list_tables('', '
-			{db_prefix}log_topics',
-			array(
-				'db_error_skip' => true,
-			)
-		);
-
-		if ($request == true)
+		// Determine the db_prefix
+		$tables = $db->db_list_tables($db_name, '%log_topics');
+		if (count($tables) == 1)
 		{
-			if ($db->num_rows($request) == 1)
-				list ($known_settings['database_settings']['db_prefix'][2]) = preg_replace('~log_topics$~', '', $db->fetch_row($request));
-			$db->free_result($request);
+			$known_settings['database_settings']['db_prefix'][2] = preg_replace('~log_topics$~', '', $tables[0]);
 		}
 	}
 	elseif (empty($show_db_settings))
