@@ -10,7 +10,7 @@
  * copyright:	2011 Simple Machines (http://www.simplemachines.org)
  * license:  	BSD, See included LICENSE.TXT for terms and conditions.
  *
- * @version 1.0
+ * @version 1.1
  */
 
 // We need the Settings.php info for database stuff.
@@ -55,14 +55,14 @@ function initialize_inputs()
 
 	ob_start();
 
-	if (ini_get('session.save_handler') == 'user')
+	if (ini_get('session.save_handler') === 'user')
 		@ini_set('session.save_handler', 'files');
 
 	if (function_exists('session_start'))
 		@session_start();
 
 	// Reject magic_quotes_sybase='on'.
-	if (ini_get('magic_quotes_sybase') || strtolower(ini_get('magic_quotes_sybase')) == 'on')
+	if (ini_get('magic_quotes_sybase') || strtolower(ini_get('magic_quotes_sybase')) === 'on')
 		die('magic_quotes_sybase=on was detected: your host is using an unsecure PHP configuration, deprecated and removed in current versions. Please upgrade PHP.');
 
 	if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc() != 0)
@@ -139,42 +139,42 @@ function action_show_settings()
 		$settingsArray[$i] = rtrim(stripslashes($settingsArray[$i]));
 
 		// Process only the lines that may have information
-		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] == '$')
+		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] === '$')
 		{
 			// 1 var name w/o $, 2 ' or " if quoted value, 3 quoted value if any, 4 unquoted value if any
 			preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(?:(.*?)["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match);
 
 			// Replace dirname(__FILE__) commands with the actual value
-			if (isset($match[3]) && ($match[2] == "'" || $match[2] == '"'))
+			if (isset($match[3]) && ($match[2] == "'" || $match[2] === '"'))
 			{
-				if ($match[3] == 'dirname(__FILE__)')
+				if ($match[3] === 'dirname(__FILE__)')
 					$settings[$match[1]] = dirname(__FILE__);
-				elseif ($match[3] == 'dirname(__FILE__) . \'/sources\'')
+				elseif ($match[3] === 'dirname(__FILE__) . \'/sources\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/sources';
-				elseif ($match[3] == 'BOARDDIR . \'/sources\'')
+				elseif ($match[3] === 'BOARDDIR . \'/sources\'')
 					$settings[$match[1]] = $settings['boarddir'] . '/sources';
-				elseif ($match[3] == 'dirname(__FILE__) . \'/cache\'')
+				elseif ($match[3] === 'dirname(__FILE__) . \'/cache\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/cache';
-				elseif ($match[3] == 'dirname(__FILE__) . \'/sources/ext\'')
+				elseif ($match[3] === 'dirname(__FILE__) . \'/sources/ext\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/sources/ext';
-				elseif ($match[3] == 'dirname(__FILE__) . \'/themes/default/languages\'')
+				elseif ($match[3] === 'dirname(__FILE__) . \'/themes/default/languages\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/themes/default/languages';
 				else
 					$settings[$match[1]] = $match[3];
 			}
 			elseif (isset($match[4]))
 			{
-				if ($match[4] == 'dirname(__FILE__)')
+				if ($match[4] === 'dirname(__FILE__)')
 					$settings[$match[1]] = dirname(__FILE__);
-				elseif ($match[4] == 'dirname(__FILE__) . \'/sources\'')
+				elseif ($match[4] === 'dirname(__FILE__) . \'/sources\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/sources';
-				elseif ($match[4] == 'BOARDDIR . \'/sources\'')
+				elseif ($match[4] === 'BOARDDIR . \'/sources\'')
 					$settings[$match[1]] = $settings['boarddir'] . '/sources';
-				elseif ($match[4] == 'dirname(__FILE__) . \'/cache\'')
+				elseif ($match[4] === 'dirname(__FILE__) . \'/cache\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/cache';
-				elseif ($match[4] == 'dirname(__FILE__) . \'/sources/ext\'')
+				elseif ($match[4] === 'dirname(__FILE__) . \'/sources/ext\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/sources/ext';
-				elseif ($match[4] == 'dirname(__FILE__) . \'/themes/default/languages\'')
+				elseif ($match[4] === 'dirname(__FILE__) . \'/themes/default/languages\'')
 					$settings[$match[1]] = dirname(__FILE__) . '/themes/default/languages';
 				else
 					$settings[$match[1]] = $match[4];
@@ -382,25 +382,25 @@ function action_show_settings()
 
 		foreach ($section as $setting => $info)
 		{
-			if ($info[0] == 'hidden')
+			if ($info[0] === 'hidden')
 				continue;
 
-			if ($info[0] != 'flat' && empty($show_db_settings))
+			if ($info[0] !== 'flat' && empty($show_db_settings))
 				continue;
 
 			echo '
 							<td class="textbox">
-								<label', $info[1] != 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
+								<label', $info[1] !== 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
 				(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
-								</label>', !isset($settings[$setting]) && $info[1] != 'check' ? '<br />
+								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<br />
 								' . $txt['no_value'] : '', '
 							</td>
 							<td>';
 
-			if ($info[1] == 'int' || $info[1] == 'check')
+			if ($info[1] === 'int' || $info[1] === 'check')
 			{
 				// Default checkmarks to off if they are not set
-				if ($info[1] == 'check' && !isset($settings[$setting]))
+				if ($info[1] === 'check' && !isset($settings[$setting]))
 					$settings[$setting] = 0;
 				for ($i = 0; $i <= $info[2]; $i++)
 				{
@@ -411,19 +411,19 @@ function action_show_settings()
 								<br />';
 				}
 			}
-			elseif ($info[1] == 'string')
+			elseif ($info[1] === 'string')
 			{
 				echo '
-								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" size="', $settings_section == 'path_url_settings' || $settings_section == 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
+								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" size="', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
 
 				if (isset($info[2]))
 					echo '
-								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
-					$info[2] == '' ? '' : ($setting != 'language' && $setting != 'cookiename' ? '
+								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
+					$info[2] === '' ? '' : ($setting !== 'language' && $setting !== 'cookiename' ? '
 								<script>
 									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
 			}
-			elseif ($info[1] == 'array_string')
+			elseif ($info[1] === 'array_string')
 			{
 				if (!is_array($settings[$setting]))
 					$array_settings = @unserialize($settings[$setting]);
@@ -435,21 +435,21 @@ function action_show_settings()
 				foreach ($array_settings as $array_setting)
 				{
 					echo '
-								<input type="text" name="', $info[0], 'settings[', $setting, '_', $item, ']" id="', $setting, $item, '" value="', $array_setting, '" size="', $settings_section == 'path_url_settings' || $settings_section == 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
+								<input type="text" name="', $info[0], 'settings[', $setting, '_', $item, ']" id="', $setting, $item, '" value="', $array_setting, '" size="', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
 
 					$suggested = guess_attachments_directories($item, $array_setting);
 
 					if (!empty($suggested))
 					{
 						echo '
-								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[0] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[0], '</a></strong>&quot;.</div>',
-						$suggested[0] == '' ? '' : '
+								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[0] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[0], '</a></strong>&quot;.</div>',
+						$suggested[0] === '' ? '' : '
 								<script>
 									resetSettings[settingsCounter++] = "' . $setting . $item . '"; </script>';
 
 						for ($i = 1; $i < count($suggested); $i++)
 							echo '
-								<div class="smalltext">', $txt['other_possible_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[$i] == '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[$i], '</a></strong>&quot;.</div>';
+								<div class="smalltext">', $txt['other_possible_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[$i] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[$i], '</a></strong>&quot;.</div>';
 					}
 					else
 						echo '
@@ -546,7 +546,7 @@ function guess_attachments_directories($id, $array_setting)
 		$availableDirs = array();
 		while (false !== ($file = readdir($basedir)))
 		{
-			if ($file != '.' && $file != '..' && is_dir($file) && $file != 'sources' && $file != 'packages' && $file != 'themes' && $file != 'cache' && $file != 'avatars' && $file != 'smileys')
+			if ($file !== '.' && $file !== '..' && is_dir($file) && $file !== 'sources' && $file !== 'packages' && $file !== 'themes' && $file !== 'cache' && $file !== 'avatars' && $file !== 'smileys')
 				$availableDirs[] = $file;
 		}
 	}
@@ -572,12 +572,12 @@ function guess_attachments_directories($id, $array_setting)
 
 		// Attachments is the first guess
 		foreach ($availableDirs as $dir)
-			if ($dir == 'attachments')
+			if ($dir === 'attachments')
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
 
 		// All the others
 		foreach ($availableDirs as $dir)
-			if ($dir != 'attachments')
+			if ($dir !== 'attachments')
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
 
 		return $guesses;
@@ -622,7 +622,7 @@ function action_set_settings()
 		$settingsArray[$i] = rtrim($settingsArray[$i]);
 
 		// Remove the redirect...
-		if ($settingsArray[$i] == 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
+		if ($settingsArray[$i] === 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
 		{
 			$settingsArray[$i] = '';
 			$settingsArray[$i++] = '';
@@ -633,7 +633,7 @@ function action_set_settings()
 			continue;
 		}
 
-		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] != '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
+		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] !== '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
 			$settings[$match[1]] = stripslashes($match[3]);
 
 		foreach ($file_updates as $var => $val)
@@ -641,7 +641,7 @@ function action_set_settings()
 			if (strncasecmp($settingsArray[$i], '$' . $var, 1 + strlen($var)) == 0)
 			{
 				$comment = strstr($settingsArray[$i], '#');
-				$settingsArray[$i] = '$' . $var . ' = \'' . $val . '\';' . ($comment != '' ? "\t\t" . $comment : '');
+				$settingsArray[$i] = '$' . $var . ' = \'' . $val . '\';' . ($comment !== '' ? "\t\t" . $comment : '');
 			}
 		}
 	}
@@ -656,7 +656,7 @@ function action_set_settings()
 	for ($i = 0; $i < $lines - 1; $i++)
 	{
 		// Don't just write a bunch of blank lines.
-		if ($settingsArray[$i] != '' || $settingsArray[$i - 1] != '')
+		if ($settingsArray[$i] !== '' || $settingsArray[$i - 1] !== '')
 			fwrite($fp, $settingsArray[$i] . "\n");
 	}
 	fwrite($fp, $settingsArray[$i]);
