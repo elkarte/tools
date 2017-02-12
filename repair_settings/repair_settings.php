@@ -243,7 +243,7 @@ function action_show_settings()
 	else
 		$show_db_settings = false;
 
-	// Know settings that are in Settings.php
+	// Known settings that are in Settings.php
 	$known_settings = array(
 		'critical_settings' => array(
 			'maintenance' => array('flat', 'int', 2),
@@ -439,17 +439,24 @@ function action_show_settings()
 			elseif ($info[1] === 'string')
 			{
 				echo '
-								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" size="', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
+								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" style="width: ', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '80%;' : '30%;', '" class="input_text" />';
+
+				if (!empty($settings[$setting]) && !empty($info[2]) && $info[2] !== $settings[$setting])
+					echo '
+								<span class="input_text_warn"></span>';
 
 				if (isset($txt[$setting . '_desc']))
-					echo '<div class="smalltext">', $txt[$setting . '_desc'], '</div>';
+					echo '
+								<div class="smalltext">', $txt[$setting . '_desc'], '</div>';
 
 				if (isset($info[2]))
+				{
 					echo '
 								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
 					$info[2] === '' ? '' : ($setting !== 'language' && $setting !== 'cookiename' ? '
 								<script>
 									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
+				}
 			}
 			elseif ($info[1] === 'array_string')
 			{
@@ -988,6 +995,9 @@ function template_initialize($results = false)
 				border-bottom: 2px solid #c34;
 				background: #fee url(themes/default/images/profile/warning_mute.png) 10px 50% no-repeat;
 			}
+			.notice {
+				background: #fee url(themes/default/images/profile/warning_watch.png) 10px 50% no-repeat;
+			}
 			.panel {
 				border: 1px solid #ccc;
 				border-radius: 5px;
@@ -1046,6 +1056,11 @@ function template_initialize($results = false)
 				max-height: 2em;
 				height: 2em;
 				vertical-align: middle;
+			}
+			.input_text_warn:after {
+				color: orange;
+				font-size: 1.25em;
+				content: "\26A0";
 			}
 			.linkbutton:link, .linkbutton:visited, .button_submit {
 				border-radius: 2px;
