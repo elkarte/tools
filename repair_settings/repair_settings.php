@@ -84,7 +84,17 @@ function initialize_inputs()
 	$db_connection = false;
 	$db_show_debug = false;
 
-	if (isset($sourcedir) && file_exists($sourcedir))
+	// If we read Settings.php, verify its pointing to the correct sources
+	if (isset($sourcedir) && (file_exists(dirname(__FILE__) . '/Sources/SiteDispatcher.class.php')))
+		$source_found = true;
+	else
+	{
+		//Find Sources folder!
+		$sourcedir = discoverSourceDirectory();
+		$source_found = !empty($sourcedir);
+	}
+
+	if ($source_found)
 	{
 		if (!defined('ELK'))
 			define('ELK', 1);
@@ -769,6 +779,40 @@ function action_remove_hooks()
 	cache_put_data('modsettings', null, 0);
 
 	return 'hook_removal_success';
+}
+
+/**
+ * Locate / validate the sources directory is correct. Useful under the event
+ * that a site has been moved to a new directory. (eg: from "site.com/test" to "site.com/forum")
+ * in these cases, the Settings.php file will have wrong values.
+ *
+ * @return null|string
+ */
+function discoverSourceDirectory()
+{
+	$basedir = dirname(__FILE__);
+	$directory = new RecursiveDirectoryIterator($basedir, FilesystemIterator::SKIP_DOTS);
+	$filter = new RecursiveCallbackFilterIterator($directory, function ($current, $key, $iterator) {
+		if ($current->getFilename()[0] === '.')
+		{
+			return false;
+		}
+
+		if ($current->isDir())
+		{
+			return true;
+		}
+
+		return $current->getFilename() === 'SiteDispatcher.class.php';
+	});
+	$iterator = new RecursiveIteratorIterator($filter);
+	$sources = null;
+	foreach ($iterator as $info) {
+		$sources = $info->getPath();
+		break;
+	}
+
+	return $sources;
 }
 
 /**
