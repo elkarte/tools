@@ -86,7 +86,8 @@ function initialize_inputs()
 
 	if (isset($sourcedir) && file_exists($sourcedir))
 	{
-		define('ELK', 1);
+		if (!defined('ELK'))
+			define('ELK', 1);
 
 		// Time to set some constants
 		DEFINE('BOARDDIR', $boarddir);
@@ -108,6 +109,20 @@ function initialize_inputs()
 		require_once(SOURCEDIR . '/Load.php');
 		require_once(DATABASEDIR . '/Database.subs.php');
 		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('persist' => false, 'dont_select_db' => false, 'port' => $db_port), $db_type);
+
+		// Validate we have a proper connection to our ElkArte db and tables
+		if (!empty($db_connection))
+		{
+			$db = database();
+			if ($db->select_db($db_name, $db_connection) === null)
+				$db_connection = null;
+			else
+			{
+				$tables = $db->db_list_tables($db_name, $db_prefix . 'settings');
+				if (empty($tables) || $tables[0] !== $db_prefix . 'settings')
+					$db_connection = null;
+			}
+		}
 	}
 }
 
@@ -375,7 +390,7 @@ function action_show_settings()
 	{
 		echo '
 					<h2>', $txt[$settings_section], '</h2>
-					<h3>', $txt[$settings_section . '_info'], '</h3>
+					<h3 class="infobox">', $txt[$settings_section . '_info'], '</h3>
 
 					<table class="table_settings">
 						<tr>';
@@ -415,6 +430,9 @@ function action_show_settings()
 			{
 				echo '
 								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" size="', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
+
+				if (isset($txt[$setting . '_desc']))
+					echo '<div class="smalltext">', $txt[$setting . '_desc'], '</div>';
 
 				if (isset($info[2]))
 					echo '
@@ -788,7 +806,7 @@ function load_language_data()
 	$txt['database_settings_hidden'] = 'Some settings are not being shown because the database connection information is incorrect.';
 
 	$txt['critical_settings'] = 'Critical Settings';
-	$txt['critical_settings_info'] = 'These are the settings most likely to cause problems with your board.  You can also try the items below this area (especially the path and URL ones) if these don\'t help.  Click on the recommended values to use them.';
+	$txt['critical_settings_info'] = 'These are the settings most likely to cause problems with your board.  You can also review the items below this area (especially the path and URL ones) if these don\'t help.<br />Click on the recommended values to use them.';
 	$txt['maintenance'] = 'Maintenance Mode';
 	$txt['maintenance0'] = 'Off (recommended)';
 	$txt['maintenance1'] = 'Enabled';
@@ -812,7 +830,7 @@ function load_language_data()
 	$txt['theme_default1'] = 'Yes (recommended if you have problems)';
 
 	$txt['database_settings'] = 'Database Info';
-	$txt['database_settings_info'] = 'This is the server, username, password, and database for your server.';
+	$txt['database_settings_info'] = 'This is the server, username, password, and database for your server.<br />Click on the recommended values to use them.';
 	$txt['db_server'] = 'Server';
 	$txt['db_name'] = 'Database name';
 	$txt['db_user'] = 'Username';
@@ -830,7 +848,7 @@ function load_language_data()
 	$txt['db_sqlite'] = 'SQLite';
 
 	$txt['path_url_settings'] = 'Paths &amp; URLs';
-	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation. Correct them if they are wrong, otherwise you can experience serious issues.';
+	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation. Correct them if they are wrong, otherwise you can experience serious issues.<br />Click on the recommended values to use them.';
 	$txt['boardurl'] = 'Forum URL';
 	$txt['boarddir'] = 'Forum Directory';
 	$txt['sourcedir'] = 'Sources Directory';
@@ -847,7 +865,7 @@ function load_language_data()
 	$txt['theme_dir'] = 'Default Theme Directory';
 
 	$txt['theme_path_url_settings'] = 'Paths &amp; URLs For Themes';
-	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.';
+	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.<br />Click on the recommended values to use them.';
 
 	$txt['hook_removal_success'] = 'All active hooks in the system were successfully removed';
 	$txt['settings_saved_success'] = 'Your settings were successfully saved.';
