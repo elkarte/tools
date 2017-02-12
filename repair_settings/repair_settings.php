@@ -30,7 +30,7 @@ if (isset($_POST['submit']))
 if (isset($_POST['remove_hooks']))
 	$result = action_remove_hooks();
 if (isset($_POST['delete']))
-	$result = action_deleteScript();
+	action_deleteScript();
 
 // Off to the template
 template_initialize($result);
@@ -79,7 +79,6 @@ function initialize_inputs()
 	}
 
 	// PHP 5 might complain if we don't do this now.
-	$server_offset = @mktime(0, 0, 0, 1, 1, 1970);
 	date_default_timezone_set(date_default_timezone_get());
 
 	$db_connection = false;
@@ -119,7 +118,7 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $db_connection, $db_type, $db_name, $db_prefix;
+	global $txt, $db_name, $db_prefix;
 
 	$db = database();
 
@@ -435,7 +434,6 @@ function action_show_settings()
 				$item = 1;
 				foreach ($array_settings as $array_setting)
 				{
-					$suggested = false;
 					echo '
 								<input type="text" name="', $info[0], 'settings[', $setting, '_', $item, ']" id="', $setting, $item, '" value="', $array_setting, '" size="', $settings_section == 'path_url_settings' || $settings_section == 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
 
@@ -857,6 +855,8 @@ function load_language_data()
 
 /**
  * Show the main template with the current and suggested values
+ *
+ * @param $results boolean
  */
 function template_initialize($results = false)
 {
