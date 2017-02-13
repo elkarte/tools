@@ -280,16 +280,21 @@ function action_show_settings()
 			'smileys_url' => array('db', 'string'),
 			'smileys_dir' => array('db', 'string'),
 		),
+		'cache_settings' => array(
+			'cache_accelerator' => array('flat', 'string'),
+			'cache_enable' => array('flat', 'int', 1),
+			'cachedir' => array('flat', 'string'),
+			'cache_memcached' => array('flat', 'string'),
+			'cache_uid' => array('flat', 'string'),
+			'cache_password' => array('flat', 'string'),
+		),
 		'theme_path_url_settings' => array(),
 	);
 
-	// Remove custom_avatar info if its off
+	// Remove custom_avatar settings if its currently off
 	if (empty($settings['custom_avatar_enabled']))
 		unset($known_settings['path_url_settings']['custom_avatar_url'], $known_settings['path_url_settings']['custom_avatar_dir']);
 
-	// @todo Multiple Attachment Dirs not supported as yet, so hide this field
-	// if (empty($known_settings['path_url_settings']['attachmentUploadDir']))
-	// unset($known_settings['path_url_settings']['attachmentUploadDir']);
 	// Let's assume we don't want to change the current theme
 	$settings['theme_default'] = 0;
 
@@ -439,6 +444,7 @@ function action_show_settings()
 				// Default checkmarks to off if they are not set
 				if ($info[1] === 'check' && !isset($settings[$setting]))
 					$settings[$setting] = 0;
+
 				for ($i = 0; $i <= $info[2]; $i++)
 				{
 					echo '
@@ -457,9 +463,9 @@ function action_show_settings()
 					echo '
 								<span class="input_text_warn"></span>';
 
-				if (isset($txt[$setting . '_desc']))
+				if (isset($txt[$setting . '_hint']))
 					echo '
-								<div class="smalltext">', $txt[$setting . '_desc'], '</div>';
+								<div class="smalltext">', $txt[$setting . '_hint'], '</div>';
 
 				if (isset($info[2]))
 				{
@@ -482,7 +488,7 @@ function action_show_settings()
 				foreach ($array_settings as $array_setting)
 				{
 					echo '
-								<input type="text" name="', $info[0], 'settings[', $setting, '_', $item, ']" id="', $setting, $item, '" value="', $array_setting, '" size="', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '60" style="width: 80%;' : '30', '" class="input_text" />';
+								<input type="text" name="', $info[0], 'settings[', $setting, '_', $item, ']" id="', $setting, $item, '" value="', $array_setting, '" style="width: ', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '80%;' : '30%', '" class="input_text" />';
 
 					$suggested = guess_attachments_directories($item, $array_setting);
 
@@ -855,7 +861,7 @@ function load_language_data()
 {
 	global $txt;
 
-	$txt['elkarte_repair_settings'] = 'ElkArte Settings Repair Tool';
+	$txt['elkarte_repair_settings'] = 'ElkArte %1$s Repair Utility';
 	$txt['no_value'] = '<em style="font-weight: normal; color: red;">Value not found!</em>';
 	$txt['default_value'] = 'Recommended value';
 	$txt['other_possible_value'] = 'Other possible value';
@@ -883,7 +889,7 @@ function load_language_data()
 	$txt['minify_css_js0'] = 'Off ((recommended only if you have problems))';
 	$txt['minify_css_js1'] = 'On ';
 	$txt['enableCompressedOutput'] = 'Output Compression';
-	$txt['enableCompressedOutput0'] = 'Off (recommended only if you have problems)';
+	$txt['enableCompressedOutput0'] = 'Off (recommended if you have problems)';
 	$txt['enableCompressedOutput1'] = 'On (saves a lot of bandwidth)';
 	$txt['databaseSession_enable'] = 'Database driven sessions';
 	$txt['databaseSession_enable0'] = 'Off (not recommended)';
@@ -891,6 +897,17 @@ function load_language_data()
 	$txt['theme_default'] = 'Set ElkArte Default theme as overall forum default<br />for all users';
 	$txt['theme_default0'] = 'No (keep the current users\' theme settings)';
 	$txt['theme_default1'] = 'Yes (recommended if you have problems)';
+
+	$txt['cache_settings'] = 'Cache Settings';
+	$txt['cache_settings_info'] = 'These are the current cache settings for your installation.<br />You can verify/update cache settings or turn it off and then any needed changes in your Admin Center.';
+	$txt['cache_accelerator'] = 'Caching Accelerator';
+	$txt['cache_accelerator_hint'] = 'Choose: apc, memcache, memcached, xcache or file.';
+	$txt['cache_enable'] = 'Enable Caching';
+	$txt['cache_enable0'] = 'Off (recommended if you have problems)';
+	$txt['cache_enable1'] = 'On';
+	$txt['cache_memcached'] = 'Memcached Servers';
+	$txt['cache_uid'] = 'XCache Accelerator Userid';
+	$txt['cache_password'] = 'XCache Accelerator Password';
 
 	$txt['database_settings'] = 'Database Info';
 	$txt['database_settings_info'] = 'This is the server, username, password, and database for your server.<br />Click on the recommended values to use them.';
@@ -942,9 +959,14 @@ function load_language_data()
  */
 function template_initialize($results = false)
 {
-	global $txt, $db_type;
+	global $txt, $db_type, $sourcedir;
 
 	$logo = "themes/default/images/logo.png";
+
+	$ver = '1.0.x';
+	if (file_exists($sourcedir . '/Autoloader.class.php'))
+		$ver = '1.1.x';
+	$txt['elkarte_repair_settings'] = sprintf($txt['elkarte_repair_settings'], $ver);
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
 	echo '<!DOCTYPE html>
@@ -984,11 +1006,11 @@ function template_initialize($results = false)
 				height: 40px;
 			}
 			#header img {
-					float: right;
-				margin-top: -15px;
+				float: right;
+				margin-top: -1em;
 			}
 			#content {
-				padding: 20px 30px;
+				padding: 1em 1.5em;
 			}
 			.warningbox, .successbox, .infobox, .errorbox {
 				padding: 10px 10px 10px 35px;
@@ -1022,13 +1044,13 @@ function template_initialize($results = false)
 				margin: 0 0 0.5em;
 				padding-bottom: 3px;
 				border-bottom: 1px dashed #aaa;
-				font-size: 14pt;
+				font-size: 1.6em;
 				font-weight: bold;
 				color: #555;
 			}
 			.panel h3 {
 				margin: 0 0 2em;
-				font-size: 10pt;
+				font-size: 1em;
 				font-weight: normal;
 			}
 			form {
@@ -1065,6 +1087,7 @@ function template_initialize($results = false)
 			}
 			input, .input_text, button, select {
 				padding: 0 6px;
+				margin-top: 0;
 				min-height: 2em;
 				max-height: 2em;
 				height: 2em;
