@@ -434,8 +434,8 @@ function action_show_settings()
 							<td class="textbox">
 								<label', $info[1] !== 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
 				(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
-								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<br />
-								' . $txt['no_value'] : '', '
+								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<span class="no_value">
+								' . $txt['no_value'] . '</span>' : '', '
 							</td>
 							<td>';
 
@@ -476,6 +476,7 @@ function action_show_settings()
 									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
 				}
 			}
+			// Can only used for attachments
 			elseif ($info[1] === 'array_string')
 			{
 				if (!is_array($settings[$setting]))
@@ -514,7 +515,8 @@ function action_show_settings()
 
 			echo '
 							</td>
-						</tr><tr>';
+						</tr>
+						<tr>';
 		}
 
 		echo '
@@ -668,55 +670,7 @@ function action_set_settings()
 	}
 
 	// Updating the Settings.php file
-	$settingsArray = file(dirname(__FILE__) . '/Settings.php');
-	$settings = array();
-	for ($i = 0, $n = count($settingsArray); $i < $n; $i++)
-	{
-		$settingsArray[$i] = rtrim($settingsArray[$i]);
-
-		// Remove the redirect...
-		if ($settingsArray[$i] === 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
-		{
-			$settingsArray[$i] = '';
-			$settingsArray[$i++] = '';
-			$settingsArray[$i++] = '';
-			$settingsArray[$i++] = '';
-			$settingsArray[$i++] = '';
-			$settingsArray[$i++] = '';
-			continue;
-		}
-
-		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] !== '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
-			$settings[$match[1]] = stripslashes($match[3]);
-
-		foreach ($file_updates as $var => $val)
-		{
-			if (strncasecmp($settingsArray[$i], '$' . $var, 1 + strlen($var)) == 0)
-			{
-				$comment = strstr($settingsArray[$i], '#');
-				$settingsArray[$i] = '$' . $var . ' = \'' . $val . '\';' . ($comment !== '' ? "\t\t" . $comment : '');
-			}
-		}
-	}
-
-	// Blank out the file - done to fix a oddity with some servers.
-	$fp = @fopen(dirname(__FILE__) . '/Settings.php', 'w');
-	fclose($fp);
-
-	// Write it out with the updates
-	$fp = fopen(dirname(__FILE__) . '/Settings.php', 'r+');
-	$lines = count($settingsArray);
-	for ($i = 0; $i < $lines - 1; $i++)
-	{
-		// Don't just write a bunch of blank lines.
-		if ($settingsArray[$i] !== '' || $settingsArray[$i - 1] !== '')
-			fwrite($fp, $settingsArray[$i] . "\n");
-	}
-	fwrite($fp, $settingsArray[$i]);
-	fclose($fp);
-
-	// Make sure it works.
-	require(dirname(__FILE__) . '/Settings.php');
+	action_outputSettings($file_updates);
 
 	$setString = array();
 	foreach ($db_updates as $var => $val)
@@ -779,6 +733,84 @@ function action_set_settings()
 		);
 
 	return 'settings_saved_success';
+}
+
+/**
+ * Saves any updates made to the Settings.php values
+ *
+ * @param array $file_updates
+ */
+function action_outputSettings($file_updates)
+{
+	require_once(SOURCEDIR . '/Subs.php');
+
+	$settingsArray = file(dirname(__FILE__) . '/Settings.php');
+	$settings = array();
+
+	for ($i = 0, $n = count($settingsArray); $i < $n; $i++)
+	{
+		$settingsArray[$i] = rtrim($settingsArray[$i]);
+
+		// Remove the redirect...
+		if ($settingsArray[$i] === 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
+		{
+			$settingsArray[$i] = '';
+			$settingsArray[$i++] = '';
+			$settingsArray[$i++] = '';
+			$settingsArray[$i++] = '';
+			$settingsArray[$i++] = '';
+			$settingsArray[$i++] = '';
+			continue;
+		}
+
+		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] !== '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
+		{
+			$settings[$match[1]] = stripslashes($match[3]);
+		}
+
+		foreach ($file_updates as $var => $val)
+		{
+			if (strncasecmp($settingsArray[$i], '$' . $var, 1 + strlen($var)) === 0)
+			{
+				$comment = strstr(substr(un_htmlspecialchars($settingsArray[$i]), strpos(un_htmlspecialchars($settingsArray[$i]), ';')), '#');
+
+				// Only quote strings, not known ints, bools, checkboxes, etc
+				if (in_array($val, array('0', '1', '2', 'true', 'false')))
+				{
+					$settingsArray[$i] = '$' . $var . ' = ' . $val . ';' . ($comment !== '' ? "\t\t" . rtrim($comment) : '');
+				}
+				else
+				{
+					$settingsArray[$i] = '$' . $var . ' = \'' . $val . '\';' . ($comment !== '' ? "\t\t" . rtrim($comment) : '');
+				}
+
+				// This one's been 'used', so to speak.
+				unset($file_updates[$var]);
+			}
+		}
+	}
+
+	// Still more variables to go?  Then add them at the end.
+	if (!empty($file_updates))
+	{
+		// Add in the missing defined vars that were passed
+		foreach ($file_updates as $var => $val)
+		{
+			$settingsArray[] = '$' . $var . ' = \'' . $val . '\';';
+		}
+	}
+
+	// Blank out the file - done to fix a oddity with some servers.
+	clearstatcache();
+	file_put_contents(dirname(__FILE__) . '/Settings.php', '', LOCK_EX);
+
+	// Write it out with the updates
+	$write_settings = implode("\n", $settingsArray);
+	$write_settings = strtr($write_settings, "\n\n\n", "\n\n");
+	file_put_contents(dirname(__FILE__) . '/Settings.php', $write_settings, LOCK_EX);
+
+	// Make sure it works.
+	require(dirname(__FILE__) . '/Settings.php');
 }
 
 /**
@@ -899,9 +931,9 @@ function load_language_data()
 	$txt['theme_default1'] = 'Yes (recommended if you have problems)';
 
 	$txt['cache_settings'] = 'Cache Settings';
-	$txt['cache_settings_info'] = 'These are the current cache settings for your installation.<br />You can verify/update cache settings or turn it off and then any needed changes in your Admin Center.';
+	$txt['cache_settings_info'] = 'These are the current cache settings for your installation.<br />You can verify/update cache settings here or turn it off and make any needed changes in your Admin Center.';
 	$txt['cache_accelerator'] = 'Caching Accelerator';
-	$txt['cache_accelerator_hint'] = 'Choose: apc, memcache, memcached, xcache or file.';
+	$txt['cache_accelerator_hint'] = 'Choose: apc, memcache, memcached, xcache, filebased or none';
 	$txt['cache_enable'] = 'Enable Caching';
 	$txt['cache_enable0'] = 'Off (recommended if you have problems)';
 	$txt['cache_enable1'] = 'On';
@@ -1095,6 +1127,14 @@ function template_initialize($results = false)
 			}
 			.input_text_warn:after {
 				color: orange;
+				font-size: 1.25em;
+				content: "\26A0";
+			}
+			.no_value {
+				display: block;
+			}
+			.no_value:before {
+				color: red;
 				font-size: 1.25em;
 				content: "\26A0";
 			}
