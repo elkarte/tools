@@ -275,11 +275,17 @@ function action_show_settings()
 			'attachmentUploadDir' => array('db', 'array_string'),
 			'avatar_url' => array('db', 'string'),
 			'avatar_directory' => array('db', 'string'),
+			'custom_avatar_url' => array('db', 'string'),
+			'custom_avatar_dir' => array('db', 'string'),
 			'smileys_url' => array('db', 'string'),
 			'smileys_dir' => array('db', 'string'),
 		),
 		'theme_path_url_settings' => array(),
 	);
+
+	// Remove custom_avatar info if its off
+	if (empty($settings['custom_avatar_enabled']))
+		unset($known_settings['path_url_settings']['custom_avatar_url'], $known_settings['path_url_settings']['custom_avatar_dir']);
 
 	// @todo Multiple Attachment Dirs not supported as yet, so hide this field
 	// if (empty($known_settings['path_url_settings']['attachmentUploadDir']))
@@ -309,6 +315,12 @@ function action_show_settings()
 	{
 		$known_settings['path_url_settings']['avatar_url'][2] = $url . '/avatars';
 		$known_settings['path_url_settings']['avatar_directory'][2] = realpath(dirname(__FILE__) . '/avatars');
+	}
+
+	if (!empty($settings['custom_avatar_enabled']) && !empty($settings['custom_avatar_dir']) && file_exists(dirname(__FILE__) . '/' . basename($settings['custom_avatar_dir'])))
+	{
+		$known_settings['path_url_settings']['custom_avatar_url'][2] = $url . '/' . basename($settings['custom_avatar_dir']);
+		$known_settings['path_url_settings']['custom_avatar_dir'][2] = realpath(dirname(__FILE__) . '/' . basename($settings['custom_avatar_dir']));
 	}
 
 	if (file_exists(dirname(__FILE__) . '/smileys'))
@@ -909,12 +921,13 @@ function load_language_data()
 	$txt['attachmentUploadDir'] = 'Attachment Directory';
 	$txt['avatar_url'] = 'Avatar URL';
 	$txt['avatar_directory'] = 'Avatar Directory';
+	$txt['custom_avatar_url'] = 'Custom Avatar URL';
+	$txt['custom_avatar_dir'] = 'Custom Avatar Directory';
 	$txt['smileys_url'] = 'Smileys URL';
 	$txt['smileys_dir'] = 'Smileys Directory';
 	$txt['theme_url'] = 'Default Theme URL';
 	$txt['images_url'] = 'Default Theme Images URL';
 	$txt['theme_dir'] = 'Default Theme Directory';
-
 	$txt['theme_path_url_settings'] = 'Paths &amp; URLs For Themes';
 	$txt['theme_path_url_settings_info'] = 'These are the paths and URLs to your ElkArte themes.<br />Click on the recommended values to use them.';
 
@@ -1022,7 +1035,7 @@ function template_initialize($results = false)
 				margin: 0;
 			}
 			td.textbox {
-				padding-top: 2px;
+				padding-top: .1em;
 				white-space: nowrap;
 				padding-' . (empty($txt['lang_rtl']) ? 'right' : 'left') . ': 2em;
 				width: 20%;
