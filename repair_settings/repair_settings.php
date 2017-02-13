@@ -72,10 +72,16 @@ function initialize_inputs()
 	foreach ($_POST as $k => $v)
 	{
 		if (is_array($v))
+		{
 			foreach ($v as $k2 => $v2)
+			{
 				$_POST[$k][$k2] = addcslashes($v2, '\\\'');
+			}
+		}
 		else
+		{
 			$_POST[$k] = addcslashes($v, '\\\'');
+		}
 	}
 
 	// PHP 5 might complain if we don't do this now.
@@ -224,7 +230,8 @@ function action_show_settings()
 
 		// Load all the themes.
 		$request = $db->query('', '
-			SELECT variable, value, id_theme
+			SELECT 
+				variable, value, id_theme
 			FROM {db_prefix}themes
 			WHERE id_member = 0
 				AND variable IN ({array_string:variables})',
@@ -291,7 +298,7 @@ function action_show_settings()
 		'theme_path_url_settings' => array(),
 	);
 
-	// Remove custom_avatar settings if its currently off
+	// Don't display custom_avatar settings if its currently off
 	if (empty($settings['custom_avatar_enabled']))
 		unset($known_settings['path_url_settings']['custom_avatar_url'], $known_settings['path_url_settings']['custom_avatar_dir']);
 
@@ -479,6 +486,7 @@ function action_show_settings()
 			// Can only used for attachments
 			elseif ($info[1] === 'array_string')
 			{
+				$array_settings = '';
 				if (!is_array($settings[$setting]))
 					$array_settings = @unserialize($settings[$setting]);
 
@@ -526,30 +534,9 @@ function action_show_settings()
 	}
 
 	echo '
-
 					<div class="submitbutton">';
 
-	$failure = false;
-	if (strpos(__FILE__, ':\\') !== 1)
-	{
-		// On Linux, it's easy - just use is_writable!
-		$failure |=!is_writable('Settings.php') && !chmod('Settings.php', 0777);
-	}
-	// Windows is trickier.  Let's try opening for r+...
-	else
-	{
-		// Funny enough, chmod actually does do something on windows - it removes the read only attribute.
-		chmod(dirname(__FILE__) . '/' . 'Settings.php', 0777);
-		$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'r+');
-
-		// Hmm, okay, try just for write in that case...
-		if (!$fp)
-			$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'w');
-
-		$failure |=!$fp;
-		fclose($fp);
-	}
-
+	$failure = checkSettingsAccess();
 	if ($failure)
 		echo '
 						<input type="submit" name="submit" value="', $txt['save_settings'], '" disabled="disabled" class="button_submit" /><br />', $txt['not_writable'];
@@ -568,8 +555,8 @@ function action_show_settings()
 
 /**
  *
- * @param type $id
- * @param type $array_setting
+ * @param int $id
+ * @param array $array_setting
  */
 function guess_attachments_directories($id, $array_setting)
 {
@@ -580,20 +567,19 @@ function guess_attachments_directories($id, $array_setting)
 	if (empty($usedDirs))
 	{
 		$usedDirs = array();
-		$request = $db->query(true, '
+		$request = $db->query('', '
 			SELECT {raw:select_tables}, file_hash
 			FROM {db_prefix}attachments',
 			array(
 				'select_tables' => 'DISTINCT(id_folder), id_attach',
 			)
 		);
-
 		if ($db->num_rows($request) > 0)
 		{
 			while ($row = $db->fetch_assoc($request))
 				$usedDirs[$row['id_folder']] = $row;
-			$db->free_result($request);
 		}
+		$db->free_result($request);
 	}
 
 	if ($basedir = opendir(dirname(__FILE__)))
@@ -608,15 +594,27 @@ function guess_attachments_directories($id, $array_setting)
 
 	// 1st guess: let's see if we can find a file...if there is at least one.
 	if (isset($usedDirs[$id]))
+	{
 		foreach ($availableDirs as $aDir)
+		{
 			if (file_exists(dirname(__FILE__) . '/' . $aDir . '/' . $usedDirs[$id]['id_attach'] . '_' . $usedDirs[$id]['file_hash']))
+			{
 				return array(dirname(__FILE__) . '/' . $aDir);
+			}
+		}
+	}
 
 	// 2nd guess: directory name
 	if (!empty($availableDirs))
+	{
 		foreach ($availableDirs as $dirname)
+		{
 			if (strrpos($array_setting, $dirname) == (strlen($array_setting) - strlen($dirname)))
+			{
 				return array(dirname(__FILE__) . '/' . $dirname);
+			}
+		}
+	}
 
 	// Doing it later saves in case the attached files have been deleted from the file system
 	if (empty($usedDirs) && empty($availableDirs))
@@ -627,13 +625,21 @@ function guess_attachments_directories($id, $array_setting)
 
 		// Attachments is the first guess
 		foreach ($availableDirs as $dir)
+		{
 			if ($dir === 'attachments')
+			{
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
+			}
+		}
 
 		// All the others
 		foreach ($availableDirs as $dir)
+		{
 			if ($dir !== 'attachments')
+			{
 				$guesses[] = dirname(__FILE__) . '/' . $dir;
+			}
+		}
 
 		return $guesses;
 	}
@@ -644,8 +650,6 @@ function guess_attachments_directories($id, $array_setting)
  */
 function action_set_settings()
 {
-	global $db_connection;
-
 	$db = database();
 
 	// What areas are we updating
@@ -707,7 +711,7 @@ function action_set_settings()
 		$setString[] = array('currentAttachmentUploadDir', 0);
 	}
 
-	if ($db_connection && !empty($setString))
+	if ($db && !empty($setString))
 		$db->insert('replace', '
 			{db_prefix}settings',
 			array('variable' => 'string', 'value' => 'string-65534'),
@@ -725,7 +729,7 @@ function action_set_settings()
 		$setString[] = array($match[1], 0, $match[2], stripslashes($val));
 	}
 
-	if ($db_connection && !empty($setString))
+	if ($db && !empty($setString))
 		$db->insert('replace',
 			'{db_prefix}themes',
 			array('id_theme' => 'int', 'id_member' => 'int', 'variable' => 'string', 'value' => 'string-65534'),
@@ -733,6 +737,38 @@ function action_set_settings()
 		);
 
 	return 'settings_saved_success';
+}
+
+/**
+ * Checks to see if Settings.php is writable
+ *
+ * @return bool
+ */
+function checkSettingsAccess()
+{
+	$failure = false;
+
+	if (strpos(__FILE__, ':\\') !== 1)
+	{
+		// On Linux, it's easy - just use is_writable!
+		$failure |= !is_writable('Settings.php') && !chmod('Settings.php', 0777);
+	}
+	// Windows is trickier.  Let's try opening for r+...
+	else
+	{
+		// Funny enough, chmod actually does do something on windows - it removes the read only attribute.
+		chmod(dirname(__FILE__) . '/' . 'Settings.php', 0777);
+		$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'r+');
+
+		// Hmm, okay, try just for write in that case...
+		if (!$fp)
+			$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'w');
+
+		$failure |= !$fp;
+		fclose($fp);
+	}
+
+	return $failure;
 }
 
 /**
@@ -850,7 +886,8 @@ function discoverSourceDirectory()
 	$basedir = dirname(__FILE__);
 	$directory = new RecursiveDirectoryIterator($basedir, FilesystemIterator::SKIP_DOTS);
 	$filter = new RecursiveCallbackFilterIterator($directory, function ($current, $key, $iterator) {
-		if ($current->getFilename()[0] === '.')
+		$check = $current->getFilename();
+		if ($check[0] === '.')
 		{
 			return false;
 		}
@@ -1069,8 +1106,8 @@ function template_initialize($results = false)
 				border: 1px solid #ccc;
 				border-radius: 5px;
 				background-color: #eee;
-				margin: 1em 0;
-				padding: 1.2em;
+				margin: 1em 2em;
+				padding: 1.5em;
 			}
 			.panel h2 {
 				margin: 0 0 0.5em;
