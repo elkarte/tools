@@ -91,11 +91,10 @@ function initialize_inputs()
 	$db_show_debug = false;
 
 	// If we read Settings.php, verify its pointing to the correct sources
-	if (isset($sourcedir) && (file_exists(dirname(__FILE__) . '/Sources/SiteDispatcher.class.php')))
+	if (isset($sourcedir) && (file_exists(dirname(__FILE__) . '/sources/SiteDispatcher.class.php')))
 		$source_found = true;
 	else
 	{
-		//Find Sources folder!
 		$sourcedir = discoverSourceDirectory();
 		$source_found = !empty($sourcedir);
 	}
@@ -678,12 +677,11 @@ function action_set_settings()
 		unset($db_updates['theme_default']);
 	else
 	{
-		$db_updates['theme_guests'] = 1;
-		$db->query(true, '
+		$db->query('', '
 			UPDATE {db_prefix}members
-			SET {raw:theme_column} = 0',
+			SET id_theme = {int:default_theme}',
 			array(
-				'theme_column' => 'id_theme',
+				'default_theme' => 0,
 			)
 		);
 	}
@@ -1009,7 +1007,6 @@ function load_language_data()
 	$txt['db_persist1'] = 'Persistent (might cause problems)';
 	$txt['db_mysql'] = 'MySQL';
 	$txt['db_postgresql'] = 'PostgreSQL';
-	$txt['db_sqlite'] = 'SQLite';
 
 	$txt['path_url_settings'] = 'Paths &amp; URLs';
 	$txt['path_url_settings_info'] = 'These are the paths and URLs to your ElkArte installation. Correct them if they are wrong, otherwise you can experience serious issues.<br />Click on the recommended values to use them.';
