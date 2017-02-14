@@ -697,7 +697,7 @@ function action_set_settings()
 	$attach_count = 1;
 	foreach ($setString as $key => $value)
 	{
-		if (strpos($value[0], 'attachmentUploadDir') == 0 && strpos($value[0], 'attachmentUploadDir') !== false)
+		if (strpos($value[0], 'attachmentUploadDir') === 0)
 		{
 			$attach_dirs[$attach_count++] = $value[1];
 			unset($setString[$key]);
