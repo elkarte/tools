@@ -163,7 +163,7 @@ function action_show_settings()
 	if (count($settingsArray) == 1)
 		$settingsArray = preg_split('~[\r\n]~', $settingsArray[0]);
 
-	// Load the settings.php file in to our settings array
+	// Load the Settings.php file in to our settings array
 	$settings = array();
 	for ($i = 0, $n = count($settingsArray); $i < $n; $i++)
 	{
@@ -250,7 +250,7 @@ function action_show_settings()
 	else
 		$show_db_settings = false;
 
-	// Known settings that are in Settings.php
+	// Known settings that are found in Settings.php
 	$known_settings = array(
 		'critical_settings' => array(
 			'maintenance' => array('flat', 'int', 2),
@@ -483,7 +483,7 @@ function action_show_settings()
 									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
 				}
 			}
-			// Can only used for attachments
+			// Only used for attachments
 			elseif ($info[1] === 'array_string')
 			{
 				$array_settings = '';
@@ -554,6 +554,11 @@ function action_show_settings()
 }
 
 /**
+ * Determines the best correct attachment directory location
+ *
+ * - looking to see if it can find an attachment file in a selection of directories
+ * - failing that, look to find the directory name that matches whats in settings
+ * - failing that look for directory's named attachment
  *
  * @param int $id
  * @param array $array_setting
@@ -564,16 +569,17 @@ function guess_attachments_directories($id, $array_setting)
 
 	$db = database();
 
+	// Fetch the attachment folder id's that have been used
 	if (empty($usedDirs))
 	{
-		$usedDirs = array();
 		$request = $db->query('', '
-			SELECT {raw:select_tables}, file_hash
+			SELECT 
+				DISTINCT(id_folder), id_attach, file_hash
 			FROM {db_prefix}attachments',
 			array(
-				'select_tables' => 'DISTINCT(id_folder), id_attach',
 			)
 		);
+		$usedDirs = array();
 		if ($db->num_rows($request) > 0)
 		{
 			while ($row = $db->fetch_assoc($request))
@@ -582,14 +588,23 @@ function guess_attachments_directories($id, $array_setting)
 		$db->free_result($request);
 	}
 
-	if ($basedir = opendir(dirname(__FILE__)))
+	// Find all potential attachment directories
+	$exclude = array('sources', 'packages', 'themes', 'cache', 'avatars', 'smileys', 'install', 'vendor', 'tests');
+	$directory = new RecursiveDirectoryIterator(dirname(__FILE__), RecursiveDirectoryIterator::SKIP_DOTS);
+	$filter = new RecursiveCallbackFilterIterator($directory, function ($current) use ($exclude)
 	{
-		$availableDirs = array();
-		while (false !== ($file = readdir($basedir)))
+		if ($current->isDir() && !in_array($current->getFilename(), $exclude))
 		{
-			if ($file !== '.' && $file !== '..' && is_dir($file) && $file !== 'sources' && $file !== 'packages' && $file !== 'themes' && $file !== 'cache' && $file !== 'avatars' && $file !== 'smileys')
-				$availableDirs[] = $file;
+			return true;
 		}
+
+		return false;
+	});
+	$availableDirs = array();
+	$iterator = new RecursiveIteratorIterator($filter, RecursiveIteratorIterator::SELF_FIRST);
+	foreach ($iterator as $dirs)
+	{
+		$availableDirs[] = $dirs->getPathname();
 	}
 
 	// 1st guess: let's see if we can find a file...if there is at least one.
@@ -597,9 +612,9 @@ function guess_attachments_directories($id, $array_setting)
 	{
 		foreach ($availableDirs as $aDir)
 		{
-			if (file_exists(dirname(__FILE__) . '/' . $aDir . '/' . $usedDirs[$id]['id_attach'] . '_' . $usedDirs[$id]['file_hash']))
+			if (file_exists($aDir . '/' . $usedDirs[$id]['id_attach'] . '_' . $usedDirs[$id]['file_hash'] . '.elk'))
 			{
-				return array(dirname(__FILE__) . '/' . $aDir);
+				return array($aDir);
 			}
 		}
 	}
@@ -609,9 +624,9 @@ function guess_attachments_directories($id, $array_setting)
 	{
 		foreach ($availableDirs as $dirname)
 		{
-			if (strrpos($array_setting, $dirname) == (strlen($array_setting) - strlen($dirname)))
+			if (strrpos($array_setting, $dirname) === (strlen($array_setting) - strlen($dirname)))
 			{
-				return array(dirname(__FILE__) . '/' . $dirname);
+				return array($dirname);
 			}
 		}
 	}
@@ -626,18 +641,18 @@ function guess_attachments_directories($id, $array_setting)
 		// Attachments is the first guess
 		foreach ($availableDirs as $dir)
 		{
-			if ($dir === 'attachments')
+			if (basename($dir) === 'attachments')
 			{
-				$guesses[] = dirname(__FILE__) . '/' . $dir;
+				$guesses[] = $dir;
 			}
 		}
 
 		// All the others
 		foreach ($availableDirs as $dir)
 		{
-			if ($dir !== 'attachments')
+			if (basename($dir) !== 'attachments')
 			{
-				$guesses[] = dirname(__FILE__) . '/' . $dir;
+				$guesses[] = $dir;
 			}
 		}
 
@@ -1004,7 +1019,7 @@ function load_language_data()
 	$txt['cachedir'] = 'Cache Directory';
 	$txt['extdir'] = 'External libraries Directory';
 	$txt['languagedir'] = 'Languages Directory';
-	$txt['attachmentUploadDir'] = 'Attachment Directory';
+	$txt['attachmentUploadDir'] = 'Attachment Directory(s)';
 	$txt['avatar_url'] = 'Avatar URL';
 	$txt['avatar_directory'] = 'Avatar Directory';
 	$txt['custom_avatar_url'] = 'Custom Avatar URL';
