@@ -224,7 +224,12 @@ function action_show_settings()
 			)
 		);
 		while ($row = $db->fetch_assoc($request))
-			$settings[$row['variable']] = $row['value'];
+		{
+			if (!isset($settings[$row['variable']]))
+			{
+				$settings[$row['variable']] = $row['value'];
+			}
+		}
 		$db->free_result($request);
 
 		// Load all the themes.
@@ -288,7 +293,7 @@ function action_show_settings()
 		),
 		'cache_settings' => array(
 			'cache_accelerator' => array('flat', 'string'),
-			'cache_enable' => array('flat', 'int', 1),
+			'cache_enable' => array('flat', 'check', 1),
 			'cachedir' => array('flat', 'string'),
 			'cache_memcached' => array('flat', 'string'),
 			'cache_uid' => array('flat', 'string'),
@@ -439,7 +444,7 @@ function action_show_settings()
 			echo '
 							<td class="textbox">
 								<label', $info[1] !== 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
-				(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
+									(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
 								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<span class="no_value">
 								' . $txt['no_value'] . '</span>' : '', '
 							</td>
