@@ -91,15 +91,9 @@ function initialize_inputs()
 	$db_show_debug = false;
 
 	// If we read Settings.php, verify its pointing to the correct sources
-	if (isset($sourcedir) && (file_exists(dirname(__FILE__) . '/sources/SiteDispatcher.class.php')))
-		$source_found = true;
-	else
-	{
-		$sourcedir = discoverSourceDirectory();
-		$source_found = !empty($sourcedir);
-	}
+	$sourcedir = discoverSourceDirectory();
 
-	if ($source_found)
+	if (!empty($sourcedir))
 	{
 		if (!defined('ELK'))
 			define('ELK', 1);
