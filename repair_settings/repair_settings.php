@@ -274,7 +274,6 @@ function action_show_settings()
 			'boardurl' => array('flat', 'string'),
 			'boarddir' => array('flat', 'string'),
 			'sourcedir' => array('flat', 'string'),
-			'cachedir' => array('flat', 'string'),
 			'extdir' => array('flat', 'string'),
 			'languagedir' => array('flat', 'string'),
 			'attachmentUploadDir' => array('db', 'array_string'),
@@ -313,7 +312,7 @@ function action_show_settings()
 		$known_settings['path_url_settings']['sourcedir'][2] = realpath(dirname(__FILE__) . '/sources');
 
 	if (file_exists(dirname(__FILE__) . '/cache'))
-		$known_settings['path_url_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
+		$known_settings['cache_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
 
 	if (file_exists(dirname(__FILE__) . '/sources/ext'))
 		$known_settings['path_url_settings']['extdir'][2] = realpath(dirname(__FILE__) . '/sources/ext');
