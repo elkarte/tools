@@ -91,15 +91,9 @@ function initialize_inputs()
 	$db_show_debug = false;
 
 	// If we read Settings.php, verify its pointing to the correct sources
-	if (isset($sourcedir) && (file_exists(dirname(__FILE__) . '/sources/SiteDispatcher.class.php')))
-		$source_found = true;
-	else
-	{
-		$sourcedir = discoverSourceDirectory();
-		$source_found = !empty($sourcedir);
-	}
+	$sourcedir = discoverSourceDirectory();
 
-	if ($source_found)
+	if (!empty($sourcedir))
 	{
 		if (!defined('ELK'))
 			define('ELK', 1);
@@ -224,7 +218,12 @@ function action_show_settings()
 			)
 		);
 		while ($row = $db->fetch_assoc($request))
-			$settings[$row['variable']] = $row['value'];
+		{
+			if (!isset($settings[$row['variable']]))
+			{
+				$settings[$row['variable']] = $row['value'];
+			}
+		}
 		$db->free_result($request);
 
 		// Load all the themes.
@@ -275,7 +274,6 @@ function action_show_settings()
 			'boardurl' => array('flat', 'string'),
 			'boarddir' => array('flat', 'string'),
 			'sourcedir' => array('flat', 'string'),
-			'cachedir' => array('flat', 'string'),
 			'extdir' => array('flat', 'string'),
 			'languagedir' => array('flat', 'string'),
 			'attachmentUploadDir' => array('db', 'array_string'),
@@ -288,7 +286,7 @@ function action_show_settings()
 		),
 		'cache_settings' => array(
 			'cache_accelerator' => array('flat', 'string'),
-			'cache_enable' => array('flat', 'int', 1),
+			'cache_enable' => array('flat', 'check', 1),
 			'cachedir' => array('flat', 'string'),
 			'cache_memcached' => array('flat', 'string'),
 			'cache_uid' => array('flat', 'string'),
@@ -314,7 +312,7 @@ function action_show_settings()
 		$known_settings['path_url_settings']['sourcedir'][2] = realpath(dirname(__FILE__) . '/sources');
 
 	if (file_exists(dirname(__FILE__) . '/cache'))
-		$known_settings['path_url_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
+		$known_settings['cache_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
 
 	if (file_exists(dirname(__FILE__) . '/sources/ext'))
 		$known_settings['path_url_settings']['extdir'][2] = realpath(dirname(__FILE__) . '/sources/ext');
@@ -439,7 +437,7 @@ function action_show_settings()
 			echo '
 							<td class="textbox">
 								<label', $info[1] !== 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
-				(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
+									(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
 								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<span class="no_value">
 								' . $txt['no_value'] . '</span>' : '', '
 							</td>
