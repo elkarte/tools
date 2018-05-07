@@ -8,7 +8,7 @@ description: Tools to help with ElkArte Forum maintance.
 
 # baseurl will often be '', but for a project page on gh-pages, it needs to
 # be the project name.
-baseurl: 'http://tools.elkarte.net'
+baseurl: 'https://tools.elkarte.net'
 #baseurl: ''
 
 # This can be '' to hide the Github nav button
