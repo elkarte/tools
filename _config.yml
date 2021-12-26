@@ -1,14 +1,14 @@
-# Jekyll configuration
+# ElkArte Theme site Jekyll configuration
 
 # Name of your site (this will show up at the top of your page and in the RSS feed)
-name: ElkArte Tools &amp; Utilities
+name: ElkArte Utilites
 
 # Short description (goes below the title; it will also be used in the RSS feed)
-description: Tools to help with ElkArte Forum maintance.
+description: Utilities to help keep your site running smooth.
 
 # baseurl will often be '', but for a project page on gh-pages, it needs to
 # be the project name.
-#baseurl: 'https://tools.elkarte.net'
+#baseurl: 'https://themes.elkarte.net'
 baseurl: 'https://elkarte.github.io/tools/'
 
 # This can be '' to hide the Github nav button
@@ -17,21 +17,23 @@ github: 'elkarte/tools'
 # Set this to your UA-# value, or '' to disable the block completely
 gaaccount: ''
 
+# Gems
+gems: [jekyll-paginate]
+
 # Set this to your disqus shortname to enable comments. Note that the 'comments'
 # setting below must also be true. Individual posts can override 'comments' to
 # disable on a post-by-post basis
 disqus: ''
 comments: false
 
-permalink: /:year/:month/:title
+# Our permalinks will be addon category / theme name.html
+permalink: /:categories/:title.html
 paginate: 5
 
-highlighter: pygments
-markdown: redcarpet
-redcarpet:
-  extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables"]
-
+highlighter: rouge
+markdown: kramdown
 kramdown:
   input: GFM
+  hard_wrap: false
 
 exclude: [vendor]
