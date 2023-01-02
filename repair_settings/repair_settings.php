@@ -1,21 +1,22 @@
 <?php
 
 /**
- * @name      Elkarte Forum
- * @copyright Elkarte Forum contributors
+ * @name      ElkArte Forum
+ * @copyright ElkArte Forum contributors
+ * @license   BSD http://opensource.org/licenses/BSD-3-Clause
  *
- * This software is a derived product, based on:
- *
- * Simple Machines Forum (SMF)
+ * This file contains code covered by:
  * copyright:	2011 Simple Machines (http://www.simplemachines.org)
- * license:  	BSD, See included LICENSE.TXT for terms and conditions.
+ * license:		BSD, See included LICENSE.TXT for terms and conditions.
  *
  * @version 1.1
  */
 
 // We need the Settings.php info for database stuff.
-if (file_exists(dirname(__FILE__) . '/Settings.php'))
-	require_once(dirname(__FILE__) . '/Settings.php');
+if (file_exists(__DIR__ . '/Settings.php'))
+{
+	require_once(__DIR__ . '/Settings.php');
+}
 
 // Initialize everything
 initialize_inputs();
@@ -26,11 +27,19 @@ load_language_data();
 // Any actions we need to take care of this pass?
 $result = false;
 if (isset($_POST['submit']))
+{
 	$result = action_set_settings();
+}
+
 if (isset($_POST['remove_hooks']))
+{
 	$result = action_remove_hooks();
+}
+
 if (isset($_POST['delete']))
+{
 	action_deleteScript();
+}
 
 // Off to the template
 template_initialize($result);
@@ -45,28 +54,32 @@ template_show_footer();
  */
 function initialize_inputs()
 {
-	global $db_connection, $sourcedir, $boarddir, $languagedir, $extdir, $cachedir;
-	global $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $db_port, $db_show_debug;
+	global $db_connection, $sourcedir, $boarddir, $languagedir, $extdir, $cachedir,
+		   $db_server, $db_name, $db_user, $db_passwd, $db_prefix, $db_type, $db_port, $db_show_debug;
 
 	// Turn off magic quotes runtime and enable error reporting.
 	if (function_exists('set_magic_quotes_runtime'))
 		@set_magic_quotes_runtime(0);
+
 	error_reporting(E_ALL);
 
 	ob_start();
 
 	if (ini_get('session.save_handler') === 'user')
+	{
 		@ini_set('session.save_handler', 'files');
+	}
 
 	if (function_exists('session_start'))
+	{
 		@session_start();
+	}
 
 	// Reject magic_quotes_sybase='on'.
-	if (ini_get('magic_quotes_sybase') || strtolower(ini_get('magic_quotes_sybase')) === 'on')
-		die('magic_quotes_sybase=on was detected: your host is using an unsecure PHP configuration, deprecated and removed in current versions. Please upgrade PHP.');
-
 	if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc() != 0)
+	{
 		die('magic_quotes_gpc=on was detected: your host is using an unsecure PHP configuration, deprecated and removed in current versions. Please upgrade PHP.');
+	}
 
 	// Add slashes, as long as they aren't already being added.
 	foreach ($_POST as $k => $v)
@@ -84,7 +97,7 @@ function initialize_inputs()
 		}
 	}
 
-	// PHP 5 might complain if we don't do this now.
+	// PHP might complain if we don't do this now.
 	date_default_timezone_set(date_default_timezone_get());
 
 	$db_connection = false;
@@ -96,7 +109,9 @@ function initialize_inputs()
 	if (!empty($sourcedir))
 	{
 		if (!defined('ELK'))
+		{
 			define('ELK', 1);
+		}
 
 		// Time to set some constants
 		DEFINE('BOARDDIR', $boarddir);
@@ -110,26 +125,39 @@ function initialize_inputs()
 		DEFINE('SUBSDIR', $sourcedir . '/subs');
 		unset($boarddir, $cachedir, $sourcedir, $languagedir, $extdir);
 
-		// Default the database type to MySQL if its not set in settings
+		// Default the database type to MySQL if not set in settings
 		if (empty($db_type) || !file_exists(DATABASEDIR . '/Db-' . $db_type . '.class.php'))
+		{
 			$db_type = 'mysql';
+		}
 
-		// Lets make a connection to the db
+		// Attempt to make a connection to the db
 		require_once(SOURCEDIR . '/Load.php');
+
+		// Needed for 1.1 as autoloader is later in the process
+		if (file_exists(SOURCEDIR . '/Autoloader.class.php'))
+		{
+			require_once(SUBSDIR . '/Util.class.php');
+		}
+
 		require_once(DATABASEDIR . '/Database.subs.php');
-		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('persist' => false, 'dont_select_db' => false, 'port' => $db_port), $db_type);
+		$db_connection = elk_db_initiate($db_server, $db_name, $db_user, $db_passwd, $db_prefix, array('persist' => false, 'dont_select_db' => false, 'port' => $db_port, 'non_fatal' => true), $db_type);
 
 		// Validate we have a proper connection to our ElkArte db and tables
 		if (!empty($db_connection))
 		{
 			$db = database();
 			if ($db->select_db($db_name, $db_connection) === null)
+			{
 				$db_connection = null;
+			}
 			else
 			{
 				$tables = $db->db_list_tables($db_name, $db_prefix . 'settings');
 				if (empty($tables) || $tables[0] !== $db_prefix . 'settings')
+				{
 					$db_connection = null;
+				}
 			}
 		}
 	}
@@ -142,66 +170,100 @@ function initialize_inputs()
  */
 function action_show_settings()
 {
-	global $txt, $db_name, $db_prefix;
+	global $txt, $db_name, $db_prefix, $db_connection;
 
-	$db = database();
+	if ($db_connection)
+	{
+		$db = database();
+	}
 
 	// Check to make sure Settings.php exists!
-	if (file_exists(dirname(__FILE__) . '/Settings.php'))
-		$settingsArray = file(dirname(__FILE__) . '/Settings.php');
-	else
-		$settingsArray = array();
+	$settingsArray = array();
+	if (file_exists(__DIR__ . '/Settings.php'))
+	{
+		$settingsArray = file(__DIR__ . '/Settings.php');
+	}
 
 	// Make sure we have an array of lines
-	if (count($settingsArray) == 1)
+	if (count($settingsArray) === 1)
+	{
 		$settingsArray = preg_split('~[\r\n]~', $settingsArray[0]);
+	}
 
 	// Load the Settings.php file in to our settings array
 	$settings = array();
-	for ($i = 0, $n = count($settingsArray); $i < $n; $i++)
+	foreach ($settingsArray as $i => $iValue)
 	{
-		$settingsArray[$i] = rtrim(stripslashes($settingsArray[$i]));
+		$settingsArray[$i] = rtrim(stripslashes($iValue));
 
 		// Process only the lines that may have information
-		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] === '$')
+		if (isset($iValue[0]) && $iValue[0] === '$')
 		{
 			// 1 var name w/o $, 2 ' or " if quoted value, 3 quoted value if any, 4 unquoted value if any
 			preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(?:(.*?)["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match);
 
 			// Replace dirname(__FILE__) commands with the actual value
-			if (isset($match[3]) && ($match[2] == "'" || $match[2] === '"'))
+			if (isset($match[3]) && ($match[2] === "'" || $match[2] === '"'))
 			{
 				if ($match[3] === 'dirname(__FILE__)')
-					$settings[$match[1]] = dirname(__FILE__);
+				{
+					$settings[$match[1]] = __DIR__;
+				}
 				elseif ($match[3] === 'dirname(__FILE__) . \'/sources\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/sources';
+				{
+					$settings[$match[1]] = __DIR__ . '/sources';
+				}
 				elseif ($match[3] === 'BOARDDIR . \'/sources\'')
+				{
 					$settings[$match[1]] = $settings['boarddir'] . '/sources';
+				}
 				elseif ($match[3] === 'dirname(__FILE__) . \'/cache\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/cache';
+				{
+					$settings[$match[1]] = __DIR__ . '/cache';
+				}
 				elseif ($match[3] === 'dirname(__FILE__) . \'/sources/ext\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/sources/ext';
+				{
+					$settings[$match[1]] = __DIR__ . '/sources/ext';
+				}
 				elseif ($match[3] === 'dirname(__FILE__) . \'/themes/default/languages\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/themes/default/languages';
+				{
+					$settings[$match[1]] = __DIR__ . '/themes/default/languages';
+				}
 				else
+				{
 					$settings[$match[1]] = $match[3];
+				}
 			}
 			elseif (isset($match[4]))
 			{
 				if ($match[4] === 'dirname(__FILE__)')
-					$settings[$match[1]] = dirname(__FILE__);
+				{
+					$settings[$match[1]] = __DIR__;
+				}
 				elseif ($match[4] === 'dirname(__FILE__) . \'/sources\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/sources';
+				{
+					$settings[$match[1]] = __DIR__ . '/sources';
+				}
 				elseif ($match[4] === 'BOARDDIR . \'/sources\'')
+				{
 					$settings[$match[1]] = $settings['boarddir'] . '/sources';
+				}
 				elseif ($match[4] === 'dirname(__FILE__) . \'/cache\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/cache';
+				{
+					$settings[$match[1]] = __DIR__ . '/cache';
+				}
 				elseif ($match[4] === 'dirname(__FILE__) . \'/sources/ext\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/sources/ext';
+				{
+					$settings[$match[1]] = __DIR__ . '/sources/ext';
+				}
 				elseif ($match[4] === 'dirname(__FILE__) . \'/themes/default/languages\'')
-					$settings[$match[1]] = dirname(__FILE__) . '/themes/default/languages';
+				{
+					$settings[$match[1]] = __DIR__ . '/themes/default/languages';
+				}
 				else
+				{
 					$settings[$match[1]] = $match[4];
+				}
 			}
 		}
 	}
@@ -211,7 +273,8 @@ function action_show_settings()
 	{
 		// Load all settings
 		$request = $db->query('', '
-			SELECT DISTINCT variable, value
+			SELECT 
+			    DISTINCT variable, value
 			FROM {db_prefix}settings',
 			array(
 				'db_error_skip' => true
@@ -240,13 +303,17 @@ function action_show_settings()
 		);
 		$theme_settings = array();
 		while ($row = $db->fetch_row($request))
+		{
 			$theme_settings[$row[2]][$row[0]] = $row[1];
+		}
 		$db->free_result($request);
 
 		$show_db_settings = $request;
 	}
 	else
+	{
 		$show_db_settings = false;
+	}
 
 	// Known settings that are found in Settings.php
 	$known_settings = array(
@@ -295,9 +362,11 @@ function action_show_settings()
 		'theme_path_url_settings' => array(),
 	);
 
-	// Don't display custom_avatar settings if its currently off
+	// Don't display custom_avatar settings if it is currently off
 	if (empty($settings['custom_avatar_enabled']))
+	{
 		unset($known_settings['path_url_settings']['custom_avatar_url'], $known_settings['path_url_settings']['custom_avatar_dir']);
+	}
 
 	// Let's assume we don't want to change the current theme
 	$settings['theme_default'] = 0;
@@ -306,45 +375,45 @@ function action_show_settings()
 	$host = empty($_SERVER['HTTP_HOST']) ? $_SERVER['SERVER_NAME'] . (empty($_SERVER['SERVER_PORT']) || $_SERVER['SERVER_PORT'] == '80' ? '' : ':' . $_SERVER['SERVER_PORT']) : $_SERVER['HTTP_HOST'];
 	$url = $schema . $host . substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/'));
 	$known_settings['path_url_settings']['boardurl'][2] = $url;
-	$known_settings['path_url_settings']['boarddir'][2] = dirname(__FILE__);
+	$known_settings['path_url_settings']['boarddir'][2] = __DIR__;
 
-	if (file_exists(dirname(__FILE__) . '/sources'))
-		$known_settings['path_url_settings']['sourcedir'][2] = realpath(dirname(__FILE__) . '/sources');
+	if (file_exists(__DIR__ . '/sources'))
+	{
+		$known_settings['path_url_settings']['sourcedir'][2] = realpath(__DIR__ . '/sources');
+	}
 
-	if (file_exists(dirname(__FILE__) . '/cache'))
-		$known_settings['cache_settings']['cachedir'][2] = realpath(dirname(__FILE__) . '/cache');
+	if (file_exists(__DIR__ . '/cache'))
+	{
+		$known_settings['cache_settings']['cachedir'][2] = realpath(__DIR__ . '/cache');
+	}
 
-	if (file_exists(dirname(__FILE__) . '/sources/ext'))
-		$known_settings['path_url_settings']['extdir'][2] = realpath(dirname(__FILE__) . '/sources/ext');
+	if (file_exists(__DIR__ . '/sources/ext'))
+	{
+		$known_settings['path_url_settings']['extdir'][2] = realpath(__DIR__ . '/sources/ext');
+	}
 
-	if (file_exists(dirname(__FILE__) . '/themes/default/languages'))
-		$known_settings['path_url_settings']['languagedir'][2] = realpath(dirname(__FILE__) . '/themes/default/languages');
+	if (file_exists(__DIR__ . '/themes/default/languages'))
+	{
+		$known_settings['path_url_settings']['languagedir'][2] = realpath(__DIR__ . '/themes/default/languages');
+	}
 
-	if (file_exists(dirname(__FILE__) . '/avatars'))
+	if (file_exists(__DIR__ . '/avatars'))
 	{
 		$known_settings['path_url_settings']['avatar_url'][2] = $url . '/avatars';
-		$known_settings['path_url_settings']['avatar_directory'][2] = realpath(dirname(__FILE__) . '/avatars');
+		$known_settings['path_url_settings']['avatar_directory'][2] = realpath(__DIR__ . '/avatars');
 	}
 
-	if (!empty($settings['custom_avatar_enabled']) && !empty($settings['custom_avatar_dir']) && file_exists(dirname(__FILE__) . '/' . basename($settings['custom_avatar_dir'])))
+	if (!empty($settings['custom_avatar_enabled']) && !empty($settings['custom_avatar_dir']) && file_exists(__DIR__ . '/' . basename($settings['custom_avatar_dir'])))
 	{
 		$known_settings['path_url_settings']['custom_avatar_url'][2] = $url . '/' . basename($settings['custom_avatar_dir']);
-		$known_settings['path_url_settings']['custom_avatar_dir'][2] = realpath(dirname(__FILE__) . '/' . basename($settings['custom_avatar_dir']));
+		$known_settings['path_url_settings']['custom_avatar_dir'][2] = realpath(__DIR__ . '/' . basename($settings['custom_avatar_dir']));
 	}
 
-	if (file_exists(dirname(__FILE__) . '/smileys'))
+	if (file_exists(__DIR__ . '/smileys'))
 	{
 		$known_settings['path_url_settings']['smileys_url'][2] = $url . '/smileys';
-		$known_settings['path_url_settings']['smileys_dir'][2] = realpath(dirname(__FILE__) . '/smileys');
+		$known_settings['path_url_settings']['smileys_dir'][2] = realpath(__DIR__ . '/smileys');
 	}
-
-	/* 	if (file_exists(dirname(__FILE__) . '/themes/default'))
-	  {
-	  $known_settings['path_url_settings']['theme_url'][2] = $url . '/themes/default';
-	  $known_settings['path_url_settings']['images_url'][2] = $url . '/themes/default/images';
-	  $known_settings['path_url_settings']['theme_dir'][2] = realpath(dirname(__FILE__) . '/themes/default');
-	  }
-	 */
 
 	if (!empty($theme_settings))
 	{
@@ -353,18 +422,23 @@ function action_show_settings()
 		{
 			$this_theme = ($pos = strpos($theme['theme_url'], '/themes/')) !== false ? substr($theme['theme_url'], $pos + 8) : '';
 
+			$exist = false;
 			if (!empty($this_theme))
-				$exist = file_exists(dirname(__FILE__) . '/themes/' . $this_theme);
-			else
-				$exist = false;
+			{
+				$exist = file_exists(__DIR__ . '/themes/' . $this_theme);
+			}
 
 			$old_theme = ($pos = strpos($theme['theme_url'], '/Themes/')) !== false ? substr($theme['theme_url'], $pos + 8) : '';
-			$new_theme_exists = file_exists(dirname(__FILE__) . '/themes/' . $this_theme);
+			$new_theme_exists = file_exists(__DIR__ . '/themes/' . $this_theme);
+
+			$theme_url = $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : ($new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme : null);
+			$images_url = $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : ($new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme . '/images' : null);
+			$theme_dir = $exist && !empty($this_theme) ? realpath(__DIR__ . '/themes/' . $this_theme) : ($new_theme_exists && !empty($old_theme) ? realpath(__DIR__ . '/themes/' . $this_theme) : null);
 
 			$known_settings['theme_path_url_settings'] += array(
-				'theme_' . $id . '_theme_url' => array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme : null),
-				'theme_' . $id . '_images_url' => array('theme', 'string', $exist && !empty($this_theme) ? $url . '/themes/' . $this_theme . '/images' : $new_theme_exists && !empty($old_theme) ? $url . '/themes/' . $this_theme . '/images' : null),
-				'theme_' . $id . '_theme_dir' => array('theme', 'string', $exist && !empty($this_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : $new_theme_exists && !empty($old_theme) ? realpath(dirname(__FILE__) . '/themes/' . $this_theme) : null),
+				'theme_' . $id . '_theme_url' => array('theme', 'string', $theme_url),
+				'theme_' . $id . '_images_url' => array('theme', 'string', $images_url),
+				'theme_' . $id . '_theme_dir' => array('theme', 'string', $theme_dir),
 			);
 			$settings += array(
 				'theme_' . $id . '_theme_url' => $theme['theme_url'],
@@ -382,7 +456,7 @@ function action_show_settings()
 	{
 		// Determine the db_prefix
 		$tables = $db->db_list_tables($db_name, '%log_topics');
-		if (count($tables) == 1)
+		if (count($tables) === 1)
 		{
 			$known_settings['database_settings']['db_prefix'][2] = preg_replace('~log_topics$~', '', $tables[0]);
 		}
@@ -429,15 +503,19 @@ function action_show_settings()
 		foreach ($section as $setting => $info)
 		{
 			if ($info[0] === 'hidden')
+			{
 				continue;
+			}
 
 			if ($info[0] !== 'flat' && empty($show_db_settings))
+			{
 				continue;
+			}
 
 			echo '
 							<td class="textbox">
 								<label', $info[1] !== 'int' ? ' for="' . $setting . '"' : '', '>', $txt[$setting], ': ' .
-									(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '' ) . '
+									(isset($txt[$setting . '_desc']) ? '<span class="smalltext">' . $txt[$setting . '_desc'] . '</span>' : '') . '
 								</label>', !isset($settings[$setting]) && $info[1] !== 'check' ? '<span class="no_value">
 								' . $txt['no_value'] . '</span>' : '', '
 							</td>
@@ -447,7 +525,9 @@ function action_show_settings()
 			{
 				// Default checkmarks to off if they are not set
 				if ($info[1] === 'check' && !isset($settings[$setting]))
+				{
 					$settings[$setting] = 0;
+				}
 
 				for ($i = 0; $i <= $info[2]; $i++)
 				{
@@ -464,20 +544,26 @@ function action_show_settings()
 								<input type="text" name="', $info[0], 'settings[', $setting, ']" id="', $setting, '" value="', isset($settings[$setting]) ? htmlspecialchars($settings[$setting]) : '', '" style="width: ', $settings_section === 'path_url_settings' || $settings_section === 'theme_path_url_settings' ? '80%;' : '30%;', '" class="input_text" />';
 
 				if (!empty($settings[$setting]) && !empty($info[2]) && $info[2] !== $settings[$setting])
+				{
 					echo '
 								<span class="input_text_warn"></span>';
+				}
 
 				if (isset($txt[$setting . '_hint']))
+				{
 					echo '
 								<div class="smalltext">', $txt[$setting . '_hint'], '</div>';
+				}
 
 				if (isset($info[2]))
 				{
 					echo '
 								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, '_default" onclick="document.getElementById(\'', $setting, '\').value = ', $info[2] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $info[2], '</a></strong>&quot;.</div>',
+
 					$info[2] === '' ? '' : ($setting !== 'language' && $setting !== 'cookiename' ? '
 								<script>
-									resetSettings[settingsCounter++] = "' . $setting . '"; </script>' : '');
+									resetSettings[settingsCounter++] = "' . $setting . '";
+								</script>' : '');
 				}
 			}
 			// Only used for attachments
@@ -485,10 +571,14 @@ function action_show_settings()
 			{
 				$array_settings = '';
 				if (!is_array($settings[$setting]))
+				{
 					$array_settings = @unserialize($settings[$setting]);
+				}
 
 				if (!is_array($array_settings))
+				{
 					$array_settings = array($settings[$setting]);
+				}
 
 				$item = 1;
 				foreach ($array_settings as $array_setting)
@@ -502,17 +592,24 @@ function action_show_settings()
 					{
 						echo '
 								<div class="smalltext">', $txt['default_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[0] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[0], '</a></strong>&quot;.</div>',
+
 						$suggested[0] === '' ? '' : '
 								<script>
-									resetSettings[settingsCounter++] = "' . $setting . $item . '"; </script>';
+									resetSettings[settingsCounter++] = "' . $setting . $item . '"; 
+								</script>';
 
-						for ($i = 1; $i < count($suggested); $i++)
+						$num = count($suggested);
+						for ($i = 1; $i < $num; $i++)
+						{
 							echo '
 								<div class="smalltext">', $txt['other_possible_value'], ': &quot;<strong><a href="javascript:void(0);" id="', $setting, $item, '_default" onclick="document.getElementById(\'', $setting, $item, '\').value = ', $suggested[$i] === '' ? '\'\';">' . $txt['recommend_blank'] : 'this.innerHTML;">' . $suggested[$i], '</a></strong>&quot;.</div>';
+						}
 					}
 					else
+					{
 						echo '
 								<div class="smalltext">', $txt['no_default_value'], '</div>';
+					}
 
 					$item++;
 				}
@@ -535,14 +632,18 @@ function action_show_settings()
 
 	$failure = checkSettingsAccess();
 	if ($failure)
+	{
 		echo '
 						<input type="submit" name="submit" value="', $txt['save_settings'], '" disabled="disabled" class="button_submit" /><br />', $txt['not_writable'];
+	}
 	else
+	{
 		echo '
 						<a class="linkbutton" href="javascript:restoreAll();">', $txt['restore_all_settings'], '</a>
 						<input type="submit" name="submit" value="', $txt['save_settings'], '" class="button_submit" />
 						<input type="submit" name="remove_hooks" value="' . $txt['remove_hooks'] . '" class="button_submit" />
 						<input type="submit" name="delete" value="' . $txt['remove_script'] . '" class="button_submit" />';
+	}
 
 	echo '
 					</div>
@@ -573,29 +674,24 @@ function guess_attachments_directories($id, $array_setting)
 			SELECT 
 				DISTINCT(id_folder), id_attach, file_hash
 			FROM {db_prefix}attachments',
-			array(
-			)
+			array()
 		);
 		$usedDirs = array();
 		if ($db->num_rows($request) > 0)
 		{
 			while ($row = $db->fetch_assoc($request))
+			{
 				$usedDirs[$row['id_folder']] = $row;
+			}
 		}
 		$db->free_result($request);
 	}
 
 	// Find all potential attachment directories
 	$exclude = array('sources', 'packages', 'themes', 'cache', 'avatars', 'smileys', 'install', 'vendor', 'tests');
-	$directory = new RecursiveDirectoryIterator(dirname(__FILE__), RecursiveDirectoryIterator::SKIP_DOTS);
-	$filter = new RecursiveCallbackFilterIterator($directory, function ($current) use ($exclude)
-	{
-		if ($current->isDir() && !in_array($current->getFilename(), $exclude))
-		{
-			return true;
-		}
-
-		return false;
+	$directory = new RecursiveDirectoryIterator(__DIR__, FilesystemIterator::SKIP_DOTS);
+	$filter = new RecursiveCallbackFilterIterator($directory, function ($current) use ($exclude) {
+		return $current->isDir() && !in_array($current->getFilename(), $exclude, true);
 	});
 	$availableDirs = array();
 	$iterator = new RecursiveIteratorIterator($filter, RecursiveIteratorIterator::SELF_FIRST);
@@ -630,8 +726,11 @@ function guess_attachments_directories($id, $array_setting)
 
 	// Doing it later saves in case the attached files have been deleted from the file system
 	if (empty($usedDirs) && empty($availableDirs))
+	{
 		return false;
-	elseif (empty($usedDirs) && !empty($availableDirs))
+	}
+
+	if (empty($usedDirs) && !empty($availableDirs))
 	{
 		$guesses = array();
 
@@ -665,14 +764,16 @@ function action_set_settings()
 	$db = database();
 
 	// What areas are we updating
-	$db_updates = isset($_POST['dbsettings']) ? $_POST['dbsettings'] : array();
-	$theme_updates = isset($_POST['themesettings']) ? $_POST['themesettings'] : array();
-	$file_updates = isset($_POST['flatsettings']) ? $_POST['flatsettings'] : array();
+	$db_updates = $_POST['dbsettings'] ?? array();
+	$theme_updates = $_POST['themesettings'] ?? array();
+	$file_updates = $_POST['flatsettings'] ?? array();
 	$attach_dirs = array();
 
 	// Updating theme settings
 	if (empty($db_updates['theme_default']))
+	{
 		unset($db_updates['theme_default']);
+	}
 	else
 	{
 		$db->query('', '
@@ -689,7 +790,9 @@ function action_set_settings()
 
 	$setString = array();
 	foreach ($db_updates as $var => $val)
+	{
 		$setString[] = array($var, stripslashes($val));
+	}
 
 	// Attachments dirs
 	$attach_count = 1;
@@ -723,29 +826,35 @@ function action_set_settings()
 	}
 
 	if ($db && !empty($setString))
+	{
 		$db->insert('replace', '
 			{db_prefix}settings',
 			array('variable' => 'string', 'value' => 'string-65534'),
 			$setString, array('variable')
 		);
+	}
 
 	$setString = array();
 	foreach ($theme_updates as $var => $val)
 	{
 		// Extract the data
-		preg_match('~theme_([\d]+)_(.+)~', $var, $match);
+		preg_match('~theme_(\d+)_(.+)~', $var, $match);
 		if (empty($match[0]))
+		{
 			continue;
+		}
 
 		$setString[] = array($match[1], 0, $match[2], stripslashes($val));
 	}
 
 	if ($db && !empty($setString))
+	{
 		$db->insert('replace',
 			'{db_prefix}themes',
 			array('id_theme' => 'int', 'id_member' => 'int', 'variable' => 'string', 'value' => 'string-65534'),
 			$setString, array('id_theme', 'id_member', 'variable')
 		);
+	}
 
 	return 'settings_saved_success';
 }
@@ -753,7 +862,7 @@ function action_set_settings()
 /**
  * Checks to see if Settings.php is writable
  *
- * @return bool
+ * @return int
  */
 function checkSettingsAccess()
 {
@@ -768,12 +877,14 @@ function checkSettingsAccess()
 	else
 	{
 		// Funny enough, chmod actually does do something on windows - it removes the read only attribute.
-		chmod(dirname(__FILE__) . '/' . 'Settings.php', 0777);
-		$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'r+');
+		chmod(__DIR__ . '/' . 'Settings.php', 0777);
+		$fp = @fopen(__DIR__ . '/' . 'Settings.php', 'rb+');
 
 		// Hmm, okay, try just for write in that case...
 		if (!$fp)
-			$fp = @fopen(dirname(__FILE__) . '/' . 'Settings.php', 'w');
+		{
+			$fp = @fopen(__DIR__ . '/' . 'Settings.php', 'wb');
+		}
 
 		$failure |= !$fp;
 		fclose($fp);
@@ -791,15 +902,15 @@ function action_outputSettings($file_updates)
 {
 	require_once(SOURCEDIR . '/Subs.php');
 
-	$settingsArray = file(dirname(__FILE__) . '/Settings.php');
+	$settingsArray = file(__DIR__ . '/Settings.php');
 	$settings = array();
 
-	for ($i = 0, $n = count($settingsArray); $i < $n; $i++)
+	foreach ($settingsArray as $i => $iValue)
 	{
-		$settingsArray[$i] = rtrim($settingsArray[$i]);
+		$settingsArray[$i] = rtrim($iValue);
 
 		// Remove the redirect...
-		if ($settingsArray[$i] === 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
+		if ($iValue === 'if (file_exists(dirname(__FILE__) . \'/install.php\'))')
 		{
 			$settingsArray[$i] = '';
 			$settingsArray[$i++] = '';
@@ -810,16 +921,16 @@ function action_outputSettings($file_updates)
 			continue;
 		}
 
-		if (isset($settingsArray[$i][0]) && $settingsArray[$i][0] !== '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
+		if (isset($iValue[0]) && $iValue[0] !== '.' && preg_match('~^[$]([a-zA-Z_]+)\s*=\s*(?:(["\'])(.*?["\'])(?:\\2)?|(.*?)(?:\\2)?);~', $settingsArray[$i], $match) == 1)
 		{
 			$settings[$match[1]] = stripslashes($match[3]);
 		}
 
 		foreach ($file_updates as $var => $val)
 		{
-			if (strncasecmp($settingsArray[$i], '$' . $var, 1 + strlen($var)) === 0)
+			if (strncasecmp($iValue, '$' . $var, 1 + strlen($var)) === 0)
 			{
-				$comment = strstr(substr(un_htmlspecialchars($settingsArray[$i]), strpos(un_htmlspecialchars($settingsArray[$i]), ';')), '#');
+				$comment = strstr(substr(un_htmlspecialchars($iValue), strpos(un_htmlspecialchars($iValue), ';')), '#');
 
 				// Only quote strings, not known ints, bools, checkboxes, etc
 				if (in_array($val, array('0', '1', '2', 'true', 'false')))
@@ -849,15 +960,15 @@ function action_outputSettings($file_updates)
 
 	// Blank out the file - done to fix a oddity with some servers.
 	clearstatcache();
-	file_put_contents(dirname(__FILE__) . '/Settings.php', '', LOCK_EX);
+	file_put_contents(__DIR__ . '/Settings.php', '', LOCK_EX);
 
 	// Write it out with the updates
 	$write_settings = implode("\n", $settingsArray);
 	$write_settings = strtr($write_settings, "\n\n\n", "\n\n");
-	file_put_contents(dirname(__FILE__) . '/Settings.php', $write_settings, LOCK_EX);
+	file_put_contents(__DIR__ . '/Settings.php', $write_settings, LOCK_EX);
 
 	// Make sure it works.
-	require(dirname(__FILE__) . '/Settings.php');
+	require(__DIR__ . '/Settings.php');
 }
 
 /**
@@ -870,6 +981,7 @@ function action_remove_hooks()
 	$db = database();
 
 	if ($db_connection)
+	{
 		$db->query('', '
 			DELETE FROM {db_prefix}settings
 			WHERE variable LIKE {string:variable}',
@@ -877,6 +989,7 @@ function action_remove_hooks()
 				'variable' => 'integrate_%'
 			)
 		);
+	}
 
 	// Now fixing the cache...
 	require_once(SUBSDIR . '/Cache.subs.php');
@@ -894,9 +1007,9 @@ function action_remove_hooks()
  */
 function discoverSourceDirectory()
 {
-	$basedir = dirname(__FILE__);
+	$basedir = __DIR__;
 	$directory = new RecursiveDirectoryIterator($basedir, FilesystemIterator::SKIP_DOTS);
-	$filter = new RecursiveCallbackFilterIterator($directory, function ($current, $key, $iterator) {
+	$filter = new RecursiveCallbackFilterIterator($directory, function ($current) {
 		$check = $current->getFilename();
 		if ($check[0] === '.')
 		{
@@ -911,13 +1024,15 @@ function discoverSourceDirectory()
 		return $current->getFilename() === 'SiteDispatcher.class.php';
 	});
 	$iterator = new RecursiveIteratorIterator($filter);
-	$sources = null;
-	foreach ($iterator as $info) {
-		$sources = $info->getPath();
-		break;
+
+	if (empty(iterator_count($iterator)))
+	{
+		return null;
 	}
 
-	return $sources;
+	// Use the first found
+	$iterator->rewind();
+	return $iterator->current()->getPath();
 }
 
 /**
@@ -929,7 +1044,7 @@ function action_deleteScript()
 
 	// Now just redirect to forum home /index.php
 	$schema = isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1 || $_SERVER['HTTPS'] === 443) ? 'https://' : 'http://';
-	header('Location: ' . $schema . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/index.php');
+	header('Location: ' . $schema . ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']) . dirname($_SERVER['PHP_SELF']) . '/index.php');
 
 	exit;
 }
@@ -1044,7 +1159,9 @@ function template_initialize($results = false)
 
 	$ver = '1.0.x';
 	if (file_exists($sourcedir . '/Autoloader.class.php'))
+	{
 		$ver = '1.1.x';
+	}
 	$txt['elkarte_repair_settings'] = sprintf($txt['elkarte_repair_settings'], $ver);
 
 	// Note that we're using the default URLs because we aren't even going to try to use Settings.php's settings.
@@ -1237,12 +1354,16 @@ function template_initialize($results = false)
 		<div id="content">';
 
 	if ($results)
+	{
 		echo '
 		<div class="successbox">', $txt[$results], '</div>';
+	}
 
 	// Fix Database title to use $db_type if available
 	if (!empty($db_type) && isset($txt['db_' . $db_type]))
+	{
 		$txt['database_settings'] = $txt['db_' . $db_type] . ' ' . $txt['database_settings'];
+	}
 }
 
 /**
