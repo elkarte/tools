@@ -17,11 +17,11 @@
  * @copyright 2014 emanuele
  * @license   BSD http://opensource.org/licenses/BSD-3-Clause
  *
- * @version 0.1.1
+ * @version 0.1.2
  */
 
 // CLI demo
-//     php patch_to_mod.php --patch_type git_diff --author me --version "1.0.10" --elk_selected_version 1 --current_file "/home/emanuele/Devel/SMF/SMF/Dialogo_releases/diff-1.0.10" --name "elk"
+// php patch_to_mod.php --patch_type git_diff --author me --version "1.0.10" --elk_selected_version 1 --current_file "/home/emanuele/Devel/SMF/SMF/Dialogo_releases/diff-1.0.10" --name "elk"
 
 $txt['PtM_menu'] = 'Package creation script';
 $txt['add_a_file'] = 'Add a file';
@@ -51,24 +51,26 @@ $txt['description'] = 'This procedure will guide you to the conversion of a patc
 $create_path = '';
 
 // ---------------------------------------------------------------------------------------------------------------------
-define('ELK_INTEGRATION_SETTINGS', serialize(array(
-	'integrate_menu_buttons' => 'create_menu_button',)));
+define('ELK_INTEGRATION_SETTINGS', serialize(array('integrate_menu_buttons' => 'create_menu_button')));
 
-if (file_exists(dirname(__FILE__) . '/SSI.php') && !defined('ELK'))
+if (file_exists(__DIR__ . '/SSI.php') && !defined('ELK'))
 {
-	require_once(dirname(__FILE__) . '/SSI.php');
+	require_once(__DIR__ . '/SSI.php');
 }
 elseif (!defined('ELK'))
 {
 	exit('<b>Error:</b> please verify you put this in the same place as ELK\'s SSI.php.');
 }
 
-define('CLI', php_sapi_name() === 'cli');
+define('CLI', PHP_SAPI === 'cli');
 
 // Have some files or directories to skip then add what they start with here
 global $ignore_during_install;
-$ignore_during_install = array('sources/ext', 'docs/readme', 'install/', 'tests/',
-	'.gitattributes', '.travis.yml', 'README.md', 'readme_', 'Settings.sample.php', 'ssi_examples');
+
+$ignore_during_install = ['sources/ext', 'docs/readme', 'install/', 'tests/',
+	'.gitattributes', '.travis.yml', 'README.md', 'readme_', 'Settings.sample.php', 'ssi_examples',
+	'composer.json', 'themes/default/fonts',
+	'themes/default/scripts/jquery.sceditor.bbcode.min.js'];
 
 if (ELK === 'SSI' && CLI === false)
 {
@@ -83,7 +85,7 @@ elseif (CLI === true)
 	// Guess is fun
 	if (empty($create_path))
 	{
-		$create_path = dirname(__FILE__) . '/packages/create';
+		$create_path = __DIR__ . '/packages/create';
 	}
 
 	$d_inputs = getopt('', array(
@@ -130,7 +132,7 @@ function readAvailableMethods()
 
 	foreach ($classes as $class)
 	{
-		if (substr($class, 0, strlen($class_prefix)) == $class_prefix
+		if (substr($class, 0, strlen($class_prefix)) === $class_prefix
 			&& defined($class . '::description'))
 		{
 			$available_methods[$class] = $class::description;
@@ -192,7 +194,7 @@ function create_mod($create_path)
 	// Guess is fun
 	if (empty($create_path))
 	{
-		$create_path = dirname(__FILE__) . '/packages/create';
+		$create_path = __DIR__ . '/packages/create';
 	}
 
 	// Download the zip file
@@ -205,7 +207,7 @@ function create_mod($create_path)
 			throw new Elk_Exception($txt['package_not_found'], false);
 		}
 
-		$file_name = $file_name . '.zip';
+		$file_name .= '.zip';
 
 		ob_end_clean();
 		header('Pragma: ');
@@ -452,10 +454,12 @@ function template_create_script()
 					<input type="file" size="40" name="mod_patch" id="mod_patch" class="input_file" /> (<a href="javascript:void(0);" onclick="cleanFileInput(\'mod_patch\');"> X </a>)
 					<select name="mod_patch_type">';
 
+		$context['mod_patch_type'] = $context['mod_patch_type'] ?? '';
+
 		foreach ($context['available_types'] as $class => $desc)
 		{
 			echo '
-						<option value="', $class, '"', $context['mod_patch_type'] == $class ? ' selected="selected"' : '', '>', $desc, '</option>';
+						<option value="', $class, '"', $context['mod_patch_type'] === $class ? ' selected="selected"' : '', '>', $desc, '</option>';
 		}
 
 		echo '
@@ -524,7 +528,7 @@ function template_create_script()
 				<dd>
 					<input type="file" size="20" name="mod_file[]" id="mod_file') . ' + current_file + ' . JavaScriptEscape('" class="input_file" /> (<a href="javascript:void(0);" onclick="cleanFieldInput(\'mod_file') . ' + current_file + ' . JavaScriptEscape('\');"> X </a>)
 					<select style="width: 150px;" name="mod_file_type[]" id="mod_file') . ' + current_file + ' . JavaScriptEscape('_select">' .
-						$select . '
+				$select . '
 					</select>
 					<label for="mod_file') . ' + current_file + ' . JavaScriptEscape('_subdir">&nbsp;/&nbsp;</label><input type="text" name="mod_file_subdir[]" id="mod_file') . ' + current_file + ' . JavaScriptEscape('_subdir" value="" size="20" style="width: 150px;" class="input_text" />
 				</dd>
@@ -585,6 +589,7 @@ class Create_xml
 	private $errors = array();
 	private $up_files = array();
 	private $methods = array();
+	private $currentFileContent = '';
 
 	/**
 	 * Give the patch file a name
@@ -653,9 +658,9 @@ class Create_xml
 			$ver = $this->default_ELK_ver;
 		}
 
-		if (!in_array($ver, $this->elk_versions))
+		if (!in_array($ver, $this->elk_versions, true))
 		{
-			array_push($this->elk_versions, htmlspecialchars(substr($ver, 4, 3) . ' - ' . substr($ver, 4, 3) . '.99'));
+			$this->elk_versions[] = htmlspecialchars(substr($ver, 4, 3) . ' - ' . substr($ver, 4, 3) . '.99');
 		}
 
 		return $this;
@@ -663,7 +668,7 @@ class Create_xml
 
 	/**
 	 * Sets a path / directory for the output of the files.  The path will be
-	 * relative to the packages directory of the forum
+	 * relative to the packages' directory of the forum
 	 *
 	 * @param string $path
 	 * @return $this
@@ -672,7 +677,10 @@ class Create_xml
 	{
 		if (!file_exists($path))
 		{
-			@mkdir($path);
+			if (!mkdir($path) && !is_dir($path))
+			{
+				throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+			}
 		}
 
 		if (!file_exists($path) || !is_writable($path))
@@ -689,11 +697,16 @@ class Create_xml
 			deltree($current_path);
 		}
 
-		@mkdir($current_path);
+		if (!mkdir($current_path) && !is_dir($current_path))
+		{
+			throw new \RuntimeException(sprintf('Directory "%s" was not created', $current_path));
+		}
+
 		if (!file_exists($current_path) || !is_writable($current_path))
 		{
 			$this->addError(array('err_code' => 'path_not_writable', 'sprintf' => array($current_path)))->clean_uploaded_files();
 		}
+
 		$this->create_path = $current_path;
 
 		return $this;
@@ -713,6 +726,7 @@ class Create_xml
 				@unlink($this->create_path . '/' . $file['name']);
 			}
 		}
+
 		$this->up_files = array();
 
 		if (!empty($_FILES['mod_file']))
@@ -736,7 +750,7 @@ class Create_xml
 	{
 		if (!empty($err))
 		{
-			array_push($this->errors, $err);
+			$this->errors[] = $err;
 		}
 
 		return $this;
@@ -1027,7 +1041,7 @@ class Create_xml
 				if (!empty($this->modifications))
 				{
 					$write .= '
-			<modification' . ($action == 'uninstall' ? ' reverse="true"' : '') . '>modifications.xml</modification>';
+			<modification' . ($action === 'uninstall' ? ' reverse="true"' : '') . '>modifications.xml</modification>';
 				}
 
 				$write .= '
@@ -1111,7 +1125,7 @@ class Create_xml
 
 			$search = array_shift($searches);
 			$replace = array_shift($replaces);
-			if ($search == $replace)
+			if ($search === $replace)
 			{
 				if ($reverse)
 				{
@@ -1154,31 +1168,31 @@ class Create_xml
 	{
 		global $settings;
 
-		if (substr($file, 0, 7) == 'sources')
+		if (substr($file, 0, 7) === 'sources')
 		{
 			$real_path = SOURCEDIR . substr($file, 7);
 		}
-		elseif (substr($file, 0, 24) == 'themes/default/languages')
+		elseif (substr($file, 0, 24) === 'themes/default/languages')
 		{
 			$real_path = $settings['default_theme_dir'] . substr($file, 14);
 		}
-		elseif (substr($file, 0, 21) == 'themes/default/images')
+		elseif (substr($file, 0, 21) === 'themes/default/images')
 		{
 			$real_path = '';
 		}
-		elseif (substr($file, 0, 22) == 'themes/default/scripts')
+		elseif (substr($file, 0, 22) === 'themes/default/scripts')
 		{
 			$real_path = $settings['default_theme_dir'] . substr($file, 14);
 		}
-		elseif (substr($file, 0, 18) == 'themes/default/css')
+		elseif (substr($file, 0, 18) === 'themes/default/css')
 		{
 			$real_path = $settings['default_theme_dir'] . substr($file, 14);
 		}
-		elseif (substr($file, 0, 14) == 'themes/default')
+		elseif (substr($file, 0, 14) === 'themes/default')
 		{
 			$real_path = $settings['default_theme_dir'] . substr($file, 14);
 		}
-		elseif (substr($file, 0, 6) == 'themes')
+		elseif (substr($file, 0, 6) === 'themes')
 		{
 			$real_path = substr($settings['default_theme_dir'], 0, -8) . substr($file, 6);
 		}
@@ -1187,8 +1201,9 @@ class Create_xml
 			$real_path = BOARDDIR . '/' . $file;
 		}
 
-		$this->currentFileName = $real_path;
-		if (!empty($real_path))
+		$real_path = trim($real_path);
+
+		if (!empty($real_path && file_exists($real_path)))
 		{
 			$this->currentFileContent = str_replace(array("\n", "\r"), array(''), file_get_contents($real_path));
 		}
@@ -1339,7 +1354,7 @@ class Create_xml
  */
 class Create_from_git_diff extends Create_xml
 {
-	const description = 'from git diff';
+	public const description = 'from git diff';
 
 	/**
 	 * @return string
@@ -1379,9 +1394,10 @@ class Create_from_git_diff extends Create_xml
 			}
 
 			// The block of code is finished, let's add an <operation>
-			if ($this->is_end_of_operation() && !empty($operations))
+			if ($this->is_end_of_operation() && !empty($operations['search']) && !empty($operations['replace']))
 			{
 				$this->addOperation($operations);
+
 				// Reset things.
 				$operations = array();
 				if ($this->line_starts_with('diff --git'))
@@ -1389,6 +1405,7 @@ class Create_from_git_diff extends Create_xml
 					$dir = '';
 					$this->increase_counter();
 				}
+
 				continue;
 			}
 
@@ -1441,64 +1458,72 @@ class Create_from_git_diff extends Create_xml
 
 		$this->readCurrentFile(substr($directory, 6));
 
-		if ($subdir == 'sources/subs')
+		if ($subdir === 'sources/subs')
 		{
-			$dir = 'SUBSDIR';
-		}
-		elseif ($subdir == 'sources/controllers')
-		{
-			$dir = 'CONTROLLERDIR';
-		}
-		elseif ($subdir == 'sources/admin')
-		{
-			$dir = 'ADMINDIR';
-		}
-		elseif ($subdir == 'sources/ext')
-		{
-			$dir = 'EXTDIR';
-		}
-		elseif ($subdir == 'sources')
-		{
-			$dir = 'SOURCEDIR';
-		}
-		elseif (strpos($directory, 'languages') !== false)
-		{
-			$dir = 'LANGUAGEDIR/english';
-		}
-		elseif (strpos($directory, 'images') !== false)
-		{
-			$dir = 'IMAGESDIR';
-		}
-		elseif ($subdir == 'themes/default')
-		{
-			$dir = 'THEMEDIR';
-		}
-		elseif ($subdir == 'sources/modules')
-		{
-			$dir = 'SOURCEDIR/modules';
-		}
-		elseif ($subdir == 'sources/database')
-		{
-			$dir = 'SOURCEDIR/database';
-		}
-		elseif (strpos($directory, 'themes/default') !== false)
-		{
-			$dir = str_replace('themes/default', 'THEMEDIR', $subdir);
-		}
-		elseif (strpos($directory, 'sources/subs') !== false)
-		{
-			$dir = str_replace('sources/subs', 'SUBSDIR', $subdir);
-		}
-		elseif (strpos($directory, 'sources/modules') !== false)
-		{
-			$dir = str_replace('sources/modules', 'SOURCEDIR/modules', $subdir);
-		}
-		else
-		{
-			$dir = 'BOARDDIR';
+			return 'SUBSDIR';
 		}
 
-		return $dir;
+		if ($subdir === 'sources/controllers')
+		{
+			return 'CONTROLLERDIR';
+		}
+
+		if ($subdir === 'sources/admin')
+		{
+			return 'ADMINDIR';
+		}
+
+		if ($subdir === 'sources/ext')
+		{
+			return 'EXTDIR';
+		}
+
+		if ($subdir === 'sources')
+		{
+			return 'SOURCEDIR';
+		}
+
+		if (strpos($directory, 'languages') !== false)
+		{
+			return 'LANGUAGEDIR/english';
+		}
+
+		if (strpos($directory, 'images') !== false)
+		{
+			return 'IMAGESDIR';
+		}
+
+		if ($subdir === 'themes/default')
+		{
+			return 'THEMEDIR';
+		}
+
+		if ($subdir === 'sources/modules')
+		{
+			return 'SOURCEDIR/modules';
+		}
+
+		if ($subdir === 'sources/database')
+		{
+			return 'SOURCEDIR/database';
+		}
+
+		if (strpos($directory, 'themes/default') !== false)
+		{
+			return str_replace('themes/default', 'THEMEDIR', $subdir);
+		}
+
+		if (strpos($directory, 'sources/subs') !== false)
+		{
+			return str_replace('sources/subs', 'SUBSDIR', $subdir);
+		}
+
+		if (strpos($directory, 'sources/modules') !== false)
+		{
+			return str_replace('sources/modules', 'SOURCEDIR/modules', $subdir);
+		}
+
+		return 'BOARDDIR';
 	}
 
 	/**
@@ -1652,7 +1677,7 @@ class Create_from_svn_patch extends Create_xml
 
 		$this->readCurrentFile(substr($directory, 4, strpos($directory, "\t") - 4));
 
-		if ($subdir == 'Sources')
+		if ($subdir === 'Sources')
 		{
 			$dir = '$sourcedir';
 		}
@@ -1668,7 +1693,7 @@ class Create_from_svn_patch extends Create_xml
 		{
 			$dir = '$themedir/scripts';
 		}
-		elseif ($subdir == 'Themes')
+		elseif ($subdir === 'Themes')
 		{
 			$dir = '$themedir';
 		}
